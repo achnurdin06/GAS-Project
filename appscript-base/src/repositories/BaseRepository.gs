@@ -20,9 +20,17 @@ class BaseRepository {
   getSpreadsheet() {
     const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
     if (spreadsheetId) {
-      return SpreadsheetApp.openById(spreadsheetId);
+      try {
+        return SpreadsheetApp.openById(spreadsheetId);
+      } catch (e) {}
     }
-    return SpreadsheetApp.getActiveSpreadsheet();
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+
+    // Auto-create spreadsheet for standalone script
+    const newSs = SpreadsheetApp.create('AEF Enterprise Database');
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', newSs.getId());
+    return newSs;
   }
 
   /**

@@ -6,7 +6,21 @@
  */
 
 function setupDatabase() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let ss = null;
+  const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  if (spreadsheetId) {
+    try {
+      ss = SpreadsheetApp.openById(spreadsheetId);
+    } catch (e) {}
+  }
+  if (!ss) {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  }
+  if (!ss) {
+    ss = SpreadsheetApp.create('AEF Enterprise Database');
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
+    console.log('Created new Standalone Spreadsheet DB:', ss.getUrl());
+  }
 
   // Helper to ensure sheet exists and write headers & initial rows if empty
   function initSheet(sheetName, headers, seedRows = []) {
@@ -142,5 +156,5 @@ function setupDatabase() {
   const auditHeaders = ['event_id', 'timestamp', 'user_id', 'module', 'action', 'reference_id', 'status', 'description', 'old_value', 'new_value', 'id', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   initSheet('log_audit', auditHeaders, []);
 
-  return "AEF Database and Seed Data Setup Complete!";
+  return "AEF Database & Seed Data Setup Complete! Spreadsheet URL: " + ss.getUrl();
 }
