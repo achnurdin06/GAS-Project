@@ -33,4 +33,14 @@ class AuditService {
       Logger.error('AUDIT', 'log', `Failed to write audit log: ${err.message}`);
     }
   }
+
+  /**
+   * Get all audit log entries
+   * @returns {Object} Standard Response
+   */
+  getAuditLogs() {
+    const { rows } = this.auditRepo.readAll();
+    const sorted = rows.reverse().slice(0, 100); // Top 100 latest events
+    return Response.success('Audit logs retrieved', sorted, 'AUDIT_LIST_SUCCESS');
+  }
 }

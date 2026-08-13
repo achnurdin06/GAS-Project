@@ -1,0 +1,62 @@
+<template id="tpl-permissions">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Permission Control</h3>
+      <p class="text-muted small mb-0">Atur pemetaan izin fitur (permission_code) terhadap role ID.</p>
+    </div>
+    <button class="btn btn-aef-primary" data-bs-toggle="modal" data-bs-target="#addPermModal">
+      <i class="bi bi-key-fill me-1"></i> Tambah Permission
+    </button>
+  </div>
+
+  <div class="aef-card">
+    <div class="table-responsive">
+      <table class="table table-aef align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Role ID</th>
+            <th>Permission Code</th>
+            <th>Nama Permission</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="perms-table-body">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add Permission Modal -->
+  <div class="modal fade" id="addPermModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark border-secondary text-white">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title"><i class="bi bi-key-fill me-2"></i>Tambah Permission</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-add-perm" onsubmit="event.preventDefault(); AEF.createPermission();">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Target Role ID</label>
+              <input type="text" id="new-perm-role" class="form-control bg-dark border-secondary text-white" placeholder="ROLE_USER" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">Permission Code (e.g. REPORT_VIEW)</label>
+              <input type="text" id="new-perm-code" class="form-control bg-dark border-secondary text-white" placeholder="REPORT_VIEW" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">Nama Label</label>
+              <input type="text" id="new-perm-name" class="form-control bg-dark border-secondary text-white" placeholder="Lihat Laporan" required>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-aef-primary">Simpan Permission</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

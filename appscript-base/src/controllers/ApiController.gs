@@ -114,3 +114,90 @@ function apiDeleteUser(payload) {
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
+
+// ROLES API
+function apiGetRoles(payload) {
+  try {
+    const service = new RoleService();
+    return service.getAllRoles(payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiCreateRole(payload) {
+  try {
+    const service = new RoleService();
+    return service.createRole(payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeleteRole(payload) {
+  try {
+    const targetId = payload ? (payload.role_id || payload.roleId) : null;
+    const service = new RoleService();
+    return service.deleteRole(targetId, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+// PERMISSIONS API
+function apiGetPermissions(payload) {
+  try {
+    const service = new PermissionService();
+    return service.getAllPermissions(payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiCreatePermission(payload) {
+  try {
+    const service = new PermissionService();
+    return service.createPermission(payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeletePermission(payload) {
+  try {
+    const targetId = payload ? (payload.perm_id || payload.permId) : null;
+    const service = new PermissionService();
+    return service.deletePermission(targetId, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+// CONFIG API
+function apiGetConfigs(payload) {
+  try {
+    const service = new ConfigService();
+    return service.getAllConfigs(payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiUpdateConfig(payload) {
+  try {
+    const service = new ConfigService();
+    return service.updateConfig(payload.config_id, payload.config_value, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+// AUDIT API
+function apiGetAuditLogs(payload) {
+  try {
+    const service = new AuditService();
+    return service.getAuditLogs();
+  } catch (err) {
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}

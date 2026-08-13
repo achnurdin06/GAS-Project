@@ -136,6 +136,18 @@
       } else if (route === '/users') {
         contentCanvas.innerHTML = document.getElementById('tpl-users').innerHTML;
         this.loadUsersTable();
+      } else if (route === '/roles') {
+        contentCanvas.innerHTML = document.getElementById('tpl-roles').innerHTML;
+        this.loadRolesTable();
+      } else if (route === '/permissions') {
+        contentCanvas.innerHTML = document.getElementById('tpl-permissions').innerHTML;
+        this.loadPermissionsTable();
+      } else if (route === '/config') {
+        contentCanvas.innerHTML = document.getElementById('tpl-config').innerHTML;
+        this.loadConfigsTable();
+      } else if (route === '/audit') {
+        contentCanvas.innerHTML = document.getElementById('tpl-audit').innerHTML;
+        this.loadAuditLogsTable();
       } else {
         contentCanvas.innerHTML = `
           <div class="aef-card text-center py-5">
@@ -223,6 +235,167 @@
           }
         })
         .apiDeleteUser({ userId: userId, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    // ROLES CRUD
+    loadRolesTable: function () {
+      const tbody = document.getElementById('roles-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          if (res.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data role.</td></tr>';
+            return;
+          }
+          let rows = '';
+          res.data.forEach(r => {
+            rows += `<tr>
+              <td><code>${r.role_code}</code></td>
+              <td>${r.role_name}</td>
+              <td>${r.description || '-'}</td>
+              <td><span class="badge bg-success-subtle text-success">${r.status}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>`;
+          });
+          tbody.innerHTML = rows;
+        }
+      }).apiGetRoles();
+    },
+
+    createRole: function () {
+      const code = document.getElementById('new-role-code').value;
+      const name = document.getElementById('new-role-name').value;
+      const desc = document.getElementById('new-role-desc').value;
+      if (!code || !name) return alert('Role Code dan Nama Role wajib diisi!');
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('addRoleModal'));
+          if (modal) modal.hide();
+          this.loadRolesTable();
+        } else alert('Gagal: ' + res.message);
+      }).apiCreateRole({ role_code: code, role_name: name, description: desc });
+    },
+
+    deleteRole: function (roleId) {
+      if (!confirm('Hapus role ini?')) return;
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) this.loadRolesTable();
+        else alert('Gagal: ' + res.message);
+      }).apiDeleteRole({ role_id: roleId });
+    },
+
+    // PERMISSIONS CRUD
+    loadPermissionsTable: function () {
+      const tbody = document.getElementById('perms-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          if (res.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data permission.</td></tr>';
+            return;
+          }
+          let rows = '';
+          res.data.forEach(p => {
+            rows += `<tr>
+              <td><span class="badge bg-indigo-subtle text-primary">${p.role_id}</span></td>
+              <td><code>${p.permission_code}</code></td>
+              <td>${p.permission_name}</td>
+              <td><span class="badge bg-success-subtle text-success">${p.status}</span></td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>`;
+          });
+          tbody.innerHTML = rows;
+        }
+      }).apiGetPermissions();
+    },
+
+    createPermission: function () {
+      const roleId = document.getElementById('new-perm-role').value;
+      const code = document.getElementById('new-perm-code').value;
+      const name = document.getElementById('new-perm-name').value;
+      if (!roleId || !code) return alert('Role ID dan Permission Code wajib diisi!');
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('addPermModal'));
+          if (modal) modal.hide();
+          this.loadPermissionsTable();
+        } else alert('Gagal: ' + res.message);
+      }).apiCreatePermission({ role_id: roleId, permission_code: code, permission_name: name });
+    },
+
+    deletePermission: function (permId) {
+      if (!confirm('Hapus permission ini?')) return;
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) this.loadPermissionsTable();
+        else alert('Gagal: ' + res.message);
+      }).apiDeletePermission({ perm_id: permId });
+    },
+
+    // CONFIG CRUD
+    loadConfigsTable: function () {
+      const tbody = document.getElementById('configs-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          let rows = '';
+          res.data.forEach(c => {
+            rows += `<tr>
+              <td><code>${c.config_key}</code></td>
+              <td class="fw-semibold text-info">${c.config_value}</td>
+              <td>${c.description || '-'}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-light" onclick="AEF.updateConfigPrompt('${c.id}', '${c.config_key}', '${c.config_value}')"><i class="bi bi-pencil"></i> Edit</button>
+              </td>
+            </tr>`;
+          });
+          tbody.innerHTML = rows;
+        }
+      }).apiGetConfigs();
+    },
+
+    updateConfigPrompt: function (id, key, val) {
+      const newVal = prompt(`Ubah nilai untuk ${key}:`, val);
+      if (newVal !== null && newVal !== val) {
+        google.script.run.withSuccessHandler((res) => {
+          if (res.success) this.loadConfigsTable();
+          else alert('Gagal: ' + res.message);
+        }).apiUpdateConfig({ config_id: id, config_value: newVal });
+      }
+    },
+
+    // AUDIT LOGS VIEW
+    loadAuditLogsTable: function () {
+      const tbody = document.getElementById('audit-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat log...</td></tr>';
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          if (res.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada log audit.</td></tr>';
+            return;
+          }
+          let rows = '';
+          res.data.forEach(a => {
+            const badgeClass = a.status === 'SUCCESS' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+            rows += `<tr>
+              <td class="small text-muted">${a.timestamp ? a.timestamp.replace('T', ' ').substring(0, 19) : '-'}</td>
+              <td><code>${a.module || '-'}</code></td>
+              <td><span class="badge ${badgeClass}">${a.action}_${a.status}</span></td>
+              <td class="small">${a.user_id}</td>
+              <td class="small">${a.description || '-'}</td>
+              <td class="small text-muted"><code>${a.reference_id ? a.reference_id.substring(0, 8) + '...' : '-'}</code></td>
+            </tr>`;
+          });
+          tbody.innerHTML = rows;
+        }
+      }).apiGetAuditLogs();
     },
 
     initDashboardChart: function () {

@@ -1,0 +1,31 @@
+<template id="tpl-audit">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-1">Audit Trail Logs</h3>
+      <p class="text-muted small mb-0">Jejak rekaman aktivitas penting & log keamanan sistem (PRD Section 16 & 17).</p>
+    </div>
+    <button class="btn btn-outline-light btn-sm" onclick="AEF.loadAuditLogsTable()">
+      <i class="bi bi-arrow-clockwise me-1"></i> Refresh Logs
+    </button>
+  </div>
+
+  <div class="aef-card">
+    <div class="table-responsive">
+      <table class="table table-aef align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Module</th>
+            <th>Action / Status</th>
+            <th>User ID</th>
+            <th>Deskripsi</th>
+            <th>Ref ID</th>
+          </tr>
+        </thead>
+        <tbody id="audit-table-body">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>

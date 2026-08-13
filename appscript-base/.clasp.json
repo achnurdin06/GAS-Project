@@ -25,7 +25,10 @@
     "src/services/AuditService.gs",
     "src/services/AuthService.gs",
     "src/services/MenuService.gs",
-    "src/services/UserService.gs"
+    "src/services/UserService.gs",
+    "src/services/RoleService.gs",
+    "src/services/PermissionService.gs",
+    "src/services/ConfigService.gs"
   ],
   "skipSubdirectories": false
 }
