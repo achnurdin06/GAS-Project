@@ -11,6 +11,21 @@
   "jsonExtensions": [
     ".json"
   ],
-  "filePushOrder": [],
+  "filePushOrder": [
+    "src/core/Utils.gs",
+    "src/core/Response.gs",
+    "src/core/Logger.gs",
+    "src/repositories/BaseRepository.gs",
+    "src/repositories/AuditRepository.gs",
+    "src/repositories/ConfigRepository.gs",
+    "src/repositories/MenuRepository.gs",
+    "src/repositories/PermissionRepository.gs",
+    "src/repositories/RoleRepository.gs",
+    "src/repositories/UserRepository.gs",
+    "src/services/AuditService.gs",
+    "src/services/AuthService.gs",
+    "src/services/MenuService.gs",
+    "src/services/UserService.gs"
+  ],
   "skipSubdirectories": false
 }
