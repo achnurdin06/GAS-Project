@@ -80,3 +80,37 @@ function apiCreateUser(payload) {
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
+
+/**
+ * Handle Update User Request
+ * @param {Object} payload { user_id, userId, name, email, password, role_id, actor_id }
+ * @returns {Object} Standard Response
+ */
+function apiUpdateUser(payload) {
+  try {
+    const targetId = payload ? (payload.user_id || payload.userId) : null;
+    if (!targetId) return Response.error('User ID wajib diisi', 'INVALID_PAYLOAD');
+    const userService = new UserService();
+    return userService.updateUser(targetId, payload, payload.actor_id || 'SYSTEM');
+  } catch (err) {
+    Logger.error('USER_CONTROLLER', 'apiUpdateUser', err.message);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+/**
+ * Handle Delete User Request
+ * @param {Object} payload { user_id, userId, actor_id }
+ * @returns {Object} Standard Response
+ */
+function apiDeleteUser(payload) {
+  try {
+    const targetId = payload ? (payload.user_id || payload.userId) : null;
+    if (!targetId) return Response.error('User ID wajib diisi', 'INVALID_PAYLOAD');
+    const userService = new UserService();
+    return userService.deleteUser(targetId, payload.actor_id || 'SYSTEM');
+  } catch (err) {
+    Logger.error('USER_CONTROLLER', 'apiDeleteUser', err.message);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}

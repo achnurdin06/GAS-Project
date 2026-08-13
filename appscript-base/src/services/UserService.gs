@@ -64,6 +64,31 @@ class UserService {
   }
 
   /**
+   * Update existing user by ID
+   * @param {string} userId 
+   * @param {Object} userData 
+   * @param {string} actorId 
+   * @returns {Object} Standard Response
+   */
+  updateUser(userId, userData, actorId = 'SYSTEM') {
+    if (!userId) return Response.error('User ID wajib diisi', 'VALIDATION_ERROR');
+
+    const existing = this.userRepo.findById(userId);
+    if (!existing) return Response.error('User tidak ditemukan', 'USER_NOT_FOUND');
+
+    const updateFields = {};
+    if (userData.name) updateFields.name = userData.name;
+    if (userData.email) updateFields.email = userData.email;
+    if (userData.role_id) updateFields.role_id = userData.role_id;
+    if (userData.password) updateFields.password_hash = Utils.hashSha256(userData.password);
+
+    const updated = this.userRepo.updateById(userId, updateFields, actorId);
+    this.auditService.log('USER', 'UPDATE', 'SUCCESS', actorId, `User updated: ${userId}`, userId, existing, updated);
+
+    return Response.success('User berhasil diperbarui', updated, 'USER_UPDATED');
+  }
+
+  /**
    * Delete user by ID
    * @param {string} userId 
    * @param {string} actorId 
