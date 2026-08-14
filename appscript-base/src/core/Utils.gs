@@ -1,52 +1,50 @@
 /**
- * AppScript Enterprise Framework (AEF)
- * Core Utility Helper
+ * Core Utilities for AEF
+ * Handles UUID generation, SHA-256 Hashing, ISO Formatting, and Safe JSON Handling
  */
-
 const Utils = {
   /**
-   * Generates a standard v4 UUID.
-   * @returns {string} UUID string
+   * Generates a UUID v4 compliant string
+   * @returns {string} UUID
    */
-  generateUuid: function () {
+  generateUuid() {
     return Utilities.getUuid();
   },
 
   /**
-   * Hashes a string (e.g. password) using SHA-256 as specified in PRD Section 8.
-   * @param {string} text 
-   * @returns {string} Hex string representation of SHA-256 hash
+   * Computes SHA-256 Digest of a plain text string
+   * @param {string} text - Plain text input (e.g. password)
+   * @returns {string} Hex encoded SHA-256 hash string
    */
-  hashSha256: function (text) {
+  hashSha256(text) {
     if (!text) return '';
-    const rawHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
-    let txtHash = '';
-    for (let i = 0; i < rawHash.length; i++) {
-      let byteValue = rawHash[i];
-      if (byteValue < 0) byteValue += 256;
-      let byteString = byteValue.toString(16);
-      if (byteString.length == 1) byteString = '0' + byteString;
-      txtHash += byteString;
+    const rawByteHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
+    let hexString = '';
+    for (let i = 0; i < rawByteHash.length; i++) {
+      let byte = rawByteHash[i];
+      if (byte < 0) byte += 256;
+      let byteHex = byte.toString(16);
+      if (byteHex.length === 1) byteHex = '0' + byteHex;
+      hexString += byteHex;
     }
-    return txtHash;
+    return hexString;
   },
 
   /**
-   * Formats a date object to ISO string format (YYYY-MM-DDTHH:mm:ss.sssZ).
-   * @param {Date} [date] 
-   * @returns {string} ISO Date String
+   * Gets current ISO Date Time string (UTC)
+   * @returns {string} ISO Date string
    */
-  formatIsoDate: function (date = new Date()) {
-    return date.toISOString();
+  formatIsoDate(dateObj = new Date()) {
+    return dateObj.toISOString();
   },
 
   /**
-   * Safely parses JSON.
+   * Safely parses JSON input or returns fallback
    * @param {string} jsonStr 
-   * @param {*} fallback 
-   * @returns {*}
+   * @param {any} fallback 
+   * @returns {any}
    */
-  safeJsonParse: function (jsonStr, fallback = null) {
+  safeJsonParse(jsonStr, fallback = null) {
     try {
       return jsonStr ? JSON.parse(jsonStr) : fallback;
     } catch (e) {

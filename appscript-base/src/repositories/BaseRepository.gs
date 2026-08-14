@@ -1,201 +1,154 @@
 /**
- * AppScript Enterprise Framework (AEF)
- * Base Repository Layer (PRD Section 4.4 & 24)
- * 
- * Exclusive for Spreadsheet I/O with memory-first batching optimization.
+ * Base Repository Class for AppScript Enterprise Framework (AEF)
+ * Implements Memory-First Batch I/O for Google Spreadsheets
  */
-
 class BaseRepository {
   /**
-   * @param {string} sheetName - Name of the target sheet (e.g. mst_user, sys_configuration)
+   * @param {string} tableName - Sheet name (e.g. mst_user, sys_configuration)
    */
-  constructor(sheetName) {
-    this.sheetName = sheetName;
+  constructor(tableName) {
+    this.tableName = tableName;
   }
 
   /**
-   * Gets Spreadsheet reference. Defaults to ActiveSpreadsheet or Script Property SPREADSHEET_ID.
-   * @returns {GoogleAppsScript.Spreadsheet.Spreadsheet}
+   * Gets Spreadsheet reference with standalone fallback
    */
   getSpreadsheet() {
-    const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-    if (spreadsheetId) {
-      try {
-        return SpreadsheetApp.openById(spreadsheetId);
-      } catch (e) {}
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) {
+      const props = PropertiesService.getScriptProperties();
+      const spreadsheetId = props.getProperty('SPREADSHEET_ID');
+      if (spreadsheetId) {
+        try {
+          ss = SpreadsheetApp.openById(spreadsheetId);
+        } catch (e) {
+          ss = null;
+        }
+      }
     }
-    const active = SpreadsheetApp.getActiveSpreadsheet();
-    if (active) return active;
-
-    // Auto-create spreadsheet for standalone script
-    const newSs = SpreadsheetApp.create('AEF Enterprise Database');
-    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', newSs.getId());
-    return newSs;
+    if (!ss) {
+      throw new Error(`Spreadsheet database not initialized for table: ${this.tableName}. Please run setupDatabase() first.`);
+    }
+    return ss;
   }
 
   /**
-   * Gets sheet object by name.
-   * @returns {GoogleAppsScript.Spreadsheet.Sheet}
+   * Gets Sheet reference
    */
   getSheet() {
     const ss = this.getSpreadsheet();
-    let sheet = ss.getSheetByName(this.sheetName);
+    const sheet = ss.getSheetByName(this.tableName);
     if (!sheet) {
-      sheet = ss.insertSheet(this.sheetName);
+      throw new Error(`Sheet '${this.tableName}' does not exist in spreadsheet.`);
     }
     return sheet;
   }
 
   /**
-   * Reads all data from sheet into array of objects (Batch Read ONCE into memory).
-   * @returns {{ headers: string[], rows: Object[], rawValues: Array[] }}
+   * Memory-First Batch Reading: Gets all rows as Object array
+   * @returns {Array<Object>}
    */
   readAll() {
     const sheet = this.getSheet();
-    const dataRange = sheet.getDataRange();
-    const values = dataRange.getValues();
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) return [];
 
-    if (!values || values.length === 0 || (values.length === 1 && values[0][0] === '')) {
-      return { headers: [], rows: [], rawValues: [] };
-    }
+    const values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    const headers = values[0].map(h => String(h).trim());
+    const dataRows = values.slice(1);
 
-    const headers = values[0].map(h => String(h).trim().toLowerCase());
-    const rows = [];
-
-    for (let r = 1; r < values.length; r++) {
-      const rowVal = values[r];
-      const rowObj = {};
-      let isEmpty = true;
-
-      for (let c = 0; c < headers.length; c++) {
-        const val = rowVal[c] !== undefined ? rowVal[c] : '';
-        rowObj[headers[c]] = val;
-        if (val !== '') isEmpty = false;
-      }
-
-      if (!isEmpty) {
-        rowObj._rowIndex = r + 1; // 1-indexed sheet row
-        rows.push(rowObj);
-      }
-    }
-
-    return { headers, rows, rawValues: values };
-  }
-
-  /**
-   * Finds rows matching a predicate or filter object.
-   * @param {Object|Function} filter
-   * @returns {Object[]} Matching row objects
-   */
-  find(filter) {
-    const { rows } = this.readAll();
-    if (typeof filter === 'function') {
-      return rows.filter(filter);
-    }
-    if (typeof filter === 'object' && filter !== null) {
-      const keys = Object.keys(filter);
-      return rows.filter(row => {
-        return keys.every(key => String(row[key]) === String(filter[key]));
+    return dataRows.map((row, rowIdx) => {
+      const item = { _rowIndex: rowIdx + 2 };
+      headers.forEach((h, colIdx) => {
+        item[h] = row[colIdx] !== undefined ? row[colIdx] : '';
       });
-    }
-    return rows;
+      return item;
+    });
   }
 
   /**
-   * Finds a single row by ID.
+   * Finds records matching predicate object or function
+   * @param {Object|Function} predicate
+   * @returns {Array<Object>}
+   */
+  find(predicate) {
+    const all = this.readAll();
+    if (!predicate) return all;
+
+    if (typeof predicate === 'function') {
+      return all.filter(predicate);
+    }
+
+    return all.filter(item => {
+      return Object.keys(predicate).every(key => String(item[key]).trim() === String(predicate[key]).trim());
+    });
+  }
+
+  /**
+   * Finds single record by ID
    * @param {string} id 
    * @returns {Object|null}
    */
   findById(id) {
-    const matches = this.find({ id: id });
-    return matches.length > 0 ? matches[0] : null;
+    const results = this.find({ id: id });
+    return results.length > 0 ? results[0] : null;
   }
 
   /**
-   * Inserts a record. Appends to sheet in batch.
-   * @param {Object} data 
-   * @param {string} [actorId='SYSTEM']
-   * @returns {Object} Inserted record with generated metadata
+   * Inserts record into sheet
+   * @param {Object} record 
+   * @param {string} actorId 
+   * @returns {Object} Inserted record
    */
-  insert(data, actorId = 'SYSTEM') {
+  insert(record, actorId = 'SYSTEM') {
     const sheet = this.getSheet();
-    const { headers } = this.readAll();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
 
-    // Standard column injection if not present
-    const record = Object.assign({}, data);
-    if (!record.id) record.id = Utils.generateUuid();
-    if (!record.created_at) record.created_at = Utils.formatIsoDate();
-    if (!record.created_by) record.created_by = actorId;
-    if (!record.updated_at) record.updated_at = record.created_at;
-    if (!record.updated_by) record.updated_by = actorId;
-    if (record.status === undefined) record.status = 'ACTIVE';
+    const nowIso = Utils.formatIsoDate();
+    record.id = record.id || Utils.generateUuid();
+    record.created_at = record.created_at || nowIso;
+    record.created_by = record.created_by || actorId;
+    record.updated_at = record.updated_at || nowIso;
+    record.updated_by = record.updated_by || actorId;
+    record.status = record.status || 'ACTIVE';
 
-    if (headers.length === 0) {
-      // Initialize headers if sheet is brand new
-      const defaultHeaders = Object.keys(record).filter(k => !k.startsWith('_'));
-      sheet.appendRow(defaultHeaders);
-      const rowValues = defaultHeaders.map(h => record[h] !== undefined ? record[h] : '');
-      sheet.appendRow(rowValues);
-    } else {
-      const rowValues = headers.map(h => record[h] !== undefined ? record[h] : '');
-      sheet.appendRow(rowValues);
-    }
-
+    const rowData = headers.map(h => record[h] !== undefined ? record[h] : '');
+    sheet.appendRow(rowData);
     return record;
   }
 
   /**
-   * Updates a record by ID using memory batch write.
+   * Updates record by ID
    * @param {string} id 
    * @param {Object} updateData 
-   * @param {string} [actorId='SYSTEM']
-   * @returns {Object|null} Updated record
+   * @param {string} actorId 
+   * @returns {boolean}
    */
   updateById(id, updateData, actorId = 'SYSTEM') {
+    const item = this.findById(id);
+    if (!item) return false;
+
     const sheet = this.getSheet();
-    const { headers, rawValues } = this.readAll();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
 
-    if (headers.length === 0 || rawValues.length <= 1) return null;
+    updateData.updated_at = Utils.formatIsoDate();
+    updateData.updated_by = actorId;
 
-    const idColIndex = headers.indexOf('id');
-    if (idColIndex === -1) return null;
+    const merged = Object.assign({}, item, updateData);
+    const rowValues = headers.map(h => merged[h] !== undefined ? merged[h] : '');
 
-    let targetRowIndex = -1;
-    for (let r = 1; r < rawValues.length; r++) {
-      if (String(rawValues[r][idColIndex]) === String(id)) {
-        targetRowIndex = r;
-        break;
-      }
-    }
-
-    if (targetRowIndex === -1) return null;
-
-    // Apply updates in rawValues memory array
-    const updatedRecord = {};
-    headers.forEach((h, colIdx) => {
-      updatedRecord[h] = rawValues[targetRowIndex][colIdx];
-    });
-
-    Object.assign(updatedRecord, updateData);
-    updatedRecord.updated_at = Utils.formatIsoDate();
-    updatedRecord.updated_by = actorId;
-
-    const newRowValues = headers.map(h => updatedRecord[h] !== undefined ? updatedRecord[h] : '');
-    
-    // Batch write updated row
-    sheet.getRange(targetRowIndex + 1, 1, 1, headers.length).setValues([newRowValues]);
-
-    return updatedRecord;
+    sheet.getRange(item._rowIndex, 1, 1, headers.length).setValues([rowValues]);
+    return true;
   }
 
   /**
-   * Soft deletes a record by updating status to 'INACTIVE' or 'DELETED'.
+   * Soft deletes record by setting status = INACTIVE
    * @param {string} id 
-   * @param {string} [actorId='SYSTEM']
+   * @param {string} actorId 
    * @returns {boolean}
    */
   deleteById(id, actorId = 'SYSTEM') {
-    const updated = this.updateById(id, { status: 'INACTIVE' }, actorId);
-    return updated !== null;
+    return this.updateById(id, { status: 'INACTIVE' }, actorId);
   }
 }

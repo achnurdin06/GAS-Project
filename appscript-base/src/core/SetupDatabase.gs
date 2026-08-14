@@ -1,56 +1,61 @@
 /**
- * AppScript Enterprise Framework (AEF)
- * Initial Database & Seed Data Setup Script
- * 
- * Run this function 'setupDatabase' from Apps Script Editor to initialize sheets & seed data!
+ * Database Setup & Seed Data Script for AEF Framework
+ * Automatically initializes sheets and seeds demo data for table relations:
+ * mst_user -> mst_role -> mst_permission -> mst_menu -> sys_configuration -> log_audit
  */
-
 function setupDatabase() {
-  let ss = null;
-  const spreadsheetId = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
-  if (spreadsheetId) {
-    try {
-      ss = SpreadsheetApp.openById(spreadsheetId);
-    } catch (e) {}
-  }
+  let ss = SpreadsheetApp.getActiveSpreadsheet();
+
   if (!ss) {
-    ss = SpreadsheetApp.getActiveSpreadsheet();
-  }
-  if (!ss) {
-    ss = SpreadsheetApp.create('AEF Enterprise Database');
-    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', ss.getId());
-    console.log('Created new Standalone Spreadsheet DB:', ss.getUrl());
+    const props = PropertiesService.getScriptProperties();
+    let existingId = props.getProperty('SPREADSHEET_ID');
+
+    if (existingId) {
+      try {
+        ss = SpreadsheetApp.openById(existingId);
+      } catch (e) {
+        ss = null;
+      }
+    }
+
+    if (!ss) {
+      ss = SpreadsheetApp.create('AEF Enterprise Database');
+      props.setProperty('SPREADSHEET_ID', ss.getId());
+    }
   }
 
-  // Helper to ensure sheet exists and write headers & initial rows
-  function initSheet(sheetName, headers, seedRows = [], forceOverwrite = false) {
+  function initSheet(sheetName, headers, seedData = [], forceRecreate = false) {
     let sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
+    } else if (forceRecreate) {
+      sheet.clearContents();
+    } else if (sheet.getLastRow() > 0) {
+      return sheet;
     }
 
-    const dataRange = sheet.getDataRange();
-    const values = dataRange.getValues();
+    sheet.appendRow(headers);
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#f3f4f6');
 
-    if (forceOverwrite || !values || values.length === 0 || (values.length === 1 && values[0][0] === '')) {
-      sheet.clear();
-      sheet.appendRow(headers);
-      seedRows.forEach(row => {
-        const rowValues = headers.map(h => row[h] !== undefined ? row[h] : '');
-        sheet.appendRow(rowValues);
-      });
-      Logger.info('SETUP', 'initSheet', `Sheet initialized: ${sheetName}`);
+    if (seedData && seedData.length > 0) {
+      const rows = seedData.map(item => headers.map(h => item[h] !== undefined ? item[h] : ''));
+      sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
     }
+
+    return sheet;
   }
 
-  // 1. mst_user
+  // 1. mst_user Sheet
   const userHeaders = ['id', 'name', 'email', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
+  const adminPasswordHash = Utils.hashSha256('admin123');
   const userSeed = [
     {
       id: Utils.generateUuid(),
-      name: 'Administrator AEF',
+      name: 'System Administrator',
       email: 'admin@aef.com',
-      password_hash: Utils.hashSha256('admin123'),
+      password_hash: adminPasswordHash,
       role_id: 'ROLE_ADMIN',
       created_at: Utils.formatIsoDate(),
       created_by: 'SYSTEM',
@@ -73,7 +78,7 @@ function setupDatabase() {
   ];
   initSheet('mst_user', userHeaders, userSeed, true);
 
-  // 2. mst_role
+  // 2. mst_role Sheet
   const roleHeaders = ['id', 'role_code', 'role_name', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const roleSeed = [
     { id: Utils.generateUuid(), role_code: 'ROLE_ADMIN', role_name: 'System Administrator', description: 'Full access administrator role', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', updated_at: Utils.formatIsoDate(), updated_by: 'SYSTEM', status: 'ACTIVE' },
@@ -81,7 +86,7 @@ function setupDatabase() {
   ];
   initSheet('mst_role', roleHeaders, roleSeed, true);
 
-  // 3. mst_permission
+  // 3. mst_permission Sheet
   const permHeaders = ['id', 'role_id', 'permission_code', 'permission_name', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const permSeed = [
     { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'DASHBOARD_VIEW', permission_name: 'View Dashboard', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
@@ -96,7 +101,7 @@ function setupDatabase() {
   ];
   initSheet('mst_permission', permHeaders, permSeed, true);
 
-  // 4. mst_menu (All 6 AEF Framework Core Menus)
+  // 4. mst_menu Sheet (All 6 AEF Framework Core Menus)
   const menuHeaders = ['menu_id', 'parent_id', 'menu_code', 'menu_name', 'route', 'icon', 'sort_order', 'permission_code', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   const menuSeed = [
     { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_DASHBOARD', menu_name: 'Dashboard', route: '/dashboard', icon: 'bi-speedometer2', sort_order: 1, permission_code: 'DASHBOARD_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
@@ -108,7 +113,7 @@ function setupDatabase() {
   ];
   initSheet('mst_menu', menuHeaders, menuSeed, true);
 
-  // 5. sys_configuration
+  // 5. sys_configuration Sheet
   const configHeaders = ['id', 'config_key', 'config_value', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const configSeed = [
     { id: Utils.generateUuid(), config_key: 'APP_NAME', config_value: 'AppScript Enterprise Framework', description: 'Application Name', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
@@ -117,7 +122,7 @@ function setupDatabase() {
   ];
   initSheet('sys_configuration', configHeaders, configSeed, true);
 
-  // 6. log_audit
+  // 6. log_audit Sheet
   const auditHeaders = ['event_id', 'timestamp', 'user_id', 'module', 'action', 'reference_id', 'status', 'description', 'old_value', 'new_value', 'id', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   initSheet('log_audit', auditHeaders, []);
 

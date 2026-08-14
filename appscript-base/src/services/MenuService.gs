@@ -1,65 +1,51 @@
-/**
- * AppScript Enterprise Framework (AEF)
- * Menu Service (PRD Section 11, 12 & 14)
- * Configuration & Metadata Driven Dynamic Menu Service
- */
-
 class MenuService {
   constructor() {
     this.menuRepo = new MenuRepository();
-    this.permissionRepo = new PermissionRepository();
+    this.permRepo = new PermissionRepository();
+    this.userRepo = new UserRepository();
   }
 
-  /**
-   * Returns metadata-driven menus filtered by user role permissions.
-   * @param {string} roleId 
-   * @returns {Object} Standard Response JSON
-   */
-  getMenuForUser(roleId) {
-    const allMenus = this.menuRepo.getSortedMenus();
+  getUserMenu(actorId = 'SYSTEM') {
+    const activeMenus = this.menuRepo.findActiveMenus();
+    let allowedPermCodes = null;
 
-    // Fetch permitted codes for role
-    let permittedCodes = [];
-    if (roleId === 'ROLE_ADMIN' || roleId === 'SUPERADMIN') {
-      permittedCodes = null; // Superadmin has access to all active menus
-    } else {
-      const perms = this.permissionRepo.findByRoleId(roleId);
-      permittedCodes = perms.map(p => p.permission_code);
+    if (actorId && actorId !== 'SYSTEM' && actorId !== 'ANONYMOUS') {
+      const user = this.userRepo.findById(actorId);
+      if (user && user.role_id) {
+        if (user.role_id !== 'ROLE_ADMIN') {
+          const userPerms = this.permRepo.findByRoleId(user.role_id);
+          allowedPermCodes = userPerms.map(p => String(p.permission_code).trim().toUpperCase());
+        }
+      }
     }
 
-    const filteredMenus = allMenus.filter(menu => {
-      if (!menu.permission_code || permittedCodes === null) return true;
-      return permittedCodes.includes(menu.permission_code);
+    const filteredMenus = activeMenus.filter(m => {
+      if (!allowedPermCodes) return true; // ROLE_ADMIN or SYSTEM sees all
+      if (!m.permission_code) return true;
+      return allowedPermCodes.includes(String(m.permission_code).trim().toUpperCase());
     });
 
-    // Build hierarchical tree (Parent -> Children)
-    const tree = this.buildMenuTree(filteredMenus);
-
-    return Response.success('Menu berhasil dimuat', tree, 'MENU_LOAD_SUCCESS');
-  }
-
-  /**
-   * Helper to structure list into parent-child tree.
-   * @param {Object[]} menuList 
-   * @returns {Object[]}
-   */
-  buildMenuTree(menuList) {
-    const map = {};
-    const tree = [];
-
-    menuList.forEach(item => {
-      map[item.id || item.menu_id] = { ...item, children: [] };
+    const parents = filteredMenus.filter(m => !m.parent_id);
+    const result = parents.map(parent => {
+      const children = filteredMenus.filter(child => child.parent_id === parent.menu_id);
+      return {
+        id: parent.menu_id,
+        code: parent.menu_code,
+        name: parent.menu_name,
+        route: parent.route,
+        icon: parent.icon,
+        sort_order: parent.sort_order,
+        children: children.map(c => ({
+          id: c.menu_id,
+          code: c.menu_code,
+          name: c.menu_name,
+          route: c.route,
+          icon: c.icon,
+          sort_order: c.sort_order
+        }))
+      };
     });
 
-    menuList.forEach(item => {
-      const currentId = item.id || item.menu_id;
-      if (item.parent_id && map[item.parent_id]) {
-        map[item.parent_id].children.push(map[currentId]);
-      } else {
-        tree.push(map[currentId]);
-      }
-    });
-
-    return tree;
+    return Response.success('Menu metadata berhasil diambil', result, 'MENU_FETCH_SUCCESS');
   }
 }

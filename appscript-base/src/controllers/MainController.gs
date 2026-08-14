@@ -1,30 +1,24 @@
 /**
- * AppScript Enterprise Framework (AEF)
- * Main Controller & Entry Point (PRD Section 4.2 & 21)
- */
-
-/**
- * Serves the web application HTML.
- * @param {Object} e 
- * @returns {GoogleAppsScript.HTML.HtmlOutput}
+ * Main Web App Controller for AEF
+ * Handles doGet entry point and partial view includes
  */
 function doGet(e) {
   try {
     const template = HtmlService.createTemplateFromFile('views/Index');
     return template.evaluate()
-      .setTitle('AEF App - AppScript Enterprise Framework')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+      .setTitle('AppScript Enterprise Framework (AEF)')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } catch (err) {
-    Logger.error('MAIN', 'doGet', `Failed to render page: ${err.message}`);
-    return HtmlService.createHtmlOutput(`<h3>Error rendering application: ${err.message}</h3>`);
+    LoggerUtil.error('MainController', 'Error rendering web app', err);
+    return HtmlService.createHtmlOutput(`<h3>Error loading application: ${err.message}</h3>`);
   }
 }
 
 /**
- * Include HTML files (CSS / JS / Partials) into template.
+ * Helper to include partial HTML files into templates
  * @param {string} filename 
- * @returns {string} Content of HTML file
+ * @returns {string} File content
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();

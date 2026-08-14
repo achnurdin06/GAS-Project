@@ -1,46 +1,30 @@
-/**
- * AppScript Enterprise Framework (AEF)
- * Audit Service (PRD Section 16 & 17)
- */
-
 class AuditService {
   constructor() {
     this.auditRepo = new AuditRepository();
   }
 
-  /**
-   * Records an audit log event.
-   * Standard event codes: MODULE_ACTION_RESULT
-   * E.g. AUTH_LOGIN_SUCCESS, USER_CREATED, PERMISSION_UPDATED
-   */
-  log(module, action, status, userId, description = '', refId = '', oldValue = null, newValue = null) {
+  log(module, action, status, userId = 'SYSTEM', description = '', referenceId = '', oldValue = null, newValue = null) {
     try {
-      const eventCode = `${module}_${action}_${status}`;
-      this.auditRepo.logEvent({
+      const record = {
         event_id: Utils.generateUuid(),
         timestamp: Utils.formatIsoDate(),
-        user_id: userId || 'GUEST',
+        user_id: userId,
         module: module,
         action: action,
         status: status,
-        reference_id: refId,
-        description: description || eventCode,
-        old_value: oldValue,
-        new_value: newValue
-      });
-      Logger.info(module, action, `${eventCode}: ${description}`, refId, userId);
+        description: description,
+        reference_id: referenceId || Utils.generateUuid(),
+        old_value: oldValue ? JSON.stringify(oldValue) : '',
+        new_value: newValue ? JSON.stringify(newValue) : ''
+      };
+      this.auditRepo.insert(record, userId);
     } catch (err) {
-      Logger.error('AUDIT', 'log', `Failed to write audit log: ${err.message}`);
+      LoggerUtil.error('AuditService', 'Failed to write audit log', err);
     }
   }
 
-  /**
-   * Get all audit log entries
-   * @returns {Object} Standard Response
-   */
-  getAuditLogs() {
-    const { rows } = this.auditRepo.readAll();
-    const sorted = rows.reverse().slice(0, 100); // Top 100 latest events
-    return Response.success('Audit logs retrieved', sorted, 'AUDIT_LIST_SUCCESS');
+  getAuditLogs(limit = 100) {
+    const logs = this.auditRepo.getRecentLogs(limit);
+    return Response.success('Audit logs fetched successfully', logs, 'AUDIT_LIST_SUCCESS');
   }
 }

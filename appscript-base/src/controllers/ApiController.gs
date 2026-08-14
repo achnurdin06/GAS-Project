@@ -1,203 +1,152 @@
 /**
- * AppScript Enterprise Framework (AEF)
- * API Controllers for Client Communication (google.script.run bindings)
- */
-
-/**
- * Handle Auth Login Request
- * @param {Object} payload { email, password }
- * @returns {Object} Standard Response
+ * Central API Controller for google.script.run Client Handlers
  */
 function apiLogin(payload) {
   try {
-    if (!payload) return Response.error('Payload request tidak boleh kosong', 'INVALID_PAYLOAD');
-    const authService = new AuthService();
-    return authService.login(payload.email, payload.password);
+    return new AuthService().login(payload.email, payload.password);
   } catch (err) {
-    Logger.error('AUTH_CONTROLLER', 'apiLogin', err.message);
+    LoggerUtil.error('ApiController', 'apiLogin failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Logout Request
- * @param {Object} payload { session_id, user_id }
- * @returns {Object} Standard Response
- */
 function apiLogout(payload) {
   try {
-    const authService = new AuthService();
-    return authService.logout(payload ? payload.session_id : '', payload ? payload.user_id : '');
+    return new AuthService().logout(payload ? payload.token : null, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
-    Logger.error('AUTH_CONTROLLER', 'apiLogout', err.message);
+    LoggerUtil.error('ApiController', 'apiLogout failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Get Dynamic Menu Request
- * @param {Object} payload { role_id }
- * @returns {Object} Standard Response
- */
 function apiGetMenu(payload) {
   try {
-    const roleId = payload ? payload.role_id : 'ROLE_USER';
-    const menuService = new MenuService();
-    return menuService.getMenuForUser(roleId);
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new MenuService().getUserMenu(actorId);
   } catch (err) {
-    Logger.error('MENU_CONTROLLER', 'apiGetMenu', err.message);
+    LoggerUtil.error('ApiController', 'apiGetMenu failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Get All Users Request
- * @param {Object} payload { actor_id }
- * @returns {Object} Standard Response
- */
+// USERS CRUD
 function apiGetUsers(payload) {
   try {
-    const userService = new UserService();
-    return userService.getAllUsers(payload ? payload.actor_id : 'GUEST');
+    return new UserService().getAllUsers(payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
-    Logger.error('USER_CONTROLLER', 'apiGetUsers', err.message);
+    LoggerUtil.error('ApiController', 'apiGetUsers failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Create User Request
- * @param {Object} payload { name, email, password, role_id, actor_id }
- * @returns {Object} Standard Response
- */
 function apiCreateUser(payload) {
   try {
-    if (!payload) return Response.error('Payload request tidak boleh kosong', 'INVALID_PAYLOAD');
-    const userService = new UserService();
-    return userService.createUser(payload, payload.actor_id || 'SYSTEM');
+    return new UserService().createUser(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
-    Logger.error('USER_CONTROLLER', 'apiCreateUser', err.message);
+    LoggerUtil.error('ApiController', 'apiCreateUser failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Update User Request
- * @param {Object} payload { user_id, userId, name, email, password, role_id, actor_id }
- * @returns {Object} Standard Response
- */
 function apiUpdateUser(payload) {
   try {
-    const targetId = payload ? (payload.user_id || payload.userId) : null;
-    if (!targetId) return Response.error('User ID wajib diisi', 'INVALID_PAYLOAD');
-    const userService = new UserService();
-    return userService.updateUser(targetId, payload, payload.actor_id || 'SYSTEM');
+    return new UserService().updateUser(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
-    Logger.error('USER_CONTROLLER', 'apiUpdateUser', err.message);
+    LoggerUtil.error('ApiController', 'apiUpdateUser failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-/**
- * Handle Delete User Request
- * @param {Object} payload { user_id, userId, actor_id }
- * @returns {Object} Standard Response
- */
 function apiDeleteUser(payload) {
   try {
-    const targetId = payload ? (payload.user_id || payload.userId) : null;
-    if (!targetId) return Response.error('User ID wajib diisi', 'INVALID_PAYLOAD');
-    const userService = new UserService();
-    return userService.deleteUser(targetId, payload.actor_id || 'SYSTEM');
+    return new UserService().deleteUser(payload.userId || payload.user_id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
-    Logger.error('USER_CONTROLLER', 'apiDeleteUser', err.message);
+    LoggerUtil.error('ApiController', 'apiDeleteUser failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-// ROLES API
+// ROLES CRUD
 function apiGetRoles(payload) {
   try {
-    const service = new RoleService();
-    return service.getAllRoles(payload ? payload.actor_id : 'SYSTEM');
+    return new RoleService().getAllRoles();
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetRoles failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
 function apiCreateRole(payload) {
   try {
-    const service = new RoleService();
-    return service.createRole(payload, payload ? payload.actor_id : 'SYSTEM');
+    return new RoleService().createRole(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreateRole failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
 function apiDeleteRole(payload) {
   try {
-    const targetId = payload ? (payload.role_id || payload.roleId) : null;
-    const service = new RoleService();
-    return service.deleteRole(targetId, payload ? payload.actor_id : 'SYSTEM');
+    return new RoleService().deleteRole(payload.role_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeleteRole failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-// PERMISSIONS API
+// PERMISSIONS CRUD
 function apiGetPermissions(payload) {
   try {
-    const service = new PermissionService();
-    return service.getAllPermissions(payload ? payload.actor_id : 'SYSTEM');
+    return new PermissionService().getAllPermissions();
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetPermissions failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
 function apiCreatePermission(payload) {
   try {
-    const service = new PermissionService();
-    return service.createPermission(payload, payload ? payload.actor_id : 'SYSTEM');
+    return new PermissionService().createPermission(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreatePermission failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
 function apiDeletePermission(payload) {
   try {
-    const targetId = payload ? (payload.perm_id || payload.permId) : null;
-    const service = new PermissionService();
-    return service.deletePermission(targetId, payload ? payload.actor_id : 'SYSTEM');
+    return new PermissionService().deletePermission(payload.perm_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeletePermission failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-// CONFIG API
+// SYSTEM CONFIG CRUD
 function apiGetConfigs(payload) {
   try {
-    const service = new ConfigService();
-    return service.getAllConfigs(payload ? payload.actor_id : 'SYSTEM');
+    return new ConfigService().getAllConfigs();
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetConfigs failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
 function apiUpdateConfig(payload) {
   try {
-    const service = new ConfigService();
-    return service.updateConfig(payload.config_id, payload.config_value, payload ? payload.actor_id : 'SYSTEM');
+    return new ConfigService().updateConfig(payload.config_id, payload.config_value, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateConfig failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
 
-// AUDIT API
+// AUDIT LOGS
 function apiGetAuditLogs(payload) {
   try {
-    const service = new AuditService();
-    return service.getAuditLogs();
+    return new AuditService().getAuditLogs(100);
   } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetAuditLogs failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
