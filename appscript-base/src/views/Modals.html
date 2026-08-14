@@ -171,3 +171,100 @@
     </div>
   </div>
 </div>
+
+<!-- 6. Add Menu Modal -->
+<div class="modal fade" id="addMenuModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-menu-button-wide-fill text-primary me-2"></i>Tambah Menu Baru</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('addMenuModal')" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="form-add-menu" onsubmit="event.preventDefault(); AEF.createMenu();">
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Menu Code (e.g. MENU_REPORTS)</label>
+            <input type="text" id="new-menu-code" class="form-control" placeholder="MENU_REPORTS" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Nama Menu</label>
+            <input type="text" id="new-menu-name" class="form-control" placeholder="Laporan" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Route (e.g. /reports)</label>
+              <input type="text" id="new-menu-route" class="form-control" placeholder="/reports" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Icon Class (Bootstrap Icon)</label>
+              <input type="text" id="new-menu-icon" class="form-control" placeholder="bi-file-earmark-text" value="bi-circle">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Sort Order</label>
+              <input type="number" id="new-menu-sort" class="form-control" value="8">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Permission Code</label>
+              <input type="text" id="new-menu-perm" class="form-control" placeholder="DASHBOARD_VIEW" value="DASHBOARD_VIEW">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
+            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('addMenuModal')">Batal</button>
+            <button type="submit" class="btn btn-aef-primary">Simpan Menu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Edit Menu Modal -->
+<div class="modal fade" id="editMenuModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Data Menu</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('editMenuModal')" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="form-edit-menu" onsubmit="event.preventDefault(); AEF.submitUpdateMenu();">
+          <input type="hidden" id="edit-menu-id">
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Menu Code</label>
+            <input type="text" id="edit-menu-code" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Nama Menu</label>
+            <input type="text" id="edit-menu-name" class="form-control" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Route</label>
+              <input type="text" id="edit-menu-route" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Icon Class</label>
+              <input type="text" id="edit-menu-icon" class="form-control">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Sort Order</label>
+              <input type="number" id="edit-menu-sort" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Permission Code</label>
+              <input type="text" id="edit-menu-perm" class="form-control">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
+            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('editMenuModal')">Batal</button>
+            <button type="submit" class="btn btn-aef-primary">Perbarui Menu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -3,6 +3,7 @@ class MenuService {
     this.menuRepo = new MenuRepository();
     this.permRepo = new PermissionRepository();
     this.userRepo = new UserRepository();
+    this.auditService = new AuditService();
   }
 
   getUserMenu(actorId = 'SYSTEM') {
@@ -21,7 +22,7 @@ class MenuService {
     }
 
     const filteredMenus = activeMenus.filter(m => {
-      if (!allowedPermCodes) return true; // ROLE_SUPER_ADMIN & ROLE_ADMIN see ALL 6 menus
+      if (!allowedPermCodes) return true; // ROLE_SUPER_ADMIN & ROLE_ADMIN see ALL 7 menus
       if (!m.permission_code) return true;
       return allowedPermCodes.includes(String(m.permission_code).trim().toUpperCase());
     });
@@ -39,6 +40,7 @@ class MenuService {
         route: parent.route,
         icon: parent.icon,
         sort_order: parent.sort_order,
+        permission_code: parent.permission_code,
         children: children.map(c => ({
           id: c.menu_id,
           menu_id: c.menu_id,
@@ -48,11 +50,69 @@ class MenuService {
           menu_name: c.menu_name,
           route: c.route,
           icon: c.icon,
-          sort_order: c.sort_order
+          sort_order: c.sort_order,
+          permission_code: c.permission_code
         }))
       };
     });
 
     return Response.success('Menu metadata berhasil diambil', result, 'MENU_FETCH_SUCCESS');
+  }
+
+  getAllMenus() {
+    const menus = this.menuRepo.find(row => String(row.status).trim().toUpperCase() === 'ACTIVE')
+      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+    return Response.success('List menu berhasil diambil', menus, 'MENU_LIST_SUCCESS');
+  }
+
+  createMenu(menuData, actorId = 'SYSTEM') {
+    if (!menuData.menu_code || !menuData.menu_name || !menuData.route) {
+      return Response.error('Menu Code, Menu Name, dan Route wajib diisi', 'VALIDATION_ERROR');
+    }
+
+    const newMenu = {
+      menu_id: Utils.generateUuid(),
+      parent_id: menuData.parent_id || '',
+      menu_code: String(menuData.menu_code).trim().toUpperCase(),
+      menu_name: menuData.menu_name,
+      route: menuData.route,
+      icon: menuData.icon || 'bi-circle',
+      sort_order: Number(menuData.sort_order || 99),
+      permission_code: menuData.permission_code || 'DASHBOARD_VIEW',
+      status: 'ACTIVE'
+    };
+
+    const inserted = this.menuRepo.insert(newMenu, actorId);
+    this.auditService.log('MENU', 'CREATE', 'SUCCESS', actorId, `Menu created: ${newMenu.menu_code}`, inserted.menu_id);
+
+    return Response.success('Menu berhasil dibuat', inserted, 'MENU_CREATE_SUCCESS');
+  }
+
+  updateMenu(updatePayload, actorId = 'SYSTEM') {
+    const menuId = updatePayload.menu_id || updatePayload.id;
+    if (!menuId) return Response.error('Menu ID wajib diisi', 'VALIDATION_ERROR');
+
+    const updateFields = {};
+    if (updatePayload.menu_code) updateFields.menu_code = String(updatePayload.menu_code).trim().toUpperCase();
+    if (updatePayload.menu_name) updateFields.menu_name = updatePayload.menu_name;
+    if (updatePayload.route) updateFields.route = updatePayload.route;
+    if (updatePayload.icon) updateFields.icon = updatePayload.icon;
+    if (updatePayload.sort_order !== undefined) updateFields.sort_order = Number(updatePayload.sort_order);
+    if (updatePayload.permission_code) updateFields.permission_code = updatePayload.permission_code;
+
+    const success = this.menuRepo.updateById(menuId, updateFields, actorId);
+    if (!success) return Response.error('Gagal memperbarui menu', 'SYSTEM_ERROR');
+
+    this.auditService.log('MENU', 'UPDATE', 'SUCCESS', actorId, `Menu updated: ${menuId}`, menuId);
+    return Response.success('Menu berhasil diperbarui', null, 'MENU_UPDATE_SUCCESS');
+  }
+
+  deleteMenu(menuId, actorId = 'SYSTEM') {
+    if (!menuId) return Response.error('Menu ID wajib diisi', 'VALIDATION_ERROR');
+    const success = this.menuRepo.deleteById(menuId, actorId);
+    if (!success) return Response.error('Gagal menghapus menu', 'MENU_NOT_FOUND');
+
+    this.auditService.log('MENU', 'DELETE', 'SUCCESS', actorId, `Menu deleted: ${menuId}`, menuId);
+    return Response.success('Menu berhasil dihapus', null, 'MENU_DELETE_SUCCESS');
   }
 }

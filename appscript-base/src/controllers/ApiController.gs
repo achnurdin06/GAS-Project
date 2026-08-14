@@ -150,3 +150,40 @@ function apiGetAuditLogs(payload) {
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
+
+// MENU MANAGEMENT CRUD
+function apiGetAllMenus(payload) {
+  try {
+    return new MenuService().getAllMenus();
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetAllMenus failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiCreateMenu(payload) {
+  try {
+    return new MenuService().createMenu(payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreateMenu failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiUpdateMenu(payload) {
+  try {
+    return new MenuService().updateMenu(payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateMenu failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeleteMenu(payload) {
+  try {
+    return new MenuService().deleteMenu(payload.menu_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeleteMenu failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}

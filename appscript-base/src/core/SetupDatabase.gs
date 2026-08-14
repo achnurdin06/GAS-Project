@@ -115,7 +115,11 @@ function setupDatabase() {
     { code: 'PERMISSION_DELETE', name: 'Delete Permission' },
     { code: 'CONFIG_VIEW', name: 'View System Config' },
     { code: 'CONFIG_UPDATE', name: 'Update System Config' },
-    { code: 'AUDIT_VIEW', name: 'View Audit Logs' }
+    { code: 'AUDIT_VIEW', name: 'View Audit Logs' },
+    { code: 'MENU_VIEW', name: 'View Menu Management' },
+    { code: 'MENU_CREATE', name: 'Create Menu' },
+    { code: 'MENU_UPDATE', name: 'Update Menu' },
+    { code: 'MENU_DELETE', name: 'Delete Menu' }
   ];
 
   const permSeed = [];
@@ -146,7 +150,7 @@ function setupDatabase() {
 
   initSheet('mst_permission', permHeaders, permSeed, true);
 
-  // 4. mst_menu Sheet (All 6 AEF Framework Core Menus)
+  // 4. mst_menu Sheet (All 7 AEF Framework Core Menus)
   const menuHeaders = ['menu_id', 'parent_id', 'menu_code', 'menu_name', 'route', 'icon', 'sort_order', 'permission_code', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   const menuSeed = [
     { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_DASHBOARD', menu_name: 'Dashboard', route: '/dashboard', icon: 'bi-speedometer2', sort_order: 1, permission_code: 'DASHBOARD_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
@@ -154,7 +158,8 @@ function setupDatabase() {
     { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_ROLE_MGMT', menu_name: 'Role Management', route: '/roles', icon: 'bi-shield-lock-fill', sort_order: 3, permission_code: 'ROLE_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_PERM_MGMT', menu_name: 'Permission Control', route: '/permissions', icon: 'bi-key-fill', sort_order: 4, permission_code: 'PERMISSION_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_CONFIG', menu_name: 'System Config', route: '/config', icon: 'bi-gear-fill', sort_order: 5, permission_code: 'CONFIG_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_AUDIT', menu_name: 'Audit Trail Logs', route: '/audit', icon: 'bi-journal-text', sort_order: 6, permission_code: 'AUDIT_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' }
+    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_AUDIT', menu_name: 'Audit Trail Logs', route: '/audit', icon: 'bi-journal-text', sort_order: 6, permission_code: 'AUDIT_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_MENU_MGMT', menu_name: 'Menu Management', route: '/menus', icon: 'bi-menu-button-wide-fill', sort_order: 7, permission_code: 'MENU_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' }
   ];
   initSheet('mst_menu', menuHeaders, menuSeed, true);
 

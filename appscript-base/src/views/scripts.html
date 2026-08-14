@@ -150,6 +150,9 @@
       } else if (route === '/audit') {
         contentCanvas.innerHTML = document.getElementById('tpl-audit').innerHTML;
         this.loadAuditLogsTable();
+      } else if (route === '/menus') {
+        contentCanvas.innerHTML = document.getElementById('tpl-menus').innerHTML;
+        this.loadMenusTable();
       } else {
         contentCanvas.innerHTML = `
           <div class="aef-card text-center py-5">
@@ -167,7 +170,8 @@
       roles: { page: 1, pageSize: 5, data: [] },
       perms: { page: 1, pageSize: 5, data: [] },
       configs: { page: 1, pageSize: 5, data: [] },
-      audit: { page: 1, pageSize: 5, data: [] }
+      audit: { page: 1, pageSize: 5, data: [] },
+      menus: { page: 1, pageSize: 5, data: [] }
     },
 
     renderTablePagination: function (key, renderRowFn, tbodyId, infoId, controlsId) {
@@ -232,6 +236,7 @@
       else if (key === 'perms') this.renderPermissionsPage();
       else if (key === 'configs') this.renderConfigsPage();
       else if (key === 'audit') this.renderAuditPage();
+      else if (key === 'menus') this.renderMenusPage();
     },
 
     // USERS CRUD
@@ -563,6 +568,122 @@
           <td class="small text-muted"><code>${a.reference_id ? a.reference_id.substring(0, 8) + '...' : '-'}</code></td>
         </tr>`;
       }, 'audit-table-body', 'audit-pagination-info', 'audit-pagination-controls');
+    },
+
+    // MENUS MANAGEMENT CRUD
+    loadMenusTable: function () {
+      const tbody = document.getElementById('menus-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data menu...</td></tr>';
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          this.menusCache = res.data;
+          this.paginationState.menus.data = res.data;
+          this.paginationState.menus.page = 1;
+          this.renderMenusPage();
+        }
+      }).apiGetAllMenus();
+    },
+
+    renderMenusPage: function () {
+      this.renderTablePagination('menus', (m) => `
+        <tr>
+          <td><code>${m.menu_code || m.code}</code></td>
+          <td class="fw-semibold" style="color: #181c32;">${m.menu_name || m.name}</td>
+          <td><code class="text-primary">${m.route}</code></td>
+          <td><i class="bi ${m.icon || 'bi-circle'} me-1"></i> ${m.icon || '-'}</td>
+          <td><span class="badge bg-light text-dark border">${m.sort_order || 0}</span></td>
+          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${m.permission_code || '-'}</span></td>
+          <td><span class="badge badge-light-success px-3 py-2 fs-7">${m.status || 'ACTIVE'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditMenuModal('${m.menu_id || m.id}')" title="Edit Menu">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteMenu('${m.menu_id || m.id}')" title="Hapus Menu">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `, 'menus-table-body', 'menus-pagination-info', 'menus-pagination-controls');
+    },
+
+    createMenu: function () {
+      const code = document.getElementById('new-menu-code').value;
+      const name = document.getElementById('new-menu-name').value;
+      const route = document.getElementById('new-menu-route').value;
+      const icon = document.getElementById('new-menu-icon').value;
+      const sort = document.getElementById('new-menu-sort').value;
+      const perm = document.getElementById('new-menu-perm').value;
+
+      if (!code || !name || !route) return alert('Menu Code, Nama Menu, dan Route wajib diisi!');
+
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.hideModal('addMenuModal');
+          document.getElementById('form-add-menu').reset();
+          this.loadMenusTable();
+          this.loadSidebarMenu();
+        } else alert('Gagal: ' + res.message);
+      }).apiCreateMenu({
+        menu_code: code,
+        menu_name: name,
+        route: route,
+        icon: icon,
+        sort_order: sort,
+        permission_code: perm,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      });
+    },
+
+    openEditMenuModal: function (menuId) {
+      const menu = (this.menusCache || []).find(m => (m.menu_id === menuId || m.id === menuId));
+      if (!menu) return;
+      document.getElementById('edit-menu-id').value = menu.menu_id || menu.id;
+      document.getElementById('edit-menu-code').value = menu.menu_code || menu.code || '';
+      document.getElementById('edit-menu-name').value = menu.menu_name || menu.name || '';
+      document.getElementById('edit-menu-route').value = menu.route || '';
+      document.getElementById('edit-menu-icon').value = menu.icon || '';
+      document.getElementById('edit-menu-sort').value = menu.sort_order || 0;
+      document.getElementById('edit-menu-perm').value = menu.permission_code || '';
+
+      this.showModal('editMenuModal');
+    },
+
+    submitUpdateMenu: function () {
+      const menuId = document.getElementById('edit-menu-id').value;
+      const code = document.getElementById('edit-menu-code').value;
+      const name = document.getElementById('edit-menu-name').value;
+      const route = document.getElementById('edit-menu-route').value;
+      const icon = document.getElementById('edit-menu-icon').value;
+      const sort = document.getElementById('edit-menu-sort').value;
+      const perm = document.getElementById('edit-menu-perm').value;
+
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.hideModal('editMenuModal');
+          this.loadMenusTable();
+          this.loadSidebarMenu();
+        } else alert('Gagal: ' + res.message);
+      }).apiUpdateMenu({
+        menu_id: menuId,
+        menu_code: code,
+        menu_name: name,
+        route: route,
+        icon: icon,
+        sort_order: sort,
+        permission_code: perm,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      });
+    },
+
+    deleteMenu: function (menuId) {
+      if (!confirm('Hapus menu ini?')) return;
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.loadMenusTable();
+          this.loadSidebarMenu();
+        } else alert('Gagal: ' + res.message);
+      }).apiDeleteMenu({ menu_id: menuId, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     initDashboardChart: function () {
