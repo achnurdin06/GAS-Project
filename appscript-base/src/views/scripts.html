@@ -277,6 +277,13 @@
     },
 
     showModal: function (modalId) {
+      if (modalId === 'addUserModal') this.populateRoleDropdowns('', ['new-user-role']);
+      if (modalId === 'addPermModal') this.populateRoleDropdowns('', ['new-perm-role']);
+      if (modalId === 'addMenuModal') {
+        this.populatePermissionDropdowns('', ['new-menu-perm']);
+        this.populateParentMenuDropdowns('', ['new-menu-parent']);
+      }
+
       const modalEl = document.getElementById(modalId);
       if (!modalEl) return;
       try {
@@ -292,6 +299,58 @@
       modalEl.classList.add('show');
       modalEl.style.display = 'block';
       document.body.classList.add('modal-open');
+    },
+
+    populateRoleDropdowns: function (selectedVal, elemIds) {
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          elemIds.forEach(id => {
+            const selectElem = document.getElementById(id);
+            if (!selectElem) return;
+            let options = '<option value="">-- Pilih Role --</option>';
+            res.data.forEach(r => {
+              const isSelected = String(selectedVal).trim().toUpperCase() === String(r.role_code).trim().toUpperCase() ? 'selected' : '';
+              options += `<option value="${r.role_code}" ${isSelected}>${r.role_name} (${r.role_code})</option>`;
+            });
+            selectElem.innerHTML = options;
+          });
+        }
+      }).apiGetRoles();
+    },
+
+    populatePermissionDropdowns: function (selectedVal, elemIds) {
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          elemIds.forEach(id => {
+            const selectElem = document.getElementById(id);
+            if (!selectElem) return;
+            let options = '<option value="">-- Pilih Permission --</option>';
+            res.data.forEach(p => {
+              const isSelected = String(selectedVal).trim().toUpperCase() === String(p.permission_code).trim().toUpperCase() ? 'selected' : '';
+              options += `<option value="${p.permission_code}" ${isSelected}>${p.permission_name} (${p.permission_code})</option>`;
+            });
+            selectElem.innerHTML = options;
+          });
+        }
+      }).apiGetPermissions();
+    },
+
+    populateParentMenuDropdowns: function (selectedVal, elemIds) {
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && Array.isArray(res.data)) {
+          elemIds.forEach(id => {
+            const selectElem = document.getElementById(id);
+            if (!selectElem) return;
+            let options = '<option value="">-- Main Top-Level Menu --</option>';
+            res.data.forEach(m => {
+              const mId = m.menu_id || m.id;
+              const isSelected = String(selectedVal).trim() === String(mId).trim() ? 'selected' : '';
+              options += `<option value="${mId}" ${isSelected}>${m.menu_name || m.name}</option>`;
+            });
+            selectElem.innerHTML = options;
+          });
+        }
+      }).apiGetAllMenus();
     },
 
     hideModal: function (modalId) {
@@ -348,9 +407,9 @@
       document.getElementById('edit-user-id').value = user.id;
       document.getElementById('edit-user-name').value = user.name;
       document.getElementById('edit-user-email').value = user.email;
-      document.getElementById('edit-user-role').value = user.role_id;
       document.getElementById('edit-user-password').value = '';
 
+      this.populateRoleDropdowns(user.role_id, ['edit-user-role']);
       this.showModal('editUserModal');
     },
 
@@ -644,8 +703,9 @@
       document.getElementById('edit-menu-route').value = menu.route || '';
       document.getElementById('edit-menu-icon').value = menu.icon || '';
       document.getElementById('edit-menu-sort').value = menu.sort_order || 0;
-      document.getElementById('edit-menu-perm').value = menu.permission_code || '';
 
+      this.populatePermissionDropdowns(menu.permission_code, ['edit-menu-perm']);
+      this.populateParentMenuDropdowns(menu.parent_id, ['edit-menu-parent']);
       this.showModal('editMenuModal');
     },
 

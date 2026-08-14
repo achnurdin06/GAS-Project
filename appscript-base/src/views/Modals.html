@@ -1,4 +1,4 @@
-<!-- AEF ALL MODAL DIALOGS -->
+<!-- AEF ALL MODAL DIALOGS WITH DYNAMIC RELATIONAL SELECT DROPDOWNS -->
 
 <!-- 1. Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
@@ -23,10 +23,9 @@
             <input type="password" id="new-user-password" class="form-control" placeholder="••••••••" required>
           </div>
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Role</label>
-            <select id="new-user-role" class="form-select">
-              <option value="ROLE_USER">Standard User (ROLE_USER)</option>
-              <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+            <label class="form-label text-muted small fw-semibold">Role (Relasi mst_role)</label>
+            <select id="new-user-role" class="form-select" required>
+              <option value="">-- Pilih Role --</option>
             </select>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
@@ -63,10 +62,9 @@
             <input type="password" id="edit-user-password" class="form-control" placeholder="Kosongkan jika tidak ingin diubah">
           </div>
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Role</label>
-            <select id="edit-user-role" class="form-select">
-              <option value="ROLE_USER">Standard User (ROLE_USER)</option>
-              <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+            <label class="form-label text-muted small fw-semibold">Role (Relasi mst_role)</label>
+            <select id="edit-user-role" class="form-select" required>
+              <option value="">-- Pilih Role --</option>
             </select>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
@@ -122,15 +120,17 @@
       <div class="modal-body p-4">
         <form id="form-add-perm" onsubmit="event.preventDefault(); AEF.createPermission();">
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Target Role ID</label>
-            <input type="text" id="new-perm-role" class="form-control" placeholder="ROLE_USER" required>
+            <label class="form-label text-muted small fw-semibold">Target Role (Relasi mst_role)</label>
+            <select id="new-perm-role" class="form-select" required>
+              <option value="">-- Pilih Role --</option>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label text-muted small fw-semibold">Permission Code (e.g. REPORT_VIEW)</label>
             <input type="text" id="new-perm-code" class="form-control" placeholder="REPORT_VIEW" required>
           </div>
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Nama Label</label>
+            <label class="form-label text-muted small fw-semibold">Nama Label Permission</label>
             <input type="text" id="new-perm-name" class="form-control" placeholder="Lihat Laporan" required>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
@@ -183,6 +183,12 @@
       <div class="modal-body p-4">
         <form id="form-add-menu" onsubmit="event.preventDefault(); AEF.createMenu();">
           <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Parent Menu (Opsional - Relasi mst_menu)</label>
+            <select id="new-menu-parent" class="form-select">
+              <option value="">-- Main Top-Level Menu --</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label class="form-label text-muted small fw-semibold">Menu Code (e.g. MENU_REPORTS)</label>
             <input type="text" id="new-menu-code" class="form-control" placeholder="MENU_REPORTS" required>
           </div>
@@ -206,8 +212,10 @@
               <input type="number" id="new-menu-sort" class="form-control" value="8">
             </div>
             <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Permission Code</label>
-              <input type="text" id="new-menu-perm" class="form-control" placeholder="DASHBOARD_VIEW" value="DASHBOARD_VIEW">
+              <label class="form-label text-muted small fw-semibold">Permission Code (Relasi mst_permission)</label>
+              <select id="new-menu-perm" class="form-select">
+                <option value="DASHBOARD_VIEW">DASHBOARD_VIEW</option>
+              </select>
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
@@ -232,6 +240,12 @@
         <form id="form-edit-menu" onsubmit="event.preventDefault(); AEF.submitUpdateMenu();">
           <input type="hidden" id="edit-menu-id">
           <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Parent Menu (Opsional)</label>
+            <select id="edit-menu-parent" class="form-select">
+              <option value="">-- Main Top-Level Menu --</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label class="form-label text-muted small fw-semibold">Menu Code</label>
             <input type="text" id="edit-menu-code" class="form-control" required>
           </div>
@@ -255,8 +269,10 @@
               <input type="number" id="edit-menu-sort" class="form-control">
             </div>
             <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Permission Code</label>
-              <input type="text" id="edit-menu-perm" class="form-control">
+              <label class="form-label text-muted small fw-semibold">Permission Code (Relasi mst_permission)</label>
+              <select id="edit-menu-perm" class="form-select">
+                <option value="DASHBOARD_VIEW">DASHBOARD_VIEW</option>
+              </select>
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
