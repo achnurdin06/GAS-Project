@@ -4,7 +4,7 @@
       <h3 class="fw-bold mb-1" style="color: #181c32;">Permission Control</h3>
       <p class="text-muted small mb-0">Atur pemetaan izin fitur (permission_code) terhadap role ID.</p>
     </div>
-    <button class="btn btn-aef-primary" data-bs-toggle="modal" data-bs-target="#addPermModal">
+    <button class="btn btn-aef-primary" onclick="AEF.showModal('addPermModal')">
       <i class="bi bi-key-fill me-1"></i> Tambah Permission
     </button>
   </div>
@@ -26,37 +26,11 @@
         </tbody>
       </table>
     </div>
-  </div>
 
-  <!-- Add Permission Modal -->
-  <div class="modal fade" id="addPermModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
-        <div class="modal-header border-light py-3 px-4">
-          <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-key-fill text-primary me-2"></i>Tambah Permission</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <form id="form-add-perm" onsubmit="event.preventDefault(); AEF.createPermission();">
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Target Role ID</label>
-              <input type="text" id="new-perm-role" class="form-control" placeholder="ROLE_USER" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Permission Code (e.g. REPORT_VIEW)</label>
-              <input type="text" id="new-perm-code" class="form-control" placeholder="REPORT_VIEW" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Nama Label</label>
-              <input type="text" id="new-perm-name" class="form-control" placeholder="Lihat Laporan" required>
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-              <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Batal</button>
-              <button type="submit" class="btn btn-aef-primary">Simpan Permission</button>
-            </div>
-          </form>
-        </div>
-      </div>
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
+      <div class="text-muted small" id="perms-pagination-info">Memuat entri...</div>
+      <ul class="pagination pagination-sm mb-0" id="perms-pagination-controls"></ul>
     </div>
   </div>
 </template>

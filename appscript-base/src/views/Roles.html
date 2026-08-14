@@ -4,7 +4,7 @@
       <h3 class="fw-bold mb-1" style="color: #181c32;">Role Management</h3>
       <p class="text-muted small mb-0">Kelola daftar role dan deskripsi otorisasi sistem.</p>
     </div>
-    <button class="btn btn-aef-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+    <button class="btn btn-aef-primary" onclick="AEF.showModal('addRoleModal')">
       <i class="bi bi-shield-plus me-1"></i> Tambah Role
     </button>
   </div>
@@ -26,37 +26,11 @@
         </tbody>
       </table>
     </div>
-  </div>
 
-  <!-- Add Role Modal -->
-  <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
-        <div class="modal-header border-light py-3 px-4">
-          <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-shield-plus text-primary me-2"></i>Tambah Role Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <form id="form-add-role" onsubmit="event.preventDefault(); AEF.createRole();">
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Role Code (e.g. ROLE_MANAGER)</label>
-              <input type="text" id="new-role-code" class="form-control" placeholder="ROLE_MANAGER" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Nama Role</label>
-              <input type="text" id="new-role-name" class="form-control" placeholder="Manager Operasional" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-muted small fw-semibold">Deskripsi</label>
-              <textarea id="new-role-desc" class="form-control" rows="2"></textarea>
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-              <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Batal</button>
-              <button type="submit" class="btn btn-aef-primary">Simpan Role</button>
-            </div>
-          </form>
-        </div>
-      </div>
+    <!-- Pagination Controls -->
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
+      <div class="text-muted small" id="roles-pagination-info">Memuat entri...</div>
+      <ul class="pagination pagination-sm mb-0" id="roles-pagination-controls"></ul>
     </div>
   </div>
 </template>

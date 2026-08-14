@@ -159,6 +159,80 @@
       }
     },
 
+    // PAGINATION ENGINE
+    paginationState: {
+      users: { page: 1, pageSize: 5, data: [] },
+      roles: { page: 1, pageSize: 5, data: [] },
+      perms: { page: 1, pageSize: 5, data: [] },
+      configs: { page: 1, pageSize: 5, data: [] },
+      audit: { page: 1, pageSize: 5, data: [] }
+    },
+
+    renderTablePagination: function (key, renderRowFn, tbodyId, infoId, controlsId) {
+      const state = this.paginationState[key];
+      if (!state) return;
+
+      const tbody = document.getElementById(tbodyId);
+      const infoElem = document.getElementById(infoId);
+      const controlsElem = document.getElementById(controlsId);
+      if (!tbody) return;
+
+      const data = state.data || [];
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data ditemukan.</td></tr>';
+        if (infoElem) infoElem.innerText = 'Showing 0 to 0 of 0 entries';
+        if (controlsElem) controlsElem.innerHTML = '';
+        return;
+      }
+
+      const totalItems = data.length;
+      const pageSize = state.pageSize || 5;
+      const totalPages = Math.ceil(totalItems / pageSize);
+      state.page = Math.max(1, Math.min(state.page || 1, totalPages));
+      const currentPage = state.page;
+
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, totalItems);
+      const pageSlice = data.slice(startIdx, endIdx);
+
+      let rowsHtml = '';
+      pageSlice.forEach((item, idx) => {
+        rowsHtml += renderRowFn(item, startIdx + idx);
+      });
+      tbody.innerHTML = rowsHtml;
+
+      if (infoElem) {
+        infoElem.innerText = `Showing ${startIdx + 1} to ${endIdx} of ${totalItems} entries`;
+      }
+
+      if (controlsElem) {
+        let html = '';
+        const prevDisabled = currentPage === 1 ? 'disabled' : '';
+        html += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="AEF.changeTablePage('${key}', ${currentPage - 1}); return false;">Prev</a></li>`;
+
+        for (let p = 1; p <= totalPages; p++) {
+          const activeClass = p === currentPage ? 'active' : '';
+          html += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="AEF.changeTablePage('${key}', ${p}); return false;">${p}</a></li>`;
+        }
+
+        const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+        html += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="AEF.changeTablePage('${key}', ${currentPage + 1}); return false;">Next</a></li>`;
+
+        controlsElem.innerHTML = html;
+      }
+    },
+
+    changeTablePage: function (key, newPage) {
+      if (!this.paginationState[key]) return;
+      this.paginationState[key].page = newPage;
+      if (key === 'users') this.renderUsersPage();
+      else if (key === 'roles') this.renderRolesPage();
+      else if (key === 'perms') this.renderPermissionsPage();
+      else if (key === 'configs') this.renderConfigsPage();
+      else if (key === 'audit') this.renderAuditPage();
+    },
+
+    // USERS CRUD
     loadUsersTable: function () {
       const tableBody = document.getElementById('users-table-body');
       if (!tableBody) return;
@@ -168,33 +242,31 @@
         .withSuccessHandler((res) => {
           if (res.success && Array.isArray(res.data)) {
             this.usersCache = res.data;
-            if (res.data.length === 0) {
-              tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data user.</td></tr>';
-              return;
-            }
-            let rows = '';
-            res.data.forEach(u => {
-              rows += `
-                <tr>
-                  <td class="fw-semibold" style="color: #181c32;">${u.name}</td>
-                  <td>${u.email}</td>
-                  <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
-                  <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
-                  <td>
-                    <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteUser('${u.id}')" title="Hapus User">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              `;
-            });
-            tableBody.innerHTML = rows;
+            this.paginationState.users.data = res.data;
+            this.paginationState.users.page = 1;
+            this.renderUsersPage();
           }
         })
         .apiGetUsers({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    renderUsersPage: function () {
+      this.renderTablePagination('users', (u) => `
+        <tr>
+          <td class="fw-semibold" style="color: #181c32;">${u.name}</td>
+          <td>${u.email}</td>
+          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
+          <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
+          <td>
+            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteUser('${u.id}')" title="Hapus User">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `, 'users-table-body', 'users-pagination-info', 'users-pagination-controls');
     },
 
     showModal: function (modalId) {
@@ -321,25 +393,25 @@
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
-          if (res.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data role.</td></tr>';
-            return;
-          }
-          let rows = '';
-          res.data.forEach(r => {
-            rows += `<tr>
-              <td><code>${r.role_code}</code></td>
-              <td class="fw-semibold" style="color: #181c32;">${r.role_name}</td>
-              <td>${r.description || '-'}</td>
-              <td><span class="badge badge-light-success px-3 py-2 fs-7">${r.status}</span></td>
-              <td>
-                <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
-              </td>
-            </tr>`;
-          });
-          tbody.innerHTML = rows;
+          this.paginationState.roles.data = res.data;
+          this.paginationState.roles.page = 1;
+          this.renderRolesPage();
         }
       }).apiGetRoles();
+    },
+
+    renderRolesPage: function () {
+      this.renderTablePagination('roles', (r) => `
+        <tr>
+          <td><code>${r.role_code}</code></td>
+          <td class="fw-semibold" style="color: #181c32;">${r.role_name}</td>
+          <td>${r.description || '-'}</td>
+          <td><span class="badge badge-light-success px-3 py-2 fs-7">${r.status}</span></td>
+          <td>
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+      `, 'roles-table-body', 'roles-pagination-info', 'roles-pagination-controls');
     },
 
     createRole: function () {
@@ -371,25 +443,25 @@
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
-          if (res.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data permission.</td></tr>';
-            return;
-          }
-          let rows = '';
-          res.data.forEach(p => {
-            rows += `<tr>
-              <td><span class="badge badge-light-primary px-3 py-2 fs-7">${p.role_id}</span></td>
-              <td><code>${p.permission_code}</code></td>
-              <td class="fw-semibold" style="color: #181c32;">${p.permission_name}</td>
-              <td><span class="badge badge-light-success px-3 py-2 fs-7">${p.status}</span></td>
-              <td>
-                <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
-              </td>
-            </tr>`;
-          });
-          tbody.innerHTML = rows;
+          this.paginationState.perms.data = res.data;
+          this.paginationState.perms.page = 1;
+          this.renderPermissionsPage();
         }
       }).apiGetPermissions();
+    },
+
+    renderPermissionsPage: function () {
+      this.renderTablePagination('perms', (p) => `
+        <tr>
+          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${p.role_id}</span></td>
+          <td><code>${p.permission_code}</code></td>
+          <td class="fw-semibold" style="color: #181c32;">${p.permission_name}</td>
+          <td><span class="badge badge-light-success px-3 py-2 fs-7">${p.status}</span></td>
+          <td>
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
+          </td>
+        </tr>
+      `, 'perms-table-body', 'perms-pagination-info', 'perms-pagination-controls');
     },
 
     createPermission: function () {
@@ -421,30 +493,46 @@
       tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
-          let rows = '';
-          res.data.forEach(c => {
-            rows += `<tr>
-              <td><code>${c.config_key}</code></td>
-              <td class="fw-bold text-primary">${c.config_value}</td>
-              <td>${c.description || '-'}</td>
-              <td>
-                <button class="btn btn-sm btn-light border text-muted" onclick="AEF.updateConfigPrompt('${c.id}', '${c.config_key}', '${c.config_value}')"><i class="bi bi-pencil me-1"></i> Edit</button>
-              </td>
-            </tr>`;
-          });
-          tbody.innerHTML = rows;
+          this.configsCache = res.data;
+          this.paginationState.configs.data = res.data;
+          this.paginationState.configs.page = 1;
+          this.renderConfigsPage();
         }
       }).apiGetConfigs();
     },
 
-    updateConfigPrompt: function (id, key, val) {
-      const newVal = prompt(`Ubah nilai untuk ${key}:`, val);
-      if (newVal !== null && newVal !== val) {
-        google.script.run.withSuccessHandler((res) => {
-          if (res.success) this.loadConfigsTable();
-          else alert('Gagal: ' + res.message);
-        }).apiUpdateConfig({ config_id: id, config_value: newVal });
-      }
+    renderConfigsPage: function () {
+      this.renderTablePagination('configs', (c) => `
+        <tr>
+          <td><code>${c.config_key}</code></td>
+          <td class="fw-bold text-primary">${c.config_value}</td>
+          <td>${c.description || '-'}</td>
+          <td>
+            <button class="btn btn-sm btn-light border text-muted" onclick="AEF.openEditConfigModal('${c.id}')"><i class="bi bi-pencil me-1"></i> Edit</button>
+          </td>
+        </tr>
+      `, 'configs-table-body', 'configs-pagination-info', 'configs-pagination-controls');
+    },
+
+    openEditConfigModal: function (configId) {
+      const config = (this.configsCache || []).find(c => c.id === configId);
+      if (!config) return;
+      document.getElementById('edit-config-id').value = config.id;
+      document.getElementById('edit-config-key').value = config.config_key;
+      document.getElementById('edit-config-value').value = config.config_value;
+      this.showModal('editConfigModal');
+    },
+
+    submitUpdateConfig: function () {
+      const id = document.getElementById('edit-config-id').value;
+      const val = document.getElementById('edit-config-value').value;
+      if (!id || !val) return alert('Konfigurasi tidak boleh kosong!');
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.hideModal('editConfigModal');
+          this.loadConfigsTable();
+        } else alert('Gagal: ' + res.message);
+      }).apiUpdateConfig({ config_id: id, config_value: val });
     },
 
     // AUDIT LOGS VIEW
@@ -454,25 +542,25 @@
       tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat log...</td></tr>';
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
-          if (res.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada log audit.</td></tr>';
-            return;
-          }
-          let rows = '';
-          res.data.forEach(a => {
-            const badgeClass = a.status === 'SUCCESS' ? 'badge-light-success' : 'badge-light-danger';
-            rows += `<tr>
-              <td class="small text-muted">${a.timestamp ? a.timestamp.replace('T', ' ').substring(0, 19) : '-'}</td>
-              <td><code>${a.module || '-'}</code></td>
-              <td><span class="badge ${badgeClass} px-3 py-2 fs-7">${a.action}_${a.status}</span></td>
-              <td class="small fw-medium">${a.user_id}</td>
-              <td class="small">${a.description || '-'}</td>
-              <td class="small text-muted"><code>${a.reference_id ? a.reference_id.substring(0, 8) + '...' : '-'}</code></td>
-            </tr>`;
-          });
-          tbody.innerHTML = rows;
+          this.paginationState.audit.data = res.data;
+          this.paginationState.audit.page = 1;
+          this.renderAuditPage();
         }
       }).apiGetAuditLogs();
+    },
+
+    renderAuditPage: function () {
+      this.renderTablePagination('audit', (a) => {
+        const badgeClass = a.status === 'SUCCESS' ? 'badge-light-success' : 'badge-light-danger';
+        return `<tr>
+          <td class="small text-muted">${a.timestamp ? a.timestamp.replace('T', ' ').substring(0, 19) : '-'}</td>
+          <td><code>${a.module || '-'}</code></td>
+          <td><span class="badge ${badgeClass} px-3 py-2 fs-7">${a.action}_${a.status}</span></td>
+          <td class="small fw-medium">${a.user_id}</td>
+          <td class="small">${a.description || '-'}</td>
+          <td class="small text-muted"><code>${a.reference_id ? a.reference_id.substring(0, 8) + '...' : '-'}</code></td>
+        </tr>`;
+      }, 'audit-table-body', 'audit-pagination-info', 'audit-pagination-controls');
     },
 
     initDashboardChart: function () {
