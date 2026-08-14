@@ -22,7 +22,7 @@ class MenuService {
     }
 
     const filteredMenus = activeMenus.filter(m => {
-      if (!allowedPermCodes) return true; // ROLE_SUPER_ADMIN & ROLE_ADMIN see ALL 7 menus
+      if (!allowedPermCodes) return true; // ROLE_SUPER_ADMIN & ROLE_ADMIN see ALL menus
       if (!m.permission_code) return true;
       return allowedPermCodes.includes(String(m.permission_code).trim().toUpperCase());
     });
@@ -37,10 +37,13 @@ class MenuService {
         menu_code: parent.menu_code,
         name: parent.menu_name,
         menu_name: parent.menu_name,
+        slug: parent.slug || '',
+        type: parent.type || 'Module',
         route: parent.route,
         icon: parent.icon,
         sort_order: parent.sort_order,
         permission_code: parent.permission_code,
+        description: parent.description || '',
         children: children.map(c => ({
           id: c.menu_id,
           menu_id: c.menu_id,
@@ -48,10 +51,13 @@ class MenuService {
           menu_code: c.menu_code,
           name: c.menu_name,
           menu_name: c.menu_name,
+          slug: c.slug || '',
+          type: c.type || 'Module',
           route: c.route,
           icon: c.icon,
           sort_order: c.sort_order,
-          permission_code: c.permission_code
+          permission_code: c.permission_code,
+          description: c.description || ''
         }))
       };
     });
@@ -60,26 +66,32 @@ class MenuService {
   }
 
   getAllMenus() {
-    const menus = this.menuRepo.find(row => String(row.status).trim().toUpperCase() === 'ACTIVE')
+    const menus = this.menuRepo.readAll()
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
     return Response.success('List menu berhasil diambil', menus, 'MENU_LIST_SUCCESS');
   }
 
   createMenu(menuData, actorId = 'SYSTEM') {
-    if (!menuData.menu_code || !menuData.menu_name || !menuData.route) {
-      return Response.error('Menu Code, Menu Name, dan Route wajib diisi', 'VALIDATION_ERROR');
+    if (!menuData.menu_name || !menuData.route) {
+      return Response.error('Nama Menu dan Route wajib diisi', 'VALIDATION_ERROR');
     }
+
+    const menuCode = menuData.menu_code ? String(menuData.menu_code).trim().toUpperCase() : ('MENU_' + String(menuData.menu_name).toUpperCase().replace(/\s+/g, '_'));
+    const slug = menuData.slug ? menuData.slug : String(menuData.menu_name).toLowerCase().replace(/\s+/g, '-');
 
     const newMenu = {
       menu_id: Utils.generateUuid(),
       parent_id: menuData.parent_id || '',
-      menu_code: String(menuData.menu_code).trim().toUpperCase(),
+      menu_code: menuCode,
       menu_name: menuData.menu_name,
+      slug: slug,
+      type: menuData.type || 'Module',
       route: menuData.route,
       icon: menuData.icon || 'bi-circle',
       sort_order: Number(menuData.sort_order || 99),
       permission_code: menuData.permission_code || 'DASHBOARD_VIEW',
-      status: 'ACTIVE'
+      description: menuData.description || '',
+      status: menuData.status || 'ACTIVE'
     };
 
     const inserted = this.menuRepo.insert(newMenu, actorId);
@@ -95,10 +107,15 @@ class MenuService {
     const updateFields = {};
     if (updatePayload.menu_code) updateFields.menu_code = String(updatePayload.menu_code).trim().toUpperCase();
     if (updatePayload.menu_name) updateFields.menu_name = updatePayload.menu_name;
+    if (updatePayload.slug !== undefined) updateFields.slug = updatePayload.slug;
+    if (updatePayload.type) updateFields.type = updatePayload.type;
+    if (updatePayload.parent_id !== undefined) updateFields.parent_id = updatePayload.parent_id;
     if (updatePayload.route) updateFields.route = updatePayload.route;
     if (updatePayload.icon) updateFields.icon = updatePayload.icon;
     if (updatePayload.sort_order !== undefined) updateFields.sort_order = Number(updatePayload.sort_order);
     if (updatePayload.permission_code) updateFields.permission_code = updatePayload.permission_code;
+    if (updatePayload.description !== undefined) updateFields.description = updatePayload.description;
+    if (updatePayload.status) updateFields.status = updatePayload.status;
 
     const success = this.menuRepo.updateById(menuId, updateFields, actorId);
     if (!success) return Response.error('Gagal memperbarui menu', 'SYSTEM_ERROR');

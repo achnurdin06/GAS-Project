@@ -629,115 +629,258 @@
       }, 'audit-table-body', 'audit-pagination-info', 'audit-pagination-controls');
     },
 
-    // MENUS MANAGEMENT CRUD
+    // MENUS MANAGEMENT CRUD & TREE HIERARCHY
     loadMenusTable: function () {
-      const tbody = document.getElementById('menus-table-body');
+      const tbody = document.getElementById('menus-tree-tbody');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data menu...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat hierarki menu...</td></tr>';
+      
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
           this.menusCache = res.data;
-          this.paginationState.menus.data = res.data;
-          this.paginationState.menus.page = 1;
-          this.renderMenusPage();
+          this.populatePermissionDropdowns('', ['side-menu-perm', 'new-menu-perm']);
+          this.populateParentMenuDropdowns('', ['side-menu-parent', 'new-menu-parent']);
+          this.renderMenusTreeTable(res.data);
         }
       }).apiGetAllMenus();
     },
 
-    renderMenusPage: function () {
-      this.renderTablePagination('menus', (m) => `
-        <tr>
-          <td><code>${m.menu_code || m.code}</code></td>
-          <td class="fw-semibold" style="color: #181c32;">${m.menu_name || m.name}</td>
-          <td><code class="text-primary">${m.route}</code></td>
-          <td><i class="bi ${m.icon || 'bi-circle'} me-1"></i> ${m.icon || '-'}</td>
-          <td><span class="badge bg-light text-dark border">${m.sort_order || 0}</span></td>
-          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${m.permission_code || '-'}</span></td>
-          <td><span class="badge badge-light-success px-3 py-2 fs-7">${m.status || 'ACTIVE'}</span></td>
-          <td>
-            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditMenuModal('${m.menu_id || m.id}')" title="Edit Menu">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteMenu('${m.menu_id || m.id}')" title="Hapus Menu">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `, 'menus-table-body', 'menus-pagination-info', 'menus-pagination-controls');
+    renderMenusTreeTable: function (dataList) {
+      const tbody = document.getElementById('menus-tree-tbody');
+      const infoElem = document.getElementById('menus-pagination-info');
+      if (!tbody) return;
+
+      const data = dataList || this.menusCache || [];
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data menu ditemukan.</td></tr>';
+        if (infoElem) infoElem.innerText = 'Showing 0 of 0 entries';
+        return;
+      }
+
+      // Group into parents and children
+      const parents = data.filter(m => !m.parent_id);
+      const childrenMap = {};
+      data.forEach(m => {
+        if (m.parent_id) {
+          if (!childrenMap[m.parent_id]) childrenMap[m.parent_id] = [];
+          childrenMap[m.parent_id].push(m);
+        }
+      });
+
+      let html = '';
+      let totalCount = 0;
+
+      parents.forEach(p => {
+        totalCount++;
+        const pId = p.menu_id || p.id;
+        const pChildren = childrenMap[pId] || [];
+        const hasChildren = pChildren.length > 0;
+        const toggleIcon = hasChildren ? '<i class="bi bi-chevron-down text-primary me-2 fs-7"></i>' : '<i class="bi bi-chevron-right text-muted me-2 fs-7"></i>';
+        const typeBadge = p.type === 'Internal Link' ? 'bg-info bg-opacity-10 text-info' : 'bg-primary bg-opacity-10 text-primary';
+        const statusBadge = p.status === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+
+        html += `
+          <tr class="align-middle fw-semibold" style="background-color: #ffffff;">
+            <td>
+              <span class="cursor-pointer me-1">${toggleIcon}</span>
+              <i class="bi ${p.icon || 'bi-folder'} me-2 text-dark"></i>
+              <span class="text-dark cursor-pointer" onclick="AEF.loadSideMenuForEdit('${pId}')">${p.menu_name || p.name}</span>
+            </td>
+            <td><i class="bi ${p.icon || 'bi-circle'} me-1"></i></td>
+            <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${p.type || 'Module'}</span></td>
+            <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${p.status || 'ACTIVE'}</span></td>
+            <td>
+              <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="AEF.loadSideMenuForEdit('${pId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+              <button class="btn btn-sm btn-link text-danger p-0 me-2 text-decoration-none" onclick="AEF.deleteMenu('${pId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+              <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" onclick="AEF.openAddSubMenu('${pId}')"><i class="bi bi-plus-circle me-1"></i>Add Sub-Menu</button>
+            </td>
+          </tr>
+        `;
+
+        pChildren.forEach(c => {
+          totalCount++;
+          const cId = c.menu_id || c.id;
+          const cTypeBadge = c.type === 'Internal Link' ? 'bg-info bg-opacity-10 text-info' : 'bg-secondary bg-opacity-10 text-secondary';
+          const cStatusBadge = c.status === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+
+          html += `
+            <tr class="align-middle" style="background-color: #f8fafc;">
+              <td class="ps-4">
+                <span class="text-muted me-2" style="font-family: monospace;">├─</span>
+                <i class="bi ${c.icon || 'bi-file-earmark'} me-2 text-muted"></i>
+                <span class="text-dark cursor-pointer fw-medium" onclick="AEF.loadSideMenuForEdit('${cId}')">${c.menu_name || c.name}</span>
+              </td>
+              <td><i class="bi ${c.icon || 'bi-circle'} me-1"></i></td>
+              <td><span class="badge ${cTypeBadge} border-0 px-2.5 py-1.5 fs-8">${c.type || 'Sub Menu'}</span></td>
+              <td><span class="badge ${cStatusBadge} px-2.5 py-1.5 fs-8">${c.status || 'ACTIVE'}</span></td>
+              <td>
+                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="AEF.loadSideMenuForEdit('${cId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" onclick="AEF.deleteMenu('${cId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+      });
+
+      tbody.innerHTML = html;
+      if (infoElem) infoElem.innerText = `Showing ${totalCount} entries in hierarchy`;
+    },
+
+    loadSideMenuForEdit: function (menuId) {
+      const menu = (this.menusCache || []).find(m => (m.menu_id === menuId || m.id === menuId));
+      if (!menu) return;
+
+      document.getElementById('side-menu-id').value = menu.menu_id || menu.id;
+      document.getElementById('side-menu-name').value = menu.menu_name || menu.name || '';
+      document.getElementById('side-menu-slug').value = menu.slug || String(menu.menu_name || menu.name).toLowerCase().replace(/\s+/g, '-');
+      document.getElementById('side-menu-desc').value = menu.description || '';
+      document.getElementById('side-menu-icon').value = menu.icon || 'bi-circle';
+      document.getElementById('side-menu-type').value = menu.type || 'Module';
+      document.getElementById('side-menu-parent').value = menu.parent_id || '';
+      document.getElementById('side-menu-route').value = menu.route || '';
+      document.getElementById('side-menu-perm').value = menu.permission_code || 'MENU_VIEW';
+
+      const modeBadge = document.getElementById('side-form-mode');
+      if (modeBadge) {
+        modeBadge.className = 'badge badge-light-warning';
+        modeBadge.innerText = 'Edit Menu';
+      }
+
+      this.updateIconPreview();
+    },
+
+    openAddSubMenu: function (parentId) {
+      this.resetSideMenuForm();
+      const parentSelect = document.getElementById('side-menu-parent');
+      if (parentSelect) parentSelect.value = parentId;
+
+      const typeSelect = document.getElementById('side-menu-type');
+      if (typeSelect) typeSelect.value = 'Sub Menu';
+
+      const modeBadge = document.getElementById('side-form-mode');
+      if (modeBadge) {
+        modeBadge.className = 'badge badge-light-primary';
+        modeBadge.innerText = 'Add Sub-Menu';
+      }
+
+      const nameInput = document.getElementById('side-menu-name');
+      if (nameInput) nameInput.focus();
+    },
+
+    resetSideMenuForm: function () {
+      const form = document.getElementById('form-side-menu');
+      if (form) form.reset();
+      document.getElementById('side-menu-id').value = '';
+
+      const modeBadge = document.getElementById('side-form-mode');
+      if (modeBadge) {
+        modeBadge.className = 'badge badge-light-primary';
+        modeBadge.innerText = 'New Menu';
+      }
+
+      this.updateIconPreview();
+    },
+
+    autoGenerateSlug: function () {
+      const name = document.getElementById('side-menu-name').value;
+      const slugInput = document.getElementById('side-menu-slug');
+      if (slugInput && name) {
+        slugInput.value = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+      }
+    },
+
+    updateIconPreview: function () {
+      const iconVal = document.getElementById('side-menu-icon').value || 'bi-circle';
+      const preview = document.getElementById('side-menu-icon-preview');
+      if (preview) preview.innerHTML = `<i class="bi ${iconVal}"></i>`;
+    },
+
+    saveSideMenu: function () {
+      const menuId = document.getElementById('side-menu-id').value;
+      const name = document.getElementById('side-menu-name').value;
+      const slug = document.getElementById('side-menu-slug').value;
+      const desc = document.getElementById('side-menu-desc').value;
+      const icon = document.getElementById('side-menu-icon').value;
+      const type = document.getElementById('side-menu-type').value;
+      const parentId = document.getElementById('side-menu-parent').value;
+      const route = document.getElementById('side-menu-route').value;
+      const perm = document.getElementById('side-menu-perm').value;
+
+      if (!name || !route) return alert('Nama Menu dan Route wajib diisi!');
+
+      const payload = {
+        menu_id: menuId,
+        menu_name: name,
+        slug: slug,
+        description: desc,
+        icon: icon,
+        type: type,
+        parent_id: parentId,
+        route: route,
+        permission_code: perm,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      };
+
+      if (menuId) {
+        google.script.run.withSuccessHandler((res) => {
+          if (res.success) {
+            this.resetSideMenuForm();
+            this.loadMenusTable();
+            this.loadSidebarMenu();
+          } else alert('Gagal memperbarui menu: ' + res.message);
+        }).apiUpdateMenu(payload);
+      } else {
+        google.script.run.withSuccessHandler((res) => {
+          if (res.success) {
+            this.resetSideMenuForm();
+            this.loadMenusTable();
+            this.loadSidebarMenu();
+          } else alert('Gagal membuat menu: ' + res.message);
+        }).apiCreateMenu(payload);
+      }
+    },
+
+    filterMenuTree: function () {
+      const query = (document.getElementById('menu-search-input').value || '').toLowerCase();
+      if (!query) return this.renderMenusTreeTable(this.menusCache);
+
+      const filtered = (this.menusCache || []).filter(m => 
+        (m.menu_name || m.name || '').toLowerCase().includes(query) ||
+        (m.menu_code || m.code || '').toLowerCase().includes(query) ||
+        (m.route || '').toLowerCase().includes(query)
+      );
+      this.renderMenusTreeTable(filtered);
+    },
+
+    filterMenuStatus: function (statusVal) {
+      if (statusVal === 'ALL') return this.renderMenusTreeTable(this.menusCache);
+      const filtered = (this.menusCache || []).filter(m => String(m.status || 'ACTIVE').toUpperCase() === statusVal);
+      this.renderMenusTreeTable(filtered);
+    },
+
+    filterMenuParent: function () {
+      const filterVal = document.getElementById('menu-parent-filter').value;
+      if (filterVal === 'ALL') return this.renderMenusTreeTable(this.menusCache);
+      if (filterVal === 'TOP') {
+        const filtered = (this.menusCache || []).filter(m => !m.parent_id);
+        return this.renderMenusTreeTable(filtered);
+      }
     },
 
     createMenu: function () {
-      const code = document.getElementById('new-menu-code').value;
-      const name = document.getElementById('new-menu-name').value;
-      const route = document.getElementById('new-menu-route').value;
-      const icon = document.getElementById('new-menu-icon').value;
-      const sort = document.getElementById('new-menu-sort').value;
-      const perm = document.getElementById('new-menu-perm').value;
-
-      if (!code || !name || !route) return alert('Menu Code, Nama Menu, dan Route wajib diisi!');
-
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success) {
-          this.hideModal('addMenuModal');
-          document.getElementById('form-add-menu').reset();
-          this.loadMenusTable();
-          this.loadSidebarMenu();
-        } else alert('Gagal: ' + res.message);
-      }).apiCreateMenu({
-        menu_code: code,
-        menu_name: name,
-        route: route,
-        icon: icon,
-        sort_order: sort,
-        permission_code: perm,
-        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
-      });
+      this.saveSideMenu();
     },
 
     openEditMenuModal: function (menuId) {
-      const menu = (this.menusCache || []).find(m => (m.menu_id === menuId || m.id === menuId));
-      if (!menu) return;
-      document.getElementById('edit-menu-id').value = menu.menu_id || menu.id;
-      document.getElementById('edit-menu-code').value = menu.menu_code || menu.code || '';
-      document.getElementById('edit-menu-name').value = menu.menu_name || menu.name || '';
-      document.getElementById('edit-menu-route').value = menu.route || '';
-      document.getElementById('edit-menu-icon').value = menu.icon || '';
-      document.getElementById('edit-menu-sort').value = menu.sort_order || 0;
-
-      this.populatePermissionDropdowns(menu.permission_code, ['edit-menu-perm']);
-      this.populateParentMenuDropdowns(menu.parent_id, ['edit-menu-parent']);
-      this.showModal('editMenuModal');
+      this.loadSideMenuForEdit(menuId);
     },
 
     submitUpdateMenu: function () {
-      const menuId = document.getElementById('edit-menu-id').value;
-      const code = document.getElementById('edit-menu-code').value;
-      const name = document.getElementById('edit-menu-name').value;
-      const route = document.getElementById('edit-menu-route').value;
-      const icon = document.getElementById('edit-menu-icon').value;
-      const sort = document.getElementById('edit-menu-sort').value;
-      const perm = document.getElementById('edit-menu-perm').value;
-
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success) {
-          this.hideModal('editMenuModal');
-          this.loadMenusTable();
-          this.loadSidebarMenu();
-        } else alert('Gagal: ' + res.message);
-      }).apiUpdateMenu({
-        menu_id: menuId,
-        menu_code: code,
-        menu_name: name,
-        route: route,
-        icon: icon,
-        sort_order: sort,
-        permission_code: perm,
-        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
-      });
+      this.saveSideMenu();
     },
 
     deleteMenu: function (menuId) {
-      if (!confirm('Hapus menu ini?')) return;
+      if (!confirm('Hapus menu ini dari hierarki?')) return;
       google.script.run.withSuccessHandler((res) => {
         if (res.success) {
           this.loadMenusTable();

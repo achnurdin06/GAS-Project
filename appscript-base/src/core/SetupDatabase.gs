@@ -150,16 +150,23 @@ function setupDatabase() {
 
   initSheet('mst_permission', permHeaders, permSeed, true);
 
-  // 4. mst_menu Sheet (All 7 AEF Framework Core Menus)
-  const menuHeaders = ['menu_id', 'parent_id', 'menu_code', 'menu_name', 'route', 'icon', 'sort_order', 'permission_code', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'];
+  // 4. mst_menu Sheet (All AEF Framework Core Menus with Hierarchy & Type)
+  const menuHeaders = ['menu_id', 'parent_id', 'menu_code', 'menu_name', 'slug', 'type', 'route', 'icon', 'sort_order', 'permission_code', 'description', 'status', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   const menuSeed = [
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_DASHBOARD', menu_name: 'Dashboard', route: '/dashboard', icon: 'bi-speedometer2', sort_order: 1, permission_code: 'DASHBOARD_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_USER_MGMT', menu_name: 'User Management', route: '/users', icon: 'bi-people-fill', sort_order: 2, permission_code: 'USER_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_ROLE_MGMT', menu_name: 'Role Management', route: '/roles', icon: 'bi-shield-lock-fill', sort_order: 3, permission_code: 'ROLE_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_PERM_MGMT', menu_name: 'Permission Control', route: '/permissions', icon: 'bi-key-fill', sort_order: 4, permission_code: 'PERMISSION_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_CONFIG', menu_name: 'System Config', route: '/config', icon: 'bi-gear-fill', sort_order: 5, permission_code: 'CONFIG_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_AUDIT', menu_name: 'Audit Trail Logs', route: '/audit', icon: 'bi-journal-text', sort_order: 6, permission_code: 'AUDIT_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_MENU_MGMT', menu_name: 'Menu Management', route: '/menus', icon: 'bi-menu-button-wide-fill', sort_order: 7, permission_code: 'MENU_VIEW', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' }
+    { menu_id: Utils.generateUuid(), parent_id: '', menu_code: 'MENU_DASHBOARD', menu_name: 'Dashboard', slug: 'dashboard', type: 'Internal Link', route: '/dashboard', icon: 'bi-grid-1x2-fill', sort_order: 1, permission_code: 'DASHBOARD_VIEW', description: 'Utama Dashboard Analytics', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    
+    // Administration Parent Module
+    { menu_id: 'PARENT_ADMIN', parent_id: '', menu_code: 'MODULE_ADMINISTRATION', menu_name: 'Administration', slug: 'administration', type: 'Module', route: '#', icon: 'bi-shield-lock-fill', sort_order: 2, permission_code: 'USER_VIEW', description: 'Modul Administrasi Sistem', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_MENU_MGMT', menu_name: 'Menu Management', slug: 'menu-management', type: 'Module', route: '/menus', icon: 'bi-menu-button-wide-fill', sort_order: 1, permission_code: 'MENU_VIEW', description: 'Kelola hierarki menu aplikasi', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_ROLE_MGMT', menu_name: 'Role Management', slug: 'role-management', type: 'Module', route: '/roles', icon: 'bi-shield-check', sort_order: 2, permission_code: 'ROLE_VIEW', description: 'Kelola peran dan hak akses', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_USER_MGMT', menu_name: 'User Management', slug: 'user-management', type: 'Module', route: '/users', icon: 'bi-people-fill', sort_order: 3, permission_code: 'USER_VIEW', description: 'Kelola pengguna sistem', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_PERM_MGMT', menu_name: 'Permission Control', slug: 'permission-management', type: 'Module', route: '/permissions', icon: 'bi-key-fill', sort_order: 4, permission_code: 'PERMISSION_VIEW', description: 'Kelola otorisasi ijin', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_AUDIT', menu_name: 'Audit Trail', slug: 'audit-trail', type: 'Module', route: '/audit', icon: 'bi-journal-text', sort_order: 5, permission_code: 'AUDIT_VIEW', description: 'Log aktivitas pengguna', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    
+    // Settings Parent Module
+    { menu_id: 'PARENT_SETTINGS', parent_id: '', menu_code: 'MODULE_SETTINGS', menu_name: 'Settings', slug: 'settings', type: 'Module', route: '#', icon: 'bi-gear-fill', sort_order: 3, permission_code: 'CONFIG_VIEW', description: 'Modul Pengaturan Sistem', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_SETTINGS', menu_code: 'MENU_CONFIG', menu_name: 'General Settings', slug: 'general-settings', type: 'Module', route: '/config', icon: 'bi-gear', sort_order: 1, permission_code: 'CONFIG_VIEW', description: 'Konfigurasi variabel umum', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_SETTINGS', menu_code: 'MENU_SYSTEM_LOGS', menu_name: 'System Logs', slug: 'system-logs', type: 'Module', route: '/system-logs', icon: 'bi-file-earmark-text', sort_order: 2, permission_code: 'AUDIT_VIEW', description: 'Log teknis sistem', status: 'INACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' }
   ];
   initSheet('mst_menu', menuHeaders, menuSeed, true);
 

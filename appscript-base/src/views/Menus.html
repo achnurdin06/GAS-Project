@@ -1,39 +1,172 @@
 <template id="tpl-menus">
+  <!-- TOP HEADER & ACTION BUTTONS -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h3 class="fw-bold mb-1" style="color: #181c32;">Menu Management</h3>
-      <p class="text-muted small mb-0">Kelola struktur menu navigasi sidebar, rute, ikon, dan otorisasi secara dinamis.</p>
+      <p class="text-muted small mb-0">Kelola hierarki dan data menu aplikasi.</p>
     </div>
-    <button class="btn btn-aef-primary" onclick="AEF.showModal('addMenuModal')">
-      <i class="bi bi-plus-lg me-1"></i> Tambah Menu
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-aef-primary" onclick="AEF.showModal('addMenuModal')">
+        <i class="bi bi-plus-lg me-1"></i> Add New Menu
+      </button>
+      <button class="btn btn-light border text-muted fw-medium" onclick="alert('Reorder mode aktif. Seret item menu untuk mengatur urutan.')">
+        <i class="bi bi-arrow-down-up me-1"></i> Reorder Menus
+      </button>
+      <button class="btn btn-light border text-muted fw-medium" onclick="alert('Fitur Import/Export Menu disiapkan.')">
+        <i class="bi bi-download me-1"></i> Import/Export Menu
+      </button>
+    </div>
   </div>
 
-  <div class="aef-card">
-    <div class="table-responsive">
-      <table class="table table-aef align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Menu Code</th>
-            <th>Nama Menu</th>
-            <th>Route</th>
-            <th>Icon</th>
-            <th>Urutan</th>
-            <th>Permission</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="menus-table-body">
-          <!-- Dynamically populated -->
-        </tbody>
-      </table>
+  <!-- SEARCH & FILTER BAR -->
+  <div class="aef-card p-3 mb-3">
+    <div class="row g-3 align-items-center">
+      <!-- Search -->
+      <div class="col-md-5">
+        <label class="form-label text-muted small fw-semibold mb-1">Search</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" id="menu-search-input" class="form-control border-start-0 ps-0" placeholder="Cari menu..." oninput="AEF.filterMenuTree()">
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="col-md-4">
+        <label class="form-label text-muted small fw-semibold mb-1">Status</label>
+        <div class="btn-group btn-group-sm w-100" role="group">
+          <input type="radio" class="btn-check" name="menuStatusFilter" id="status-all" autocomplete="off" checked onclick="AEF.filterMenuStatus('ALL')">
+          <label class="btn btn-outline-secondary" for="status-all">All</label>
+
+          <input type="radio" class="btn-check" name="menuStatusFilter" id="status-active" autocomplete="off" onclick="AEF.filterMenuStatus('ACTIVE')">
+          <label class="btn btn-outline-secondary" for="status-active">Active</label>
+
+          <input type="radio" class="btn-check" name="menuStatusFilter" id="status-inactive" autocomplete="off" onclick="AEF.filterMenuStatus('INACTIVE')">
+          <label class="btn btn-outline-secondary" for="status-inactive">Inactive</label>
+        </div>
+      </div>
+
+      <!-- Parent Menu Filter -->
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-semibold mb-1">Parent Menu</label>
+        <select id="menu-parent-filter" class="form-select form-select-sm" onchange="AEF.filterMenuParent()">
+          <option value="ALL">All Parent Menus</option>
+          <option value="TOP">Top-Level Only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN 2-COLUMN GRID (LEFT TREE TABLE + RIGHT LIVE FORM) -->
+  <div class="row g-3">
+    <!-- LEFT: TREE TABLE CONTAINER -->
+    <div class="col-lg-8">
+      <div class="aef-card p-0 overflow-hidden">
+        <div class="table-responsive">
+          <table class="table table-aef align-middle mb-0">
+            <thead>
+              <tr class="bg-light">
+                <th style="width: 35%;">Menu Name</th>
+                <th style="width: 10%;">Icon</th>
+                <th style="width: 15%;">Type</th>
+                <th style="width: 12%;">Status</th>
+                <th style="width: 28%;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="menus-tree-tbody">
+              <!-- Dynamically populated hierarchical tree rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex justify-content-between align-items-center p-3 border-top border-light-subtle">
+          <div class="text-muted small" id="menus-pagination-info">Memuat hierarki menu...</div>
+          <ul class="pagination pagination-sm mb-0" id="menus-pagination-controls"></ul>
+        </div>
+      </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="menus-pagination-info">Memuat menu...</div>
-      <ul class="pagination pagination-sm mb-0" id="menus-pagination-controls"></ul>
+    <!-- RIGHT: LIVE QUICK FORM PANEL (Identical to Right Drawer in Design Image) -->
+    <div class="col-lg-4">
+      <div class="aef-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
+          <h6 class="fw-bold text-dark mb-0"><i class="bi bi-sliders text-primary me-2"></i>Quick Menu Form</h6>
+          <span class="badge badge-light-primary" id="side-form-mode">New Menu</span>
+        </div>
+
+        <form id="form-side-menu" onsubmit="event.preventDefault(); AEF.saveSideMenu();">
+          <input type="hidden" id="side-menu-id">
+
+          <!-- Name -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Name</label>
+            <input type="text" id="side-menu-name" class="form-control form-control-sm" placeholder="e.g. Menu Management" required oninput="AEF.autoGenerateSlug()">
+          </div>
+
+          <!-- Slug -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Slug</label>
+            <input type="text" id="side-menu-slug" class="form-control form-control-sm" placeholder="menu-management">
+          </div>
+
+          <!-- Description -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Description</label>
+            <textarea id="side-menu-desc" class="form-control form-control-sm" rows="2" placeholder="Deskripsi ringkas modul..."></textarea>
+          </div>
+
+          <!-- Icon Picker -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Icon Picker / Class</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-primary" id="side-menu-icon-preview"><i class="bi bi-circle"></i></span>
+              <input type="text" id="side-menu-icon" class="form-control ps-2" placeholder="bi-menu-button-wide-fill" value="bi-circle" oninput="AEF.updateIconPreview()">
+            </div>
+          </div>
+
+          <!-- Type -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Type</label>
+            <select id="side-menu-type" class="form-select form-select-sm">
+              <option value="Module">Module</option>
+              <option value="Internal Link">Internal Link</option>
+              <option value="Sub Menu">Sub Menu</option>
+            </select>
+          </div>
+
+          <!-- Parent -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Parent Menu</label>
+            <select id="side-menu-parent" class="form-select form-select-sm">
+              <option value="">-- Main Top-Level Menu --</option>
+            </select>
+          </div>
+
+          <!-- Target URL/Route -->
+          <div class="mb-2.5">
+            <label class="form-label text-muted small fw-semibold mb-1">Target URL/Route</label>
+            <input type="text" id="side-menu-route" class="form-control form-control-sm" placeholder="/menus" required>
+          </div>
+
+          <!-- Permissions Required -->
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold mb-1">Permissions required</label>
+            <select id="side-menu-perm" class="form-select form-select-sm">
+              <option value="MENU_VIEW">MENU_VIEW</option>
+            </select>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-2 pt-2 border-top border-light">
+            <button type="submit" class="btn btn-aef-primary btn-sm flex-fill">
+              <i class="bi bi-check-lg me-1"></i> Save Changes
+            </button>
+            <button type="button" class="btn btn-light border btn-sm text-muted" onclick="AEF.resetSideMenuForm()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
