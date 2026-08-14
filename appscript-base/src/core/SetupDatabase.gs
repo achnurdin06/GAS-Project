@@ -1,5 +1,5 @@
 /**
- * Database Setup & Seed Data Script for AEF Framework
+ * Database Setup & Seed Data Script for AEF Framework (Super Admin Edition)
  * Automatically initializes sheets and seeds demo data for table relations:
  * mst_user -> mst_role -> mst_permission -> mst_menu -> sys_configuration -> log_audit
  */
@@ -47,10 +47,22 @@ function setupDatabase() {
     return sheet;
   }
 
-  // 1. mst_user Sheet
+  // 1. mst_user Sheet (Super Admin & Admin & Standard User)
   const userHeaders = ['id', 'name', 'email', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const adminPasswordHash = Utils.hashSha256('admin123');
   const userSeed = [
+    {
+      id: Utils.generateUuid(),
+      name: 'Super Administrator',
+      email: 'superadmin@aef.com',
+      password_hash: adminPasswordHash,
+      role_id: 'ROLE_SUPER_ADMIN',
+      created_at: Utils.formatIsoDate(),
+      created_by: 'SYSTEM',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'SYSTEM',
+      status: 'ACTIVE'
+    },
     {
       id: Utils.generateUuid(),
       name: 'System Administrator',
@@ -81,6 +93,7 @@ function setupDatabase() {
   // 2. mst_role Sheet
   const roleHeaders = ['id', 'role_code', 'role_name', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const roleSeed = [
+    { id: Utils.generateUuid(), role_code: 'ROLE_SUPER_ADMIN', role_name: 'Super Administrator', description: 'Master role with full menu & system permissions', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', updated_at: Utils.formatIsoDate(), updated_by: 'SYSTEM', status: 'ACTIVE' },
     { id: Utils.generateUuid(), role_code: 'ROLE_ADMIN', role_name: 'System Administrator', description: 'Full access administrator role', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', updated_at: Utils.formatIsoDate(), updated_by: 'SYSTEM', status: 'ACTIVE' },
     { id: Utils.generateUuid(), role_code: 'ROLE_USER', role_name: 'Standard User', description: 'Standard end-user role', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', updated_at: Utils.formatIsoDate(), updated_by: 'SYSTEM', status: 'ACTIVE' }
   ];
@@ -88,17 +101,49 @@ function setupDatabase() {
 
   // 3. mst_permission Sheet
   const permHeaders = ['id', 'role_id', 'permission_code', 'permission_name', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
-  const permSeed = [
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'DASHBOARD_VIEW', permission_name: 'View Dashboard', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'USER_VIEW', permission_name: 'View Users', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'USER_CREATE', permission_name: 'Create User', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'USER_DELETE', permission_name: 'Delete User', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'ROLE_VIEW', permission_name: 'View Roles', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'PERMISSION_VIEW', permission_name: 'View Permissions', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'CONFIG_VIEW', permission_name: 'View System Config', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_ADMIN', permission_code: 'AUDIT_VIEW', permission_name: 'View Audit Logs', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), role_id: 'ROLE_USER', permission_code: 'DASHBOARD_VIEW', permission_name: 'View Dashboard', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' }
+  const permCodes = [
+    { code: 'DASHBOARD_VIEW', name: 'View Dashboard' },
+    { code: 'USER_VIEW', name: 'View Users' },
+    { code: 'USER_CREATE', name: 'Create User' },
+    { code: 'USER_UPDATE', name: 'Update User' },
+    { code: 'USER_DELETE', name: 'Delete User' },
+    { code: 'ROLE_VIEW', name: 'View Roles' },
+    { code: 'ROLE_CREATE', name: 'Create Role' },
+    { code: 'ROLE_DELETE', name: 'Delete Role' },
+    { code: 'PERMISSION_VIEW', name: 'View Permissions' },
+    { code: 'PERMISSION_CREATE', name: 'Create Permission' },
+    { code: 'PERMISSION_DELETE', name: 'Delete Permission' },
+    { code: 'CONFIG_VIEW', name: 'View System Config' },
+    { code: 'CONFIG_UPDATE', name: 'Update System Config' },
+    { code: 'AUDIT_VIEW', name: 'View Audit Logs' }
   ];
+
+  const permSeed = [];
+  // Super Admin & Admin get ALL permissions
+  ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].forEach(rId => {
+    permCodes.forEach(p => {
+      permSeed.push({
+        id: Utils.generateUuid(),
+        role_id: rId,
+        permission_code: p.code,
+        permission_name: p.name,
+        created_at: Utils.formatIsoDate(),
+        created_by: 'SYSTEM',
+        status: 'ACTIVE'
+      });
+    });
+  });
+  // Standard User gets Dashboard View
+  permSeed.push({
+    id: Utils.generateUuid(),
+    role_id: 'ROLE_USER',
+    permission_code: 'DASHBOARD_VIEW',
+    permission_name: 'View Dashboard',
+    created_at: Utils.formatIsoDate(),
+    created_by: 'SYSTEM',
+    status: 'ACTIVE'
+  });
+
   initSheet('mst_permission', permHeaders, permSeed, true);
 
   // 4. mst_menu Sheet (All 6 AEF Framework Core Menus)

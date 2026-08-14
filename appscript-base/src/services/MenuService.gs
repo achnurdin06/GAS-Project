@@ -12,15 +12,16 @@ class MenuService {
     if (actorId && actorId !== 'SYSTEM' && actorId !== 'ANONYMOUS') {
       const user = this.userRepo.findById(actorId);
       if (user && user.role_id) {
-        if (user.role_id !== 'ROLE_ADMIN') {
-          const userPerms = this.permRepo.findByRoleId(user.role_id);
+        const rId = String(user.role_id).trim().toUpperCase();
+        if (rId !== 'ROLE_SUPER_ADMIN' && rId !== 'ROLE_ADMIN') {
+          const userPerms = this.permRepo.findByRoleId(rId);
           allowedPermCodes = userPerms.map(p => String(p.permission_code).trim().toUpperCase());
         }
       }
     }
 
     const filteredMenus = activeMenus.filter(m => {
-      if (!allowedPermCodes) return true; // ROLE_ADMIN or SYSTEM sees all
+      if (!allowedPermCodes) return true; // ROLE_SUPER_ADMIN & ROLE_ADMIN see ALL 6 menus
       if (!m.permission_code) return true;
       return allowedPermCodes.includes(String(m.permission_code).trim().toUpperCase());
     });
