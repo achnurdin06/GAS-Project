@@ -15,7 +15,7 @@ class UserService {
    * @returns {Object} Standard Response
    */
   getAllUsers(actorId) {
-    const users = this.userRepo.find({ status: 'ACTIVE' });
+    const users = this.userRepo.find(row => String(row.status).trim().toUpperCase() === 'ACTIVE');
     const safeUsers = users.map(u => ({
       id: u.id,
       name: u.name,

@@ -66,4 +66,44 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+        <div class="modal-header border-light py-3 px-4">
+          <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Data User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form-edit-user" onsubmit="event.preventDefault(); AEF.submitUpdateUser();">
+            <input type="hidden" id="edit-user-id">
+            <div class="mb-3">
+              <label class="form-label text-muted small fw-semibold">Nama Lengkap</label>
+              <input type="text" id="edit-user-name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small fw-semibold">Email Address</label>
+              <input type="email" id="edit-user-email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small fw-semibold">Password Baru (Opsional)</label>
+              <input type="password" id="edit-user-password" class="form-control" placeholder="Kosongkan jika tidak ingin diubah">
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small fw-semibold">Role</label>
+              <select id="edit-user-role" class="form-select">
+                <option value="ROLE_USER">Standard User (ROLE_USER)</option>
+                <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
+              </select>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
+              <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-aef-primary">Perbarui User</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
