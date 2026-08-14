@@ -1,7 +1,7 @@
 <template id="tpl-users">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="fw-bold mb-1">User Management</h3>
+      <h3 class="fw-bold mb-1" style="color: #181c32;">User Management</h3>
       <p class="text-muted small mb-0">Kelola pengguna sistem dan pendelegasian role hak akses.</p>
     </div>
     <button class="btn btn-aef-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
@@ -31,34 +31,34 @@
   <!-- Add User Modal -->
   <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark border-secondary text-white">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Tambah User Baru</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+        <div class="modal-header border-light py-3 px-4">
+          <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-person-plus text-primary me-2"></i>Tambah User Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <form id="form-add-user" onsubmit="event.preventDefault(); AEF.createUser();">
             <div class="mb-3">
-              <label class="form-label text-muted small">Nama Lengkap</label>
-              <input type="text" id="new-user-name" class="form-control bg-dark border-secondary text-white" placeholder="Contoh: Budi Santoso" required>
+              <label class="form-label text-muted small fw-semibold">Nama Lengkap</label>
+              <input type="text" id="new-user-name" class="form-control" placeholder="Contoh: Budi Santoso" required>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted small">Email Address</label>
-              <input type="email" id="new-user-email" class="form-control bg-dark border-secondary text-white" placeholder="user@aef.com" required>
+              <label class="form-label text-muted small fw-semibold">Email Address</label>
+              <input type="email" id="new-user-email" class="form-control" placeholder="user@aef.com" required>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted small">Password</label>
-              <input type="password" id="new-user-password" class="form-control bg-dark border-secondary text-white" placeholder="••••••••" required>
+              <label class="form-label text-muted small fw-semibold">Password</label>
+              <input type="password" id="new-user-password" class="form-control" placeholder="••••••••" required>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted small">Role</label>
-              <select id="new-user-role" class="form-select bg-dark border-secondary text-white">
+              <label class="form-label text-muted small fw-semibold">Role</label>
+              <select id="new-user-role" class="form-select">
                 <option value="ROLE_USER">Standard User (ROLE_USER)</option>
                 <option value="ROLE_ADMIN">System Administrator (ROLE_ADMIN)</option>
               </select>
             </div>
-            <div class="d-flex justify-content-end gap-2 mt-4">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
+              <button type="button" class="btn btn-light text-muted" data-bs-dismiss="modal">Batal</button>
               <button type="submit" class="btn btn-aef-primary">Simpan User</button>
             </div>
           </form>

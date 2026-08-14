@@ -175,12 +175,12 @@
             res.data.forEach(u => {
               rows += `
                 <tr>
-                  <td>${u.name}</td>
+                  <td class="fw-semibold" style="color: #181c32;">${u.name}</td>
                   <td>${u.email}</td>
-                  <td><span class="badge bg-indigo-subtle text-primary">${u.role_id}</span></td>
-                  <td><span class="badge bg-success-subtle text-success">${u.status}</span></td>
+                  <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
+                  <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
                   <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="AEF.deleteUser('${u.id}')">
+                    <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteUser('${u.id}')">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -252,11 +252,11 @@
           res.data.forEach(r => {
             rows += `<tr>
               <td><code>${r.role_code}</code></td>
-              <td>${r.role_name}</td>
+              <td class="fw-semibold" style="color: #181c32;">${r.role_name}</td>
               <td>${r.description || '-'}</td>
-              <td><span class="badge bg-success-subtle text-success">${r.status}</span></td>
+              <td><span class="badge badge-light-success px-3 py-2 fs-7">${r.status}</span></td>
               <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
               </td>
             </tr>`;
           });
@@ -301,12 +301,12 @@
           let rows = '';
           res.data.forEach(p => {
             rows += `<tr>
-              <td><span class="badge bg-indigo-subtle text-primary">${p.role_id}</span></td>
+              <td><span class="badge badge-light-primary px-3 py-2 fs-7">${p.role_id}</span></td>
               <td><code>${p.permission_code}</code></td>
-              <td>${p.permission_name}</td>
-              <td><span class="badge bg-success-subtle text-success">${p.status}</span></td>
+              <td class="fw-semibold" style="color: #181c32;">${p.permission_name}</td>
+              <td><span class="badge badge-light-success px-3 py-2 fs-7">${p.status}</span></td>
               <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
               </td>
             </tr>`;
           });
@@ -348,10 +348,10 @@
           res.data.forEach(c => {
             rows += `<tr>
               <td><code>${c.config_key}</code></td>
-              <td class="fw-semibold text-info">${c.config_value}</td>
+              <td class="fw-bold text-primary">${c.config_value}</td>
               <td>${c.description || '-'}</td>
               <td>
-                <button class="btn btn-sm btn-outline-light" onclick="AEF.updateConfigPrompt('${c.id}', '${c.config_key}', '${c.config_value}')"><i class="bi bi-pencil"></i> Edit</button>
+                <button class="btn btn-sm btn-light border text-muted" onclick="AEF.updateConfigPrompt('${c.id}', '${c.config_key}', '${c.config_value}')"><i class="bi bi-pencil me-1"></i> Edit</button>
               </td>
             </tr>`;
           });
@@ -383,12 +383,12 @@
           }
           let rows = '';
           res.data.forEach(a => {
-            const badgeClass = a.status === 'SUCCESS' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+            const badgeClass = a.status === 'SUCCESS' ? 'badge-light-success' : 'badge-light-danger';
             rows += `<tr>
               <td class="small text-muted">${a.timestamp ? a.timestamp.replace('T', ' ').substring(0, 19) : '-'}</td>
               <td><code>${a.module || '-'}</code></td>
-              <td><span class="badge ${badgeClass}">${a.action}_${a.status}</span></td>
-              <td class="small">${a.user_id}</td>
+              <td><span class="badge ${badgeClass} px-3 py-2 fs-7">${a.action}_${a.status}</span></td>
+              <td class="small fw-medium">${a.user_id}</td>
               <td class="small">${a.description || '-'}</td>
               <td class="small text-muted"><code>${a.reference_id ? a.reference_id.substring(0, 8) + '...' : '-'}</code></td>
             </tr>`;
@@ -408,18 +408,18 @@
           datasets: [{
             label: 'System Activity Events',
             data: [12, 19, 8, 15, 22, 10, 25],
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderColor: '#009ef7',
+            backgroundColor: 'rgba(0, 158, 247, 0.08)',
             fill: true,
             tension: 0.4
           }]
         },
         options: {
           responsive: true,
-          plugins: { legend: { labels: { color: '#94a3b8' } } },
+          plugins: { legend: { labels: { color: '#a1a5b7' } } },
           scales: {
-            x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: '#a1a5b7' }, grid: { color: '#f1f1f4' } },
+            y: { ticks: { color: '#a1a5b7' }, grid: { color: '#f1f1f4' } }
           }
         }
       });
