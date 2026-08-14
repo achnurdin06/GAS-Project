@@ -107,10 +107,12 @@
             let html = '';
             res.data.forEach(item => {
               const iconClass = item.icon || 'bi-circle';
+              const menuTitle = item.name || item.menu_name || item.code || 'Menu';
+              const menuCode = item.code || item.menu_code || item.id;
               html += `
-                <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${item.route}'); return false;" id="nav-item-${item.menu_code}">
+                <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${item.route}'); return false;" id="nav-item-${menuCode}">
                   <i class="bi ${iconClass}"></i>
-                  <span>${item.menu_name}</span>
+                  <span>${menuTitle}</span>
                 </a>
               `;
             });

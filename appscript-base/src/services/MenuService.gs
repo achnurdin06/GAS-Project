@@ -31,15 +31,21 @@ class MenuService {
       const children = filteredMenus.filter(child => child.parent_id === parent.menu_id);
       return {
         id: parent.menu_id,
+        menu_id: parent.menu_id,
         code: parent.menu_code,
+        menu_code: parent.menu_code,
         name: parent.menu_name,
+        menu_name: parent.menu_name,
         route: parent.route,
         icon: parent.icon,
         sort_order: parent.sort_order,
         children: children.map(c => ({
           id: c.menu_id,
+          menu_id: c.menu_id,
           code: c.menu_code,
+          menu_code: c.menu_code,
           name: c.menu_name,
+          menu_name: c.menu_name,
           route: c.route,
           icon: c.icon,
           sort_order: c.sort_order
