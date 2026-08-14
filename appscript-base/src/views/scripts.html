@@ -747,30 +747,166 @@
     },
 
     initDashboardChart: function () {
-      const ctx = document.getElementById('aefActivityChart');
-      if (!ctx) return;
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-          datasets: [{
-            label: 'System Activity Events',
-            data: [12, 19, 8, 15, 22, 10, 25],
-            borderColor: '#009ef7',
-            backgroundColor: 'rgba(0, 158, 247, 0.08)',
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: '#a1a5b7' } } },
-          scales: {
-            x: { ticks: { color: '#a1a5b7' }, grid: { color: '#f1f1f4' } },
-            y: { ticks: { color: '#a1a5b7' }, grid: { color: '#f1f1f4' } }
-          }
+      // Update My Information & Welcome Header
+      if (this.state.user) {
+        const u = this.state.user;
+        const wTitle = document.getElementById('dash-welcome-title');
+        if (wTitle) wTitle.innerText = `Welcome back, ${u.name || 'Administrator'}! 👋`;
+        
+        const iName = document.getElementById('info-user-name');
+        if (iName) iName.innerText = u.name || 'Administrator';
+
+        const iEmail = document.getElementById('info-user-email');
+        if (iEmail) iEmail.innerText = u.email || 'admin@example.com';
+
+        const iRole = document.getElementById('info-user-role');
+        if (iRole) iRole.innerText = u.role_id === 'ROLE_SUPER_ADMIN' ? 'Super Administrator' : (u.role_id || 'System Administrator');
+
+        const iLogin = document.getElementById('info-user-login');
+        if (iLogin) iLogin.innerText = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' }) + ' WIB';
+      }
+
+      google.script.run.withSuccessHandler((res) => {
+        if (!res || !res.success || !res.data) return;
+
+        const data = res.data;
+        const counts = data.counts || {};
+        const actions = data.auditByAction || {};
+        const modules = data.auditByModule || {};
+        const trend = data.loginTrend || {};
+
+        // Update Stat Cards Counts
+        const cMenu = document.getElementById('dash-count-menu');
+        if (cMenu) cMenu.innerText = counts.menus || 0;
+
+        const cRole = document.getElementById('dash-count-role');
+        if (cRole) cRole.innerText = counts.roles || 0;
+
+        const cUser = document.getElementById('dash-count-user');
+        if (cUser) cUser.innerText = counts.users || 0;
+
+        const cPerm = document.getElementById('dash-count-perm');
+        if (cPerm) cPerm.innerText = counts.permissions || 0;
+
+        const cAudit = document.getElementById('dash-count-audit');
+        if (cAudit) cAudit.innerText = (counts.audit || 0).toLocaleString();
+
+        // 1. Chart Application Data Overview (Bar Chart)
+        const ctxOverview = document.getElementById('chartAppOverview');
+        if (ctxOverview) {
+          if (this.chartOverviewInstance) this.chartOverviewInstance.destroy();
+          this.chartOverviewInstance = new Chart(ctxOverview, {
+            type: 'bar',
+            data: {
+              labels: ['Menu', 'Role', 'User', 'Permission'],
+              datasets: [{
+                label: 'Jumlah Entri',
+                data: [counts.menus || 0, counts.roles || 0, counts.users || 0, counts.permissions || 0],
+                backgroundColor: ['#2563eb', '#10b981', '#8b5cf6', '#f97316'],
+                borderRadius: 6,
+                barThickness: 32
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+              }
+            }
+          });
         }
-      });
+
+        // 2. Chart Audit Activity by Action (Bar Chart)
+        const ctxAction = document.getElementById('chartAuditAction');
+        if (ctxAction) {
+          if (this.chartActionInstance) this.chartActionInstance.destroy();
+          this.chartActionInstance = new Chart(ctxAction, {
+            type: 'bar',
+            data: {
+              labels: ['Login', 'View', 'Insert', 'Update', 'Delete', 'Logout'],
+              datasets: [{
+                label: 'Aktivitas Hari Ini',
+                data: [actions.LOGIN || 0, actions.VIEW || 0, actions.INSERT || 0, actions.UPDATE || 0, actions.DELETE || 0, actions.LOGOUT || 0],
+                backgroundColor: ['#2563eb', '#10b981', '#8b5cf6', '#f97316', '#ef4444', '#14b8a6'],
+                borderRadius: 6,
+                barThickness: 28
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+              }
+            }
+          });
+        }
+
+        // 3. Chart Audit Activity by Module (Horizontal Bar Chart)
+        const ctxModule = document.getElementById('chartAuditModule');
+        if (ctxModule) {
+          if (this.chartModuleInstance) this.chartModuleInstance.destroy();
+          this.chartModuleInstance = new Chart(ctxModule, {
+            type: 'bar',
+            data: {
+              labels: ['USER', 'ROLE', 'MENU', 'PERMISSION', 'AUDIT'],
+              datasets: [{
+                label: 'Aktivitas Modul',
+                data: [modules.USER || 0, modules.ROLE || 0, modules.MENU || 0, modules.PERMISSION || 0, modules.AUDIT || 0],
+                backgroundColor: ['#2563eb', '#10b981', '#8b5cf6', '#f97316', '#14b8a6'],
+                borderRadius: 6,
+                barThickness: 16
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                y: { grid: { display: false } }
+              }
+            }
+          });
+        }
+
+        // 4. Chart Login Trend (Last 7 Days) (Line Chart)
+        const ctxTrend = document.getElementById('chartLoginTrend');
+        if (ctxTrend) {
+          if (this.chartTrendInstance) this.chartTrendInstance.destroy();
+          this.chartTrendInstance = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+              labels: trend.labels || ['14 Mei', '15 Mei', '16 Mei', '17 Mei', '18 Mei', '19 Mei', '20 Mei'],
+              datasets: [{
+                label: 'Login User',
+                data: trend.data || [10, 8, 15, 12, 18, 14, 16],
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                pointBackgroundColor: '#2563eb',
+                pointRadius: 4,
+                fill: true,
+                tension: 0.4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+              }
+            }
+          });
+        }
+      }).apiGetDashboardData({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     }
   };
 

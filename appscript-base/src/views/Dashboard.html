@@ -1,75 +1,207 @@
 <template id="tpl-dashboard">
-  <div class="row g-4 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="aef-card d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold">Total Users</div>
-          <div class="fs-2 fw-bold mt-1" style="color: #181c32;">2</div>
+  <!-- ROW 1: WELCOME BANNER & MY INFORMATION -->
+  <div class="row g-3 mb-3">
+    <!-- Welcome Banner Card -->
+    <div class="col-lg-8">
+      <div class="aef-welcome-banner h-100">
+        <div class="aef-welcome-icon">
+          <i class="bi bi-grid-fill"></i>
         </div>
-        <div class="rounded-3 p-3 bg-light-primary text-primary fs-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
-          <i class="bi bi-people"></i>
+        <div>
+          <h4 class="fw-bold text-dark mb-1" id="dash-welcome-title">Welcome back, Administrator! 👋</h4>
+          <p class="text-muted mb-0 small">Selamat datang di AppScript Enterprise Framework. Silakan pilih menu yang tersedia untuk melanjutkan.</p>
         </div>
       </div>
     </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="aef-card d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold">Active Roles</div>
-          <div class="fs-2 fw-bold mt-1" style="color: #181c32;">2</div>
+
+    <!-- My Information Card -->
+    <div class="col-lg-4">
+      <div class="aef-card h-100 py-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light">
+          <h6 class="fw-bold text-uppercase tracking-wider small text-primary mb-0">MY INFORMATION</h6>
+          <i class="bi bi-three-dots-vertical text-muted"></i>
         </div>
-        <div class="rounded-3 p-3 bg-light-info text-info fs-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
-          <i class="bi bi-shield-check"></i>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="aef-card d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold">System Audit Logs</div>
-          <div class="fs-2 fw-bold mt-1" style="color: #181c32;">14</div>
-        </div>
-        <div class="rounded-3 p-3 bg-light-success text-success fs-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
-          <i class="bi bi-journal-text"></i>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-sm-6 col-xl-3">
-      <div class="aef-card d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold">App Version</div>
-          <div class="fs-2 fw-bold mt-1" style="color: #181c32;">1.0.0</div>
-        </div>
-        <div class="rounded-3 p-3 bg-light-warning text-warning fs-2 d-flex align-items-center justify-content-center" style="width: 54px; height: 54px;">
-          <i class="bi bi-cpu"></i>
+        <div class="small">
+          <div class="d-flex mb-1.5"><span class="text-muted" style="width: 90px;"><i class="bi bi-person me-1"></i> Name</span>: <span class="fw-semibold text-dark ms-2" id="info-user-name">Administrator</span></div>
+          <div class="d-flex mb-1.5"><span class="text-muted" style="width: 90px;"><i class="bi bi-envelope me-1"></i> Email</span>: <span class="text-dark ms-2" id="info-user-email">admin@example.com</span></div>
+          <div class="d-flex mb-1.5"><span class="text-muted" style="width: 90px;"><i class="bi bi-shield-check me-1"></i> Role</span>: <span class="fw-medium text-dark ms-2" id="info-user-role">Super Administrator</span></div>
+          <div class="d-flex mb-1.5"><span class="text-muted" style="width: 90px;"><i class="bi bi-check-circle me-1"></i> Status</span>: <span class="badge badge-light-success ms-2 px-2 py-1">Active</span></div>
+          <div class="d-flex"><span class="text-muted" style="width: 90px;"><i class="bi bi-clock-history me-1"></i> Last Login</span>: <span class="text-dark ms-2" id="info-user-login">20 Mei 2025 09:15:23 WIB</span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row g-4">
-    <div class="col-12 col-lg-8">
-      <div class="aef-card">
-        <h5 class="card-title mb-3" style="color: #181c32;"><i class="bi bi-graph-up text-primary me-2"></i>System Activity Trail</h5>
-        <canvas id="aefActivityChart" height="120"></canvas>
+  <!-- ROW 2: 5 SUMMARY STAT CARDS GRID -->
+  <div class="aef-stat-grid">
+    <!-- Menu Card -->
+    <div class="aef-stat-card">
+      <div>
+        <div class="aef-stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+          <i class="bi bi-menu-button-wide-fill"></i>
+        </div>
+        <div class="aef-stat-count" id="dash-count-menu">15</div>
+        <div class="aef-stat-label">Total Menu Aktif</div>
+      </div>
+      <a href="#" class="aef-stat-action text-primary" onclick="AEF.navigateTo('/menus'); return false;">
+        <span>Kelola Menu</span> <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- Role Card -->
+    <div class="aef-stat-card">
+      <div>
+        <div class="aef-stat-icon-wrapper bg-success bg-opacity-10 text-success">
+          <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="aef-stat-count" id="dash-count-role">5</div>
+        <div class="aef-stat-label">Total Role</div>
+      </div>
+      <a href="#" class="aef-stat-action text-success" onclick="AEF.navigateTo('/roles'); return false;">
+        <span>Kelola Role</span> <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- User Card -->
+    <div class="aef-stat-card">
+      <div>
+        <div class="aef-stat-icon-wrapper bg-purple bg-opacity-10 text-purple" style="background-color: #f3e8ff; color: #8b5cf6;">
+          <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="aef-stat-count" id="dash-count-user">13</div>
+        <div class="aef-stat-label">Total User</div>
+      </div>
+      <a href="#" class="aef-stat-action" style="color: #8b5cf6;" onclick="AEF.navigateTo('/users'); return false;">
+        <span>Kelola User</span> <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- Permission Card -->
+    <div class="aef-stat-card">
+      <div>
+        <div class="aef-stat-icon-wrapper bg-warning bg-opacity-10 text-warning">
+          <i class="bi bi-lock-fill"></i>
+        </div>
+        <div class="aef-stat-count" id="dash-count-perm">18</div>
+        <div class="aef-stat-label">Total Permission</div>
+      </div>
+      <a href="#" class="aef-stat-action text-warning" onclick="AEF.navigateTo('/permissions'); return false;">
+        <span>Kelola Permission</span> <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+
+    <!-- Audit Trail Card -->
+    <div class="aef-stat-card">
+      <div>
+        <div class="aef-stat-icon-wrapper bg-info bg-opacity-10 text-info">
+          <i class="bi bi-clipboard-data-fill"></i>
+        </div>
+        <div class="aef-stat-count" id="dash-count-audit">1,245</div>
+        <div class="aef-stat-label">Total Aktivitas</div>
+      </div>
+      <a href="#" class="aef-stat-action text-info" onclick="AEF.navigateTo('/audit'); return false;">
+        <span>Lihat Audit Trail</span> <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- ROW 3: 2 CHARTS (OVERVIEW & ACTION) -->
+  <div class="row g-3 mb-3">
+    <!-- Left: Application Data Overview -->
+    <div class="col-lg-6">
+      <div class="aef-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="fw-bold text-dark mb-0">APPLICATION DATA OVERVIEW <i class="bi bi-info-circle text-muted fs-8"></i></h6>
+          </div>
+          <select class="form-select form-select-sm w-auto border-light text-muted small">
+            <option>Semua Waktu</option>
+          </select>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chartAppOverview"></canvas>
+        </div>
       </div>
     </div>
-    <div class="col-12 col-lg-4">
-      <div class="aef-card">
-        <h5 class="card-title mb-3" style="color: #181c32;"><i class="bi bi-info-circle text-primary me-2"></i>Framework Info</h5>
-        <ul class="list-group list-group-flush bg-transparent">
-          <li class="list-group-item bg-transparent text-muted border-light-subtle d-flex justify-content-between py-3">
-            <span>Architecture</span> <strong style="color: #181c32;">5-Layered</strong>
-          </li>
-          <li class="list-group-item bg-transparent text-muted border-light-subtle d-flex justify-content-between py-3">
-            <span>Database</span> <strong style="color: #181c32;">Google Sheet</strong>
-          </li>
-          <li class="list-group-item bg-transparent text-muted border-light-subtle d-flex justify-content-between py-3">
-            <span>Auth Engine</span> <strong style="color: #181c32;">SHA-256 RBAC</strong>
-          </li>
-          <li class="list-group-item bg-transparent text-muted border-light-subtle d-flex justify-content-between py-3">
-            <span>Dynamic Menu</span> <strong style="color: #181c32;">Metadata Driven</strong>
-          </li>
-        </ul>
+
+    <!-- Right: Audit Activity by Action (Today) -->
+    <div class="col-lg-6">
+      <div class="aef-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="fw-bold text-dark mb-0">AUDIT ACTIVITY BY ACTION (TODAY) <i class="bi bi-info-circle text-muted fs-8"></i></h6>
+          </div>
+          <select class="form-select form-select-sm w-auto border-light text-muted small">
+            <option>Hari Ini</option>
+          </select>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chartAuditAction"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: 2 CHARTS (MODULE & LOGIN TREND) -->
+  <div class="row g-3 mb-3">
+    <!-- Left: Audit Activity by Module (Today) -->
+    <div class="col-lg-6">
+      <div class="aef-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="fw-bold text-dark mb-0">AUDIT ACTIVITY BY MODULE (TODAY) <i class="bi bi-info-circle text-muted fs-8"></i></h6>
+          </div>
+          <select class="form-select form-select-sm w-auto border-light text-muted small">
+            <option>Hari Ini</option>
+          </select>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chartAuditModule"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Login Trend (Last 7 Days) -->
+    <div class="col-lg-6">
+      <div class="aef-card h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="fw-bold text-dark mb-0">LOGIN TREND (LAST 7 DAYS) <i class="bi bi-info-circle text-muted fs-8"></i></h6>
+          </div>
+          <select class="form-select form-select-sm w-auto border-light text-muted small">
+            <option>7 Hari Terakhir</option>
+          </select>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="chartLoginTrend"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: SYSTEM GUIDE -->
+  <div class="aef-guide-box mb-3">
+    <h6 class="fw-bold text-dark mb-2">SYSTEM GUIDE <i class="bi bi-info-circle text-muted fs-8"></i></h6>
+    <div class="aef-guide-grid">
+      <div class="aef-guide-item">
+        <div class="aef-guide-num">1</div>
+        <div>Gunakan menu di atas atau sidebar untuk berpindah antar fitur.</div>
+      </div>
+      <div class="aef-guide-item">
+        <div class="aef-guide-num">2</div>
+        <div>Fitur yang tampil bergantung pada role dan permission Anda.</div>
+      </div>
+      <div class="aef-guide-item">
+        <div class="aef-guide-num">3</div>
+        <div>Semua aktivitas Anda dicatat otomatis pada Audit Trail.</div>
+      </div>
+      <div class="aef-guide-item">
+        <div class="aef-guide-num">4</div>
+        <div>Gunakan menu Profile untuk melihat informasi akun dan mengubah password.</div>
+      </div>
+      <div class="aef-guide-item">
+        <div class="aef-guide-num">5</div>
+        <div>Gunakan Logout setelah selesai menggunakan aplikasi.</div>
       </div>
     </div>
   </div>

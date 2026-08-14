@@ -187,3 +187,13 @@ function apiDeleteMenu(payload) {
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
+
+// DASHBOARD ANALYTICS
+function apiGetDashboardData(payload) {
+  try {
+    return new DashboardService().getDashboardData(payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetDashboardData failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}

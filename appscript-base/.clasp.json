@@ -29,6 +29,7 @@
     "src/services/RoleService.gs",
     "src/services/PermissionService.gs",
     "src/services/ConfigService.gs",
+    "src/services/DashboardService.gs",
     "src/controllers/MainController.gs",
     "src/controllers/ApiController.gs",
     "src/core/SetupDatabase.gs"
