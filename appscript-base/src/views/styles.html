@@ -9,16 +9,14 @@
   :root {
     --metronic-bg: #f5f8fa;
     --metronic-card-bg: #ffffff;
-    --metronic-text-heading: #181c32;
+    --metronic-header-bg: #ffffff;
+    --metronic-sidebar-bg: #ffffff;
+    --metronic-primary: #009ef7;
+    --metronic-primary-hover: #0086d1;
+    --metronic-text-dark: #181c32;
     --metronic-text-body: #3f4254;
     --metronic-text-muted: #a1a5b7;
     --metronic-border: #e4e6ef;
-    --metronic-primary: #009ef7;
-    --metronic-primary-hover: #0086d1;
-    --metronic-primary-light: #f0f8ff;
-    --metronic-sidebar-width: 265px;
-    --metronic-header-height: 70px;
-    --metronic-shadow: 0px 0px 20px 0px rgba(76, 87, 125, 0.03);
   }
 
   body {
@@ -27,209 +25,183 @@
     color: var(--metronic-text-body);
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
   }
 
-  /* Metronic Card System */
-  .aef-card {
-    background: var(--metronic-card-bg);
-    border: 1px solid var(--metronic-border);
-    border-radius: 0.75rem;
-    padding: 1.75rem;
-    box-shadow: var(--metronic-shadow);
-    transition: all 0.2s ease-in-out;
+  /* Utility display class */
+  .d-none-important {
+    display: none !important;
   }
 
-  /* Top Navigation Header */
+  /* Header Navbar */
   .aef-header {
-    height: var(--metronic-header-height);
-    background: #ffffff;
+    height: 70px;
+    background-color: var(--metronic-header-bg);
     border-bottom: 1px solid var(--metronic-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.75rem;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1030;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-    box-shadow: 0px 10px 30px 0px rgba(82, 63, 105, 0.05);
+    z-index: 1000;
+    box-shadow: 0 0 40px 0 rgba(82, 63, 105, 0.04);
   }
 
   .aef-brand {
-    font-weight: 700;
-    font-size: 1.35rem;
-    color: var(--metronic-text-heading);
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--metronic-text-dark);
   }
 
   .aef-brand-icon {
     width: 38px;
     height: 38px;
-    background: var(--metronic-primary-light);
-    color: var(--metronic-primary);
+    background: linear-gradient(135deg, #009ef7, #7239ea);
+    color: #fff;
     border-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
   }
 
-  /* Sidebar */
+  /* Sidebar Navigation */
   .aef-sidebar {
-    width: var(--metronic-sidebar-width);
+    width: 260px;
+    background-color: var(--metronic-sidebar-bg);
+    border-right: 1px solid var(--metronic-border);
     position: fixed;
-    top: var(--metronic-header-height);
+    top: 70px;
     bottom: 0;
     left: 0;
-    background: #ffffff;
-    border-right: 1px solid var(--metronic-border);
-    padding: 1.5rem 1rem;
-    z-index: 1020;
+    padding: 1.5rem 0.75rem;
     overflow-y: auto;
+    z-index: 999;
   }
 
   .aef-nav-link {
-    color: #5e6278;
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
+    color: #5e6278;
+    font-weight: 500;
     border-radius: 0.475rem;
     text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.15s ease-in-out;
-    margin-bottom: 0.35rem;
+    transition: all 0.2s ease;
+    margin-bottom: 0.25rem;
   }
 
-  .aef-nav-link:hover {
+  .aef-nav-link:hover, .aef-nav-link.active {
+    background-color: #f1f0f8;
     color: var(--metronic-primary);
-    background: #f4f6f8;
   }
 
-  .aef-nav-link.active {
-    color: var(--metronic-primary);
-    background: var(--metronic-primary-light);
-    font-weight: 600;
-  }
-
-  .aef-nav-link.active i {
-    color: var(--metronic-primary);
+  .aef-nav-link i {
+    font-size: 1.15rem;
   }
 
   /* Main Wrapper */
   .aef-main-wrapper {
-    margin-top: var(--metronic-header-height);
-    margin-left: var(--metronic-sidebar-width);
-    padding: 2.25rem;
-    min-height: calc(100vh - var(--metronic-header-height));
+    margin-top: 70px;
+    margin-left: 260px;
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
   }
 
-  /* Metronic Buttons */
+  /* Metronic Cards */
+  .aef-card {
+    background: var(--metronic-card-bg);
+    border: 1px solid var(--metronic-border);
+    border-radius: 0.75rem;
+    padding: 1.75rem;
+    box-shadow: 0 0 20px 0 rgba(76, 87, 125, 0.02);
+    margin-bottom: 1.5rem;
+  }
+
   .btn-aef-primary {
     background-color: var(--metronic-primary);
-    border: none;
     color: #ffffff;
-    font-weight: 600;
-    padding: 0.65rem 1.35rem;
+    border: none;
+    font-weight: 500;
     border-radius: 0.475rem;
-    box-shadow: 0px 4px 12px rgba(0, 158, 247, 0.2);
-    transition: all 0.2s ease;
+    padding: 0.6rem 1.25rem;
+    transition: background-color 0.2s;
   }
 
   .btn-aef-primary:hover {
     background-color: var(--metronic-primary-hover);
     color: #ffffff;
-    box-shadow: 0px 6px 16px rgba(0, 158, 247, 0.3);
   }
 
   /* Metronic Soft Badges */
   .badge-light-primary {
-    background-color: #f1f0fe !important;
-    color: #7239ea !important;
+    background-color: #f8f5ff;
+    color: #7239ea;
   }
 
   .badge-light-success {
-    background-color: #e8fff3 !important;
-    color: #50cd89 !important;
+    background-color: #e8fff3;
+    color: #50cd89;
   }
 
   .badge-light-danger {
-    background-color: #fff5f8 !important;
-    color: #f1416c !important;
+    background-color: #fff5f8;
+    color: #f1416c;
   }
 
   .badge-light-info {
-    background-color: #f0f8ff !important;
-    color: #009ef7 !important;
+    background-color: #f1faff;
+    color: #009ef7;
   }
 
   .badge-light-warning {
-    background-color: #fff8dd !important;
-    color: #ffc700 !important;
+    background-color: #fff8dd;
+    color: #ffc700;
   }
 
-  /* Metronic Tables */
-  .table-aef {
-    color: var(--metronic-text-body);
-    border-color: var(--metronic-border);
-  }
-
-  .table-aef th {
-    background: #f8f9fa;
-    color: var(--metronic-text-muted);
-    font-weight: 600;
+  /* Table Customization */
+  .table-aef thead th {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: #b5b5c3;
     border-bottom: 1px solid var(--metronic-border);
-    padding: 0.85rem 1rem;
+    padding-bottom: 0.75rem;
   }
 
-  .table-aef td {
-    border-bottom: 1px solid var(--metronic-border);
-    vertical-align: middle;
-    padding: 1rem;
-    font-size: 0.95rem;
+  .table-aef tbody td {
+    padding: 1rem 0.75rem;
+    color: #464e5f;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed var(--metronic-border);
   }
 
-  .table-aef tbody tr:hover {
-    background-color: #fafbfc;
+  /* Pagination Styling */
+  .pagination .page-item .page-link {
+    border-radius: 0.35rem;
+    margin: 0 2px;
+    color: #5e6278;
+    border: 1px solid var(--metronic-border);
   }
 
-  /* Metronic Inputs */
-  .form-control, .form-select {
-    background-color: #f5f8fa;
-    border: 1px solid #e4e6ef;
-    color: var(--metronic-text-body);
-    border-radius: 0.475rem;
-    padding: 0.65rem 1rem;
-    font-size: 0.95rem;
-  }
-
-  .form-control:focus, .form-select:focus {
-    background-color: #ffffff;
+  .pagination .page-item.active .page-link {
+    background-color: var(--metronic-primary);
     border-color: var(--metronic-primary);
-    box-shadow: 0 0 0 0.25rem rgba(0, 158, 247, 0.15);
-    color: var(--metronic-text-body);
+    color: #ffffff;
   }
 
-  /* Headings & Text */
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--metronic-text-heading);
-    font-weight: 600;
-  }
-
-  .text-muted {
-    color: var(--metronic-text-muted) !important;
-  }
-
-  /* Hide elements */
-  .d-none-important {
-    display: none !important;
+  @media (max-width: 991.98px) {
+    .aef-sidebar {
+      transform: translateX(-100%);
+    }
+    .aef-main-wrapper {
+      margin-left: 0;
+    }
   }
 </style>
