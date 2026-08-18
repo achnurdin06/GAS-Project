@@ -674,7 +674,7 @@
 
     // MENUS MANAGEMENT CRUD & TREE HIERARCHY
     menuTreeState: { collapsed: {} },
-    menuPagination: { page: 1, pageSize: 8 },
+    menuPagination: { page: 1, pageSize: 20 },
     selectedMenuDetailId: null,
 
     loadMenusTable: function () {
@@ -770,7 +770,7 @@
 
       // Apply Pagination
       const totalItems = flatTreeRows.length;
-      const pageSize = this.menuPagination.pageSize || 8;
+      const pageSize = this.menuPagination.pageSize || 20;
       const totalPages = Math.ceil(totalItems / pageSize) || 1;
       
       if (this.menuPagination.page > totalPages) this.menuPagination.page = totalPages;
@@ -854,6 +854,12 @@
 
     changeMenuPage: function (page) {
       this.menuPagination.page = page;
+      this.renderMenusTreeTable(this.menusCache);
+    },
+
+    changeMenuPageSize: function (size) {
+      this.menuPagination.pageSize = size;
+      this.menuPagination.page = 1;
       this.renderMenusTreeTable(this.menusCache);
     },
 
