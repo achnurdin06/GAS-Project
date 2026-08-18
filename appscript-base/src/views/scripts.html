@@ -406,18 +406,100 @@
     loadUsersTable: function () {
       const tableBody = document.getElementById('users-table-body');
       if (!tableBody) return;
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
 
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success && Array.isArray(res.data)) {
             this.usersCache = res.data;
-            this.paginationState.users.data = res.data;
-            this.paginationState.users.page = 1;
-            this.renderUsersPage();
+            this.applyUsersFiltersAndSort();
           }
         })
         .apiGetUsers({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    handleUsersSearch: function (val) {
+      this.applyUsersFiltersAndSort();
+    },
+
+    handleUsersPageSizeChange: function (val) {
+      this.paginationState.users.pageSize = Number(val);
+      this.paginationState.users.page = 1;
+      this.renderUsersPage();
+    },
+
+    handleUsersSort: function (colName) {
+      if (!this.state.usersSort) {
+        this.state.usersSort = { column: 'name', asc: true };
+      }
+      if (this.state.usersSort.column === colName) {
+        this.state.usersSort.asc = !this.state.usersSort.asc;
+      } else {
+        this.state.usersSort.column = colName;
+        this.state.usersSort.asc = true;
+      }
+      this.applyUsersFiltersAndSort();
+    },
+
+    applyUsersFiltersAndSort: function () {
+      let filtered = [...(this.usersCache || [])];
+
+      // 1. Search Filter (All columns except action)
+      const query = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
+      if (query) {
+        filtered = filtered.filter(u => {
+          return (
+            String(u.name || '').toLowerCase().includes(query) ||
+            String(u.email || '').toLowerCase().includes(query) ||
+            String(u.phone || '').toLowerCase().includes(query) ||
+            String(u.role_id || '').toLowerCase().includes(query) ||
+            String(u.status || '').toLowerCase().includes(query) ||
+            String(u.expired_at || '').toLowerCase().includes(query)
+          );
+        });
+      }
+
+      // 2. Sorting
+      if (this.state.usersSort) {
+        const col = this.state.usersSort.column;
+        const asc = this.state.usersSort.asc;
+        filtered.sort((a, b) => {
+          let valA = String(a[col] || '').toLowerCase();
+          let valB = String(b[col] || '').toLowerCase();
+
+          if (!isNaN(valA) && !isNaN(valB)) {
+            valA = Number(valA);
+            valB = Number(valB);
+          }
+
+          if (valA < valB) return asc ? -1 : 1;
+          if (valA > valB) return asc ? 1 : -1;
+          return 0;
+        });
+      } else {
+        // Default sort by name asc
+        filtered.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+      }
+
+      this.paginationState.users.data = filtered;
+      this.paginationState.users.page = 1;
+      this.renderUsersPage();
+
+      // Update header sorting icons
+      const cols = ['name', 'email', 'phone', 'role_id', 'status'];
+      cols.forEach(c => {
+        const icon = document.getElementById(`users-sort-icon-${c}`);
+        if (icon) {
+          if (this.state.usersSort && this.state.usersSort.column === c) {
+            icon.className = this.state.usersSort.asc ? 'bi bi-sort-up ms-1' : 'bi bi-sort-down ms-1';
+            icon.style.color = '#2563eb';
+            icon.classList.remove('opacity-50', 'text-muted');
+          } else {
+            icon.className = 'bi bi-arrow-down-up ms-1 text-muted opacity-50';
+            icon.style.color = '';
+          }
+        }
+      });
     },
 
     renderUsersPage: function () {

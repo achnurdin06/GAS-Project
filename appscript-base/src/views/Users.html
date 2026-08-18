@@ -12,15 +12,33 @@
     </div>
 
     <div class="aef-card">
+      <!-- Search & Page Limit Header Controls -->
+      <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded" style="border: 1px solid #f1f1f4; margin: 1rem;">
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-muted small text-nowrap">Tampilkan</span>
+          <select id="users-page-size" class="form-select form-select-sm w-auto" onchange="AEF.handleUsersPageSizeChange(this.value)">
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+          <span class="text-muted small">entri</span>
+        </div>
+        <div class="input-group input-group-sm w-auto" style="max-width: 320px; width: 100%;">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" id="users-search" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, phone, role, status..." oninput="AEF.handleUsersSearch(this.value)">
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table class="table table-aef align-middle mb-0">
           <thead>
             <tr>
-              <th>Nama Lengkap</th>
-              <th>Email</th>
-              <th>Nomor Telepon</th>
-              <th>Role ID</th>
-              <th>Status</th>
+              <th onclick="AEF.handleUsersSort('name')" style="cursor: pointer; user-select: none;">Nama Lengkap <i id="users-sort-icon-name" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleUsersSort('email')" style="cursor: pointer; user-select: none;">Email <i id="users-sort-icon-email" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleUsersSort('phone')" style="cursor: pointer; user-select: none;">Nomor Telepon <i id="users-sort-icon-phone" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleUsersSort('role_id')" style="cursor: pointer; user-select: none;">Role ID <i id="users-sort-icon-role_id" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleUsersSort('status')" style="cursor: pointer; user-select: none;">Status <i id="users-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
               <th>Aksi</th>
             </tr>
           </thead>
