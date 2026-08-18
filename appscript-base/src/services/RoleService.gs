@@ -232,27 +232,53 @@ class RoleService {
 
   saveRolePermissionsForPrefixes(roleCode, prefix, permissionCodes, actorId = 'SYSTEM') {
     const permRepo = new PermissionRepository();
-    const existing = permRepo.find(row => 
-      String(row.role_id).trim().toUpperCase() === String(roleCode).trim().toUpperCase() &&
-      String(row.permission_code).toUpperCase().startsWith(prefix.toUpperCase() + '_')
-    );
+    const cleanRole = String(roleCode).trim().toUpperCase();
+    const cleanPrefix = String(prefix).trim().toUpperCase();
     
-    existing.forEach(p => {
-      permRepo.updateById(p.id, { status: 'DELETED' }, actorId);
-    });
+    // Find all existing permissions (any status) for this role and prefix
+    const existing = permRepo.find(row => 
+      String(row.role_id).trim().toUpperCase() === cleanRole &&
+      String(row.permission_code).toUpperCase().startsWith(cleanPrefix + '_')
+    );
 
-    if (Array.isArray(permissionCodes)) {
-      permissionCodes.forEach(code => {
-        const newPerm = {
-          id: Utils.generateUuid(),
-          role_id: roleCode.toUpperCase(),
-          permission_code: code.toUpperCase(),
-          permission_name: code,
-          status: 'ACTIVE'
-        };
-        permRepo.insert(newPerm, actorId);
-      });
-    }
+    // List of suffixes we are managing
+    const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
+    
+    // Convert checked array to set for fast lookup
+    const checkedSet = new Set((permissionCodes || []).map(c => String(c).trim().toUpperCase()));
+
+    suffixes.forEach(suffix => {
+      const code = `${cleanPrefix}_${suffix}`;
+      const isChecked = checkedSet.has(code);
+      
+      const match = existing.find(row => String(row.permission_code).trim().toUpperCase() === code);
+      
+      if (isChecked) {
+        if (match) {
+          // If already active, maybe we don't need to write, but let's update status if it was not ACTIVE
+          if (String(match.status).toUpperCase() !== 'ACTIVE') {
+            permRepo.updateById(match.id, { status: 'ACTIVE' }, actorId);
+          }
+        } else {
+          // Insert new
+          const newPerm = {
+            id: Utils.generateUuid(),
+            role_id: cleanRole,
+            permission_code: code,
+            permission_name: `${cleanPrefix} - ${suffix}`,
+            status: 'ACTIVE'
+          };
+          permRepo.insert(newPerm, actorId);
+        }
+      } else {
+        // Unchecked
+        if (match) {
+          if (String(match.status).toUpperCase() !== 'DELETED') {
+            permRepo.updateById(match.id, { status: 'DELETED' }, actorId);
+          }
+        }
+      }
+    });
   }
 
   // User Assignment Helpers

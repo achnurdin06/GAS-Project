@@ -217,6 +217,51 @@
       });
     },
 
+    showToast: function (message, type = 'success') {
+      const containerId = 'aef-toast-container';
+      let container = document.getElementById(containerId);
+      if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+      }
+
+      const toastId = 'toast-' + Date.now();
+      const bgClass = type === 'success' ? 'bg-success text-white' : 'bg-danger text-white';
+      const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+      
+      const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2">
+              <i class="bi ${icon} fs-5"></i>
+              <span>${message}</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      `;
+
+      container.insertAdjacentHTML('beforeend', toastHtml);
+      const toastEl = document.getElementById(toastId);
+      
+      if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => {
+          toastEl.remove();
+        });
+      } else {
+        toastEl.classList.add('show');
+        setTimeout(() => {
+          toastEl.classList.remove('show');
+          setTimeout(() => toastEl.remove(), 300);
+        }, 4000);
+      }
+    },
+
     logout: function () {
       this.handleLogout();
     },
@@ -2659,7 +2704,7 @@
         if (cancelBtn) cancelBtn.disabled = false;
 
         if (res.success) {
-          alert('Berhasil: Matrix hak akses sistem berhasil diperbarui.');
+          this.showToast('Matrix hak akses sistem berhasil diperbarui.', 'success');
           AEF.state.permMatrixEditMode = false;
           
           // Toggle buttons back
@@ -2669,7 +2714,7 @@
 
           this.loadPermissionsTable();
         } else {
-          alert('Gagal menyimpan matrix: ' + res.message);
+          this.showToast('Gagal menyimpan matrix: ' + res.message, 'danger');
         }
       }).withFailureHandler((err) => {
         if (saveBtn) {
@@ -2677,7 +2722,7 @@
           saveBtn.innerHTML = origText;
         }
         if (cancelBtn) cancelBtn.disabled = false;
-        alert('Gagal menyimpan matrix: Kesalahan server.');
+        this.showToast('Gagal menyimpan matrix: Kesalahan server.', 'danger');
       }).apiBatchUpdateRolePermissions({
         matrix: matrix,
         prefixes: pagePrefixes,
@@ -2702,8 +2747,8 @@
       const roleId = roleEl ? roleEl.value : '';
       const status = statusEl ? statusEl.value : 'ACTIVE';
 
-      if (!prefix) return alert('Gagal menambahkan: Prefix Code wajib diisi!');
-      if (!roleId) return alert('Gagal menambahkan: Target Role wajib dipilih!');
+      if (!prefix) return this.showToast('Gagal menambahkan: Prefix Code wajib diisi!', 'danger');
+      if (!roleId) return this.showToast('Gagal menambahkan: Target Role wajib dipilih!', 'danger');
 
       // Show loader
       const form = document.getElementById('form-add-perm');
@@ -2721,18 +2766,18 @@
         }
 
         if (res.success) {
-          alert(`Berhasil: Permission code dengan prefix "${prefix}" berhasil ditambahkan.`);
+          this.showToast(`Permission code dengan prefix "${prefix}" berhasil ditambahkan.`, 'success');
           this.hideModal('addPermModal');
           this.loadPermissionsTable();
         } else {
-          alert('Gagal menambahkan: ' + res.message);
+          this.showToast('Gagal menambahkan: ' + res.message, 'danger');
         }
       }).withFailureHandler((err) => {
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = origText;
         }
-        alert('Gagal menambahkan: Kesalahan server.');
+        this.showToast('Gagal menambahkan: Kesalahan server.', 'danger');
       }).apiCreatePermissionsForPrefix({
         prefix: prefix,
         role_id: roleId,
