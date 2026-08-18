@@ -393,6 +393,13 @@
         .apiGetMenu({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
+    hasPermission: function (requiredPermission) {
+      if (!this.state.user) return false;
+      const userRole = String(this.state.user.role_id).trim().toUpperCase();
+      if (userRole === 'ROLE_SUPER_ADMIN' || userRole === 'ROLE_ADMIN') return true;
+      return Array.isArray(this.state.permissions) && this.state.permissions.includes(requiredPermission);
+    },
+
     navigateTo: function (route) {
       this.state.currentRoute = route;
 
@@ -547,6 +554,15 @@
       if (!tableBody) return;
       tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
 
+      const addBtn = document.getElementById('btn-add-user-trigger');
+      if (addBtn) {
+        if (this.hasPermission('USER_CREATE')) {
+          addBtn.classList.remove('d-none');
+        } else {
+          addBtn.classList.add('d-none');
+        }
+      }
+
       google.script.run
         .withSuccessHandler((res) => {
           if (res && res.success && Array.isArray(res.data)) {
@@ -692,6 +708,9 @@
           `<img src="${u.profile_pic_url}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e1e9ff;">` : 
           `<div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem; border: 1px solid #e1e9ff;">${initials}</div>`;
 
+        const showEdit = this.hasPermission('USER_UPDATE') ? '' : 'd-none';
+        const showDelete = this.hasPermission('USER_DELETE') ? '' : 'd-none';
+
         return `
           <tr>
             <td class="fw-semibold" style="color: #181c32;">
@@ -709,10 +728,10 @@
               <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.showUserDetail('${u.id}')" title="Detail User">
                 <i class="bi bi-eye"></i>
               </button>
-              <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
+              <button class="btn btn-sm btn-light border text-muted me-1 ${showEdit}" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteUserModal('${u.id}')" title="Hapus User">
+              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.openDeleteUserModal('${u.id}')" title="Hapus User">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -1210,6 +1229,15 @@
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
       
+      const addBtn = document.getElementById('btn-add-role-trigger');
+      if (addBtn) {
+        if (this.hasPermission('ROLE_CREATE')) {
+          addBtn.classList.remove('d-none');
+        } else {
+          addBtn.classList.add('d-none');
+        }
+      }
+      
       google.script.run
         .withSuccessHandler((res) => {
           if (res && res.success && Array.isArray(res.data)) {
@@ -1347,6 +1375,10 @@
           `<span class="badge badge-light-success px-3 py-2 fs-7">ACTIVE</span>` :
           `<span class="badge badge-light-danger px-3 py-2 fs-7">INACTIVE</span>`;
 
+        const showEdit = this.hasPermission('ROLE_UPDATE') ? '' : 'd-none';
+        const showDuplicate = this.hasPermission('ROLE_CREATE') ? '' : 'd-none';
+        const showDelete = this.hasPermission('ROLE_DELETE') ? '' : 'd-none';
+
         return `
           <tr>
             <td><code>${r.role_code}</code></td>
@@ -1355,13 +1387,13 @@
             <td><span class="badge bg-light-primary text-primary fw-bold px-3 py-2 rounded-circle fs-7" style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center;">${r.user_count || 0}</span></td>
             <td>${statusBadge}</td>
             <td>
-              <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditRoleModal('${r.id}')" title="Edit Role">
+              <button class="btn btn-sm btn-light border text-muted me-1 ${showEdit}" onclick="AEF.openEditRoleModal('${r.id}')" title="Edit Role">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-light-primary text-primary border border-primary-subtle me-1" onclick="AEF.openDuplicateRoleModal('${r.id}')" title="Duplikat Role">
+              <button class="btn btn-sm btn-light-primary text-primary border border-primary-subtle me-1 ${showDuplicate}" onclick="AEF.openDuplicateRoleModal('${r.id}')" title="Duplikat Role">
                 <i class="bi bi-files"></i>
               </button>
-              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteRoleModal('${r.id}')" title="Hapus Role">
+              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.openDeleteRoleModal('${r.id}')" title="Hapus Role">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -1766,6 +1798,16 @@
       const tbody = document.getElementById('perms-table-body');
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+
+      const addBtn = document.getElementById('btn-add-perm-trigger');
+      if (addBtn) {
+        if (this.hasPermission('PERMISSION_CREATE')) {
+          addBtn.classList.remove('d-none');
+        } else {
+          addBtn.classList.add('d-none');
+        }
+      }
+
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
           this.paginationState.perms.data = res.data;
@@ -1776,6 +1818,8 @@
     },
 
     renderPermissionsPage: function () {
+      const showDelete = this.hasPermission('PERMISSION_DELETE') ? '' : 'd-none';
+
       this.renderTablePagination('perms', (p) => `
         <tr>
           <td><span class="badge badge-light-primary px-3 py-2 fs-7">${p.role_id}</span></td>
@@ -1783,7 +1827,7 @@
           <td class="fw-semibold" style="color: #181c32;">${p.permission_name}</td>
           <td><span class="badge badge-light-success px-3 py-2 fs-7">${p.status}</span></td>
           <td>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
           </td>
         </tr>
       `, 'perms-table-body', 'perms-pagination-info', 'perms-pagination-controls');
@@ -1800,7 +1844,7 @@
           document.getElementById('form-add-perm').reset();
           this.loadPermissionsTable();
         } else alert('Gagal: ' + res.message);
-      }).apiCreatePermission({ role_id: roleId, permission_code: code, permission_name: name });
+      }).apiCreatePermission({ role_id: roleId, permission_code: code, permission_name: name, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     deletePermission: function (permId) {
@@ -1808,7 +1852,7 @@
       google.script.run.withSuccessHandler((res) => {
         if (res.success) this.loadPermissionsTable();
         else alert('Gagal: ' + res.message);
-      }).apiDeletePermission({ perm_id: permId });
+      }).apiDeletePermission({ perm_id: permId, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     // CONFIG CRUD
@@ -1827,13 +1871,15 @@
     },
 
     renderConfigsPage: function () {
+      const showEdit = this.hasPermission('CONFIG_UPDATE') ? '' : 'd-none';
+
       this.renderTablePagination('configs', (c) => `
         <tr>
           <td><code>${c.config_key}</code></td>
           <td class="fw-bold text-primary">${c.config_value}</td>
           <td>${c.description || '-'}</td>
           <td>
-            <button class="btn btn-sm btn-light border text-muted" onclick="AEF.openEditConfigModal('${c.id}')"><i class="bi bi-pencil me-1"></i> Edit</button>
+            <button class="btn btn-sm btn-light border text-muted ${showEdit}" onclick="AEF.openEditConfigModal('${c.id}')"><i class="bi bi-pencil me-1"></i> Edit</button>
           </td>
         </tr>
       `, 'configs-table-body', 'configs-pagination-info', 'configs-pagination-controls');
@@ -1857,7 +1903,7 @@
           this.hideModal('editConfigModal');
           this.loadConfigsTable();
         } else alert('Gagal: ' + res.message);
-      }).apiUpdateConfig({ config_id: id, config_value: val });
+      }).apiUpdateConfig({ config_id: id, config_value: val, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     // AUDIT LOGS VIEW
@@ -1897,6 +1943,15 @@
       const tbody = document.getElementById('menus-tree-tbody');
       if (!tbody) return;
       tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div> Memuat hierarki menu...</td></tr>';
+      
+      const addBtn = document.getElementById('btn-add-menu-trigger');
+      if (addBtn) {
+        if (this.hasPermission('MENU_CREATE')) {
+          addBtn.classList.remove('d-none');
+        } else {
+          addBtn.classList.add('d-none');
+        }
+      }
       
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
@@ -1997,6 +2052,10 @@
       const pageItems = flatTreeRows.slice(startIndex, startIndex + pageSize);
 
       let html = '';
+      const showEdit = this.hasPermission('MENU_UPDATE') ? '' : 'd-none';
+      const showDelete = this.hasPermission('MENU_DELETE') ? '' : 'd-none';
+      const showAddSub = this.hasPermission('MENU_CREATE') ? '' : 'd-none';
+
       pageItems.forEach(row => {
         const m = row.item;
         const mId = m.menu_id || m.id;
@@ -2019,9 +2078,9 @@
               <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${m.type || 'Module'}</span></td>
               <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${m.status || 'ACTIVE'}</span></td>
               <td class="text-end">
-                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
-                <button class="btn btn-sm btn-link text-danger p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
-                <button class="btn btn-sm btn-link text-success p-0 text-decoration-none" onclick="event.stopPropagation(); AEF.openAddSubMenuModal('${mId}')"><i class="bi bi-plus-circle me-1"></i>Sub-Menu</button>
+                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none ${showEdit}" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                <button class="btn btn-sm btn-link text-danger p-0 me-2 text-decoration-none ${showDelete}" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+                <button class="btn btn-sm btn-link text-success p-0 text-decoration-none ${showAddSub}" onclick="event.stopPropagation(); AEF.openAddSubMenuModal('${mId}')"><i class="bi bi-plus-circle me-1"></i>Sub-Menu</button>
               </td>
             </tr>
           `;
@@ -2038,8 +2097,8 @@
               <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${m.type || 'Sub Menu'}</span></td>
               <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${m.status || 'ACTIVE'}</span></td>
               <td class="text-end">
-                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
-                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none ${showEdit}" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none ${showDelete}" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
               </td>
             </tr>
           `;

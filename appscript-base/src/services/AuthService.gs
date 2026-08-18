@@ -181,4 +181,21 @@ class AuthService {
       return [];
     }
   }
+
+  verifyPermission(actorId, requiredPermission) {
+    if (!actorId || actorId === 'SYSTEM') return true;
+    const user = this.userRepo.findById(actorId);
+    if (!user) return false;
+    const rId = String(user.role_id).trim().toUpperCase();
+    if (rId === 'ROLE_SUPER_ADMIN' || rId === 'ROLE_ADMIN') return true;
+    
+    try {
+      const userPerms = new PermissionRepository().findByRoleId(rId);
+      const codes = userPerms.map(p => String(p.permission_code).trim().toUpperCase());
+      return codes.includes(String(requiredPermission).trim().toUpperCase());
+    } catch (e) {
+      LoggerUtil.error('AuthService', 'Failed checking permission ' + requiredPermission + ' for actor: ' + actorId, e);
+      return false;
+    }
+  }
 }

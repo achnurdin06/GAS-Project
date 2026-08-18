@@ -50,6 +50,7 @@ function apiGetUsers(payload) {
 
 function apiCreateUser(payload) {
   try {
+    checkApiPermission(payload, 'USER_CREATE');
     return new UserService().createUser(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiCreateUser failed', err);
@@ -59,6 +60,7 @@ function apiCreateUser(payload) {
 
 function apiUpdateUser(payload) {
   try {
+    checkApiPermission(payload, 'USER_UPDATE');
     return new UserService().updateUser(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiUpdateUser failed', err);
@@ -68,6 +70,7 @@ function apiUpdateUser(payload) {
 
 function apiDeleteUser(payload) {
   try {
+    checkApiPermission(payload, 'USER_DELETE');
     return new UserService().deleteUser(payload.userId || payload.user_id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiDeleteUser failed', err);
@@ -87,6 +90,7 @@ function apiGetRoles(payload) {
 
 function apiCreateRole(payload) {
   try {
+    checkApiPermission(payload, 'ROLE_CREATE');
     return new RoleService().createRole(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiCreateRole failed', err);
@@ -96,6 +100,7 @@ function apiCreateRole(payload) {
 
 function apiDeleteRole(payload) {
   try {
+    checkApiPermission(payload, 'ROLE_DELETE');
     return new RoleService().deleteRole(payload.role_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiDeleteRole failed', err);
@@ -114,6 +119,7 @@ function apiGetRoleDetails(payload) {
 
 function apiUpdateRole(payload) {
   try {
+    checkApiPermission(payload, 'ROLE_UPDATE');
     return new RoleService().updateRole(payload.role_id || payload.id, payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiUpdateRole failed', err);
@@ -123,6 +129,7 @@ function apiUpdateRole(payload) {
 
 function apiDuplicateRole(payload) {
   try {
+    checkApiPermission(payload, 'ROLE_CREATE');
     return new RoleService().duplicateRole(payload.role_id || payload.id, payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiDuplicateRole failed', err);
@@ -142,6 +149,7 @@ function apiGetPermissions(payload) {
 
 function apiCreatePermission(payload) {
   try {
+    checkApiPermission(payload, 'PERMISSION_CREATE');
     return new PermissionService().createPermission(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiCreatePermission failed', err);
@@ -151,6 +159,7 @@ function apiCreatePermission(payload) {
 
 function apiDeletePermission(payload) {
   try {
+    checkApiPermission(payload, 'PERMISSION_DELETE');
     return new PermissionService().deletePermission(payload.perm_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiDeletePermission failed', err);
@@ -170,6 +179,7 @@ function apiGetConfigs(payload) {
 
 function apiUpdateConfig(payload) {
   try {
+    checkApiPermission(payload, 'CONFIG_UPDATE');
     return new ConfigService().updateConfig(payload.config_id, payload.config_value, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiUpdateConfig failed', err);
@@ -199,6 +209,7 @@ function apiGetAllMenus(payload) {
 
 function apiCreateMenu(payload) {
   try {
+    checkApiPermission(payload, 'MENU_CREATE');
     return new MenuService().createMenu(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiCreateMenu failed', err);
@@ -208,6 +219,7 @@ function apiCreateMenu(payload) {
 
 function apiUpdateMenu(payload) {
   try {
+    checkApiPermission(payload, 'MENU_UPDATE');
     return new MenuService().updateMenu(payload, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiUpdateMenu failed', err);
@@ -217,6 +229,7 @@ function apiUpdateMenu(payload) {
 
 function apiDeleteMenu(payload) {
   try {
+    checkApiPermission(payload, 'MENU_DELETE');
     return new MenuService().deleteMenu(payload.menu_id || payload.id, payload ? payload.actor_id : 'SYSTEM');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiDeleteMenu failed', err);
@@ -231,5 +244,12 @@ function apiGetDashboardData(payload) {
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiGetDashboardData failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function checkApiPermission(payload, requiredPermission) {
+  const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+  if (!new AuthService().verifyPermission(actorId, requiredPermission)) {
+    throw new Error('Akses Ditolak: Anda tidak memiliki permission ' + requiredPermission);
   }
 }
