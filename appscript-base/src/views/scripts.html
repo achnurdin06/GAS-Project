@@ -1461,6 +1461,8 @@
               }
             });
 
+            const isDisabled = mode === 'add' ? 'disabled' : '';
+
             parents.forEach(p => {
               const pId = p.menu_id || p.id;
               const pChildren = childrenMap[pId] || [];
@@ -1472,7 +1474,7 @@
               pChildren.forEach(c => {
                 childrenHtml += `
                   <div class="form-check ms-4 mb-2">
-                    <input class="form-check-input role-menu-checkbox" type="checkbox" value="${c.permission_code || ''}" id="${mode}-role-menu-${c.menu_code}">
+                    <input class="form-check-input role-menu-checkbox" type="checkbox" ${isDisabled} value="${c.permission_code || ''}" id="${mode}-role-menu-${c.menu_code}">
                     <label class="form-check-label text-dark" for="${mode}-role-menu-${c.menu_code}">
                       <i class="bi ${c.icon || 'bi-circle'} me-1 text-muted"></i>${c.menu_name} <span class="text-muted small">(${c.permission_code || 'Publik'})</span>
                     </label>
@@ -1482,7 +1484,7 @@
 
               parentCol.innerHTML = `
                 <div class="form-check mb-2">
-                  <input class="form-check-input role-menu-checkbox" type="checkbox" value="${p.permission_code || ''}" id="${mode}-role-menu-${p.menu_code}">
+                  <input class="form-check-input role-menu-checkbox" type="checkbox" ${isDisabled} value="${p.permission_code || ''}" id="${mode}-role-menu-${p.menu_code}">
                   <label class="form-check-label fw-bold text-dark" for="${mode}-role-menu-${p.menu_code}">
                     <i class="bi ${p.icon || 'bi-folder'} me-1 text-primary"></i>${p.menu_name} <span class="text-muted small">(${p.permission_code || 'Publik'})</span>
                   </label>
@@ -1879,6 +1881,20 @@
       // Select Tab 1 by default
       AEF.switchTab('edit-role-detail-tab');
 
+      // Populate fields instantly from local UI cache to avoid loading lag
+      if (AEF.paginationState && AEF.paginationState['roles'] && Array.isArray(AEF.paginationState['roles'].data)) {
+        const cachedRole = AEF.paginationState['roles'].data.find(r => r.id === roleId);
+        if (cachedRole) {
+          document.getElementById('edit-role-id').value = cachedRole.id;
+          document.getElementById('edit-role-name').value = cachedRole.role_name;
+          document.getElementById('edit-role-code').value = cachedRole.role_code;
+          document.getElementById('edit-role-desc').value = cachedRole.description || '';
+          document.getElementById('edit-role-status').checked = (cachedRole.status === 'ACTIVE');
+          document.getElementById('edit-role-status-text').textContent = (cachedRole.status === 'ACTIVE' ? 'Aktif' : 'Inaktif');
+          document.getElementById('edit-role-title-text').innerHTML = `<i class="bi bi-pencil-square text-primary me-2"></i>Edit Role: ${cachedRole.role_code}`;
+        }
+      }
+
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success && res.data) {
@@ -1895,11 +1911,11 @@
             // Set title text
             document.getElementById('edit-role-title-text').innerHTML = `<i class="bi bi-pencil-square text-primary me-2"></i>Edit Role: ${role.role_code}`;
 
-            this.state.editRoleAssignedUsers = role.assigned_users || [];
-            this.state.activeEditRolePermissions = role.permissions || [];
+            AEF.state.editRoleAssignedUsers = role.assigned_users || [];
+            AEF.state.activeEditRolePermissions = role.permissions || [];
 
-            this.renderRoleUserChips('edit');
-            this.renderRoleFormCheckboxes('edit');
+            AEF.renderRoleUserChips('edit');
+            AEF.renderRoleFormCheckboxes('edit');
           } else {
             alert('Gagal memuat detail role: ' + res.message);
           }
