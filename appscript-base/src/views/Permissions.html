@@ -58,7 +58,14 @@
 
     <!-- Pagination Controls -->
     <div id="perms-pagination-container" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="perms-pagination-info">Memuat entri...</div>
+      <div class="d-flex align-items-center gap-2">
+        <select id="perm-page-size" class="form-select form-select-sm" onchange="AEF.handleMatrixPageSizeChange(this.value)" style="width: 70px;">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <div class="text-muted small" id="perms-pagination-info">Memuat entri...</div>
+      </div>
       <ul class="pagination pagination-sm mb-0" id="perms-pagination-controls"></ul>
     </div>
   </div>

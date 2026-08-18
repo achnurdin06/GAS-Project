@@ -2305,30 +2305,45 @@
 
         const selectedRole = select ? select.value : '';
 
-        google.script.run.withSuccessHandler((res) => {
-          if (res.success && Array.isArray(res.data)) {
-            this.permissionsCache = res.data;
-            
-            // Extract prefixes
-            const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
-            res.data.forEach(p => {
-              const code = String(p.permission_code || '').trim().toUpperCase();
-              if (!code) return;
-              const parts = code.split('_');
-              if (parts.length > 1) {
-                parts.pop();
-                prefixes.add(parts.join('_'));
-              } else {
-                prefixes.add(code);
-              }
-            });
-            AEF.state.granularPrefixes = Array.from(prefixes).sort();
-            
-            this.renderPermissionsMatrix(selectedRole);
-          } else {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat matrix: ${res ? res.message : 'Respon kosong'}</td></tr>`;
-          }
-        }).apiGetPermissions();
+        const fetchPermsAndRender = () => {
+          google.script.run.withSuccessHandler((res) => {
+            if (res.success && Array.isArray(res.data)) {
+              this.permissionsCache = res.data;
+              
+              // Extract prefixes
+              const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
+              res.data.forEach(p => {
+                const code = String(p.permission_code || '').trim().toUpperCase();
+                if (!code) return;
+                const parts = code.split('_');
+                if (parts.length > 1) {
+                  parts.pop();
+                  prefixes.add(parts.join('_'));
+                } else {
+                  prefixes.add(code);
+                }
+              });
+              AEF.state.granularPrefixes = Array.from(prefixes).sort();
+              
+              this.renderPermissionsMatrix(selectedRole);
+            } else {
+              tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat matrix: ${res ? res.message : 'Respon kosong'}</td></tr>`;
+            }
+          }).apiGetPermissions();
+        };
+
+        if (!this.menusCache) {
+          google.script.run.withSuccessHandler((res) => {
+            if (res.success && Array.isArray(res.data)) {
+              this.menusCache = res.data;
+              fetchPermsAndRender();
+            } else {
+              tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat data menu.</td></tr>`;
+            }
+          }).apiGetAllMenus();
+        } else {
+          fetchPermsAndRender();
+        }
       };
 
       if (!this.rolesCache) {
@@ -2354,14 +2369,118 @@
       const matrixRoleLabel = document.getElementById('perm-matrix-role-name');
       if (matrixRoleLabel) matrixRoleLabel.textContent = roleName;
 
-      const page = (this.paginationState.perms && this.paginationState.perms.page) || 1;
-      const pageSize = (this.paginationState.perms && this.paginationState.perms.pageSize) || 20;
+      if (!this.paginationState.perms) this.paginationState.perms = { page: 1, pageSize: 20 };
+      const page = this.paginationState.perms.page || 1;
+      const pageSize = this.paginationState.perms.pageSize || 20;
+
+      const pageSizeSelect = document.getElementById('perm-page-size');
+      if (pageSizeSelect) pageSizeSelect.value = String(pageSize);
+
+      if (!AEF.state.permTreeCollapsed) AEF.state.permTreeCollapsed = {};
+
+      const menus = this.menusCache || [];
       const prefixes = AEF.state.granularPrefixes || [];
-      const totalItems = prefixes.length;
+
+      // 1. Group menus by parent
+      const parents = menus.filter(m => !m.parent_id);
+      const childrenMap = {};
+      menus.forEach(m => {
+        if (m.parent_id) {
+          if (!childrenMap[m.parent_id]) childrenMap[m.parent_id] = [];
+          childrenMap[m.parent_id].push(m);
+        }
+      });
+
+      // 2. Build rows
+      const flatRows = [];
+      const mappedPrefixes = new Set();
+
+      const extractPrefix = (code) => {
+        if (!code) return null;
+        const clean = String(code).trim().toUpperCase();
+        const parts = clean.split('_');
+        if (parts.length > 1) {
+          parts.pop();
+          return parts.join('_');
+        }
+        return clean;
+      };
+
+      parents.forEach(p => {
+        const pId = p.menu_id || p.id;
+        const pChildren = childrenMap[pId] || [];
+        const isCollapsed = !!AEF.state.permTreeCollapsed[pId];
+        const prefix = extractPrefix(p.permission_code);
+        if (prefix) mappedPrefixes.add(prefix);
+
+        flatRows.push({
+          id: pId,
+          name: p.menu_name || p.name,
+          code: p.menu_code || p.code,
+          icon: p.icon || 'bi-folder',
+          isParent: true,
+          hasChildren: pChildren.length > 0,
+          prefix: prefix,
+          isCollapsed: isCollapsed
+        });
+
+        if (!isCollapsed) {
+          pChildren.forEach(c => {
+            const cId = c.menu_id || c.id;
+            const cPrefix = extractPrefix(c.permission_code);
+            if (cPrefix) mappedPrefixes.add(cPrefix);
+
+            flatRows.push({
+              id: cId,
+              name: c.menu_name || c.name,
+              code: c.menu_code || c.code,
+              icon: c.icon || 'bi-file-earmark',
+              isParent: false,
+              hasChildren: false,
+              prefix: cPrefix,
+              isCollapsed: false
+            });
+          });
+        }
+      });
+
+      // 3. Add unmapped prefixes
+      const unmapped = prefixes.filter(p => !mappedPrefixes.has(p));
+      if (unmapped.length > 0) {
+        const isCollapsed = !!AEF.state.permTreeCollapsed['UNMAPPED_GROUP'];
+        flatRows.push({
+          id: 'UNMAPPED_GROUP',
+          name: 'Granular Lainnya (Tanpa Menu)',
+          code: 'CUSTOM_GRANULAR',
+          icon: 'bi-grid-3x3-gap',
+          isParent: true,
+          hasChildren: true,
+          prefix: null,
+          isCollapsed: isCollapsed
+        });
+
+        if (!isCollapsed) {
+          unmapped.forEach(prefix => {
+            flatRows.push({
+              id: `unmapped-${prefix}`,
+              name: prefix,
+              code: `${prefix}_VIEW`,
+              icon: 'bi-shield-lock-fill',
+              isParent: false,
+              hasChildren: false,
+              prefix: prefix,
+              isCollapsed: false
+            });
+          });
+        }
+      }
+
+      // Pagination slice
+      const totalItems = flatRows.length;
       const totalPages = Math.ceil(totalItems / pageSize) || 1;
       const startIdx = (page - 1) * pageSize;
       const endIdx = Math.min(startIdx + pageSize, totalItems);
-      const pageSlice = prefixes.slice(startIdx, endIdx);
+      const pageSlice = flatRows.slice(startIdx, endIdx);
 
       // Get active permissions for this specific role from permissionsCache
       const rolePerms = (this.permissionsCache || [])
@@ -2372,69 +2491,94 @@
       const isDisabledAttr = isEditMode ? '' : 'disabled';
       const showDelete = this.hasPermission('PERMISSION_DELETE') ? '' : 'd-none';
 
-      const iconMap = {
-        'USER': 'bi-people-fill',
-        'ROLE': 'bi-shield-check',
-        'PERMISSION': 'bi-key-fill',
-        'CONFIG': 'bi-sliders',
-        'AUDIT': 'bi-journal-text',
-        'MENU': 'bi-menu-button-wide-fill',
-        'DASHBOARD': 'bi-grid-1x2-fill'
-      };
-
       let html = '';
-      pageSlice.forEach(prefix => {
-        const viewCode = `${prefix}_VIEW`;
-        const createCode = `${prefix}_CREATE`;
-        const updateCode = `${prefix}_UPDATE`;
-        const deleteCode = `${prefix}_DELETE`;
-        const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
-        const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+      pageSlice.forEach(row => {
+        const prefix = row.prefix;
+        const toggleIconClass = row.hasChildren ? (row.isCollapsed ? 'bi-chevron-right text-muted' : 'bi-chevron-down text-primary') : 'bi-dot text-muted';
+        
+        let labelCellHtml = '';
+        if (row.isParent) {
+          labelCellHtml = `
+            <span class="tree-toggle-btn me-2" onclick="AEF.togglePermTree(event, '${row.id}')" style="cursor: pointer;">
+              <i class="bi ${toggleIconClass} fs-7"></i>
+            </span>
+            <i class="bi ${row.icon} me-2 text-primary"></i>
+            <span class="text-dark fw-bold">${row.name}</span>
+            <span class="text-muted ms-2 fs-8 fw-normal">(${row.code})</span>
+          `;
+        } else {
+          labelCellHtml = `
+            <span class="text-muted me-2" style="font-family: monospace;">├─</span>
+            <i class="bi ${row.icon} me-2 text-muted"></i>
+            <span class="text-dark fw-medium">${row.name}</span>
+            <span class="text-muted ms-2 fs-8">(${row.code})</span>
+          `;
+        }
 
-        // Check active states
-        const hasView = rolePerms.includes(viewCode);
-        const hasCreate = rolePerms.includes(createCode);
-        const hasUpdate = rolePerms.includes(updateCode);
-        const hasDelete = rolePerms.includes(deleteCode);
-        const hasExportImport = rolePerms.includes(`${prefix}_EXPORT`) && rolePerms.includes(`${prefix}_IMPORT`);
+        // If this row has a prefix, display checkbox columns
+        if (prefix) {
+          const viewCode = `${prefix}_VIEW`;
+          const createCode = `${prefix}_CREATE`;
+          const updateCode = `${prefix}_UPDATE`;
+          const deleteCode = `${prefix}_DELETE`;
+          const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
 
-        html += `
-          <tr id="matrix-row-${prefix}">
-            <td class="fw-semibold text-dark">
-              <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-select-all" type="checkbox" ${isDisabledAttr} onchange="AEF.toggleMatrixRow('${prefix}', this.checked)">
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-cb" type="checkbox" value="${createCode}" ${hasCreate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-cb" type="checkbox" value="${viewCode}" ${hasView ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-cb" type="checkbox" value="${updateCode}" ${hasUpdate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-cb" type="checkbox" value="${deleteCode}" ${hasDelete ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
-            </td>
-            <td class="text-center">
-              <input class="form-check-input matrix-cb" type="checkbox" value="${exportImportCode}" ${hasExportImport ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
-            </td>
-            <td class="text-center">
-              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.deletePermissionPrefixFromControl('${prefix}')">
-                <i class="bi bi-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
+          const hasView = rolePerms.includes(viewCode);
+          const hasCreate = rolePerms.includes(createCode);
+          const hasUpdate = rolePerms.includes(updateCode);
+          const hasDelete = rolePerms.includes(deleteCode);
+          const hasExportImport = rolePerms.includes(`${prefix}_EXPORT`) && rolePerms.includes(`${prefix}_IMPORT`);
+
+          html += `
+            <tr id="matrix-row-${prefix}">
+              <td class="fw-semibold text-dark">
+                ${labelCellHtml}
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-select-all" type="checkbox" ${isDisabledAttr} onchange="AEF.toggleMatrixRow('${prefix}', this.checked)">
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-cb" type="checkbox" value="${createCode}" ${hasCreate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-cb" type="checkbox" value="${viewCode}" ${hasView ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-cb" type="checkbox" value="${updateCode}" ${hasUpdate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-cb" type="checkbox" value="${deleteCode}" ${hasDelete ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+              </td>
+              <td class="text-center">
+                <input class="form-check-input matrix-cb" type="checkbox" value="${exportImportCode}" ${hasExportImport ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+              </td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.deletePermissionPrefixFromControl('${prefix}')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        } else {
+          // Parent node with no prefix has blank cells in matrix columns
+          html += `
+            <tr id="matrix-row-${row.id}" style="background-color: #ffffff;">
+              <td class="fw-semibold text-dark" colspan="7">
+                ${labelCellHtml}
+              </td>
+              <td class="text-center"></td>
+            </tr>
+          `;
+        }
       });
 
-      tbody.innerHTML = html || '<tr><td colspan="8" class="text-center py-3">Tidak ada data prefix.</td></tr>';
+      tbody.innerHTML = html || '<tr><td colspan="8" class="text-center py-3">Tidak ada data.</td></tr>';
 
-      // Update the select all checks for each row
-      pageSlice.forEach(prefix => {
-        this.updateMatrixRowSelectAll(prefix);
+      // Update the select all checks for each row that has prefix
+      pageSlice.forEach(row => {
+        if (row.prefix) {
+          this.updateMatrixRowSelectAll(row.prefix);
+        }
       });
 
       // Render Pagination controls
@@ -2477,6 +2621,25 @@
     handleMatrixPageChange: function (newPage) {
       if (!this.paginationState.perms) this.paginationState.perms = { page: 1, pageSize: 20 };
       this.paginationState.perms.page = newPage;
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      this.renderPermissionsMatrix(selectedRole);
+    },
+
+    handleMatrixPageSizeChange: function (newSize) {
+      if (!this.paginationState.perms) this.paginationState.perms = { page: 1, pageSize: 20 };
+      this.paginationState.perms.pageSize = parseInt(newSize, 10);
+      this.paginationState.perms.page = 1;
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      this.renderPermissionsMatrix(selectedRole);
+    },
+
+    togglePermTree: function (event, parentId) {
+      if (event) event.stopPropagation();
+      if (!AEF.state.permTreeCollapsed) AEF.state.permTreeCollapsed = {};
+      AEF.state.permTreeCollapsed[parentId] = !AEF.state.permTreeCollapsed[parentId];
+      
       const select = document.getElementById('perm-role-select');
       const selectedRole = select ? select.value : '';
       this.renderPermissionsMatrix(selectedRole);
