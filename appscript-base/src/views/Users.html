@@ -30,6 +30,7 @@
               <th onclick="AEF.handleUsersSort('phone')" style="cursor: pointer; user-select: none;">Nomor Telepon <i id="users-sort-icon-phone" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
               <th onclick="AEF.handleUsersSort('role_id')" style="cursor: pointer; user-select: none;">Role ID <i id="users-sort-icon-role_id" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
               <th onclick="AEF.handleUsersSort('status')" style="cursor: pointer; user-select: none;">Status <i id="users-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleUsersSort('expired_at')" style="cursor: pointer; user-select: none;">Masa Berlaku <i id="users-sort-icon-expired_at" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
               <th>Aksi</th>
             </tr>
             <tr id="users-filter-row" class="d-none bg-light">
@@ -38,6 +39,7 @@
               <th><input type="text" id="users-filter-phone" class="form-control form-control-sm" placeholder="Cari telp..." oninput="AEF.handleUsersColumnFilter()"></th>
               <th><input type="text" id="users-filter-role_id" class="form-control form-control-sm" placeholder="Cari role..." oninput="AEF.handleUsersColumnFilter()"></th>
               <th><input type="text" id="users-filter-status" class="form-control form-control-sm" placeholder="Cari status..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th><input type="text" id="users-filter-expired_at" class="form-control form-control-sm" placeholder="Cari tanggal..." oninput="AEF.handleUsersColumnFilter()"></th>
               <th></th>
             </tr>
           </thead>

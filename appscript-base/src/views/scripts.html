@@ -406,14 +406,19 @@
     loadUsersTable: function () {
       const tableBody = document.getElementById('users-table-body');
       if (!tableBody) return;
-      tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
 
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success && Array.isArray(res.data)) {
             this.usersCache = res.data;
             this.applyUsersFiltersAndSort();
+          } else {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Gagal memuat data: ${res.message || 'Error tidak diketahui'}</td></tr>`;
           }
+        })
+        .withFailureHandler((err) => {
+          tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error: ${err.message || 'Koneksi ke backend Apps Script terputus'}</td></tr>`;
         })
         .apiGetUsers({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
@@ -432,7 +437,7 @@
         row.classList.toggle('d-none');
         // Clear columns filters if hidden
         if (row.classList.contains('d-none')) {
-          const filterInputs = ['name', 'email', 'phone', 'role_id', 'status'];
+          const filterInputs = ['name', 'email', 'phone', 'role_id', 'status', 'expired_at'];
           filterInputs.forEach(f => {
             const el = document.getElementById('users-filter-' + f);
             if (el) el.value = '';
@@ -487,12 +492,14 @@
         const filterPhone = (document.getElementById('users-filter-phone')?.value || '').trim().toLowerCase();
         const filterRole = (document.getElementById('users-filter-role_id')?.value || '').trim().toLowerCase();
         const filterStatus = (document.getElementById('users-filter-status')?.value || '').trim().toLowerCase();
+        const filterExpired = (document.getElementById('users-filter-expired_at')?.value || '').trim().toLowerCase();
 
         if (filterName) filtered = filtered.filter(u => String(u.name || '').toLowerCase().includes(filterName));
         if (filterEmail) filtered = filtered.filter(u => String(u.email || '').toLowerCase().includes(filterEmail));
         if (filterPhone) filtered = filtered.filter(u => String(u.phone || '').toLowerCase().includes(filterPhone));
         if (filterRole) filtered = filtered.filter(u => String(u.role_id || '').toLowerCase().includes(filterRole));
         if (filterStatus) filtered = filtered.filter(u => String(u.status || '').toLowerCase().includes(filterStatus));
+        if (filterExpired) filtered = filtered.filter(u => String(u.expired_at || '').toLowerCase().includes(filterExpired));
       }
 
       // 3. Sorting
@@ -522,7 +529,7 @@
       this.renderUsersPage();
 
       // Update header sorting icons
-      const cols = ['name', 'email', 'phone', 'role_id', 'status'];
+      const cols = ['name', 'email', 'phone', 'role_id', 'status', 'expired_at'];
       cols.forEach(c => {
         const icon = document.getElementById(`users-sort-icon-${c}`);
         if (icon) {
@@ -539,26 +546,39 @@
     },
 
     renderUsersPage: function () {
-      this.renderTablePagination('users', (u) => `
-        <tr>
-          <td class="fw-semibold" style="color: #181c32;">${u.name}</td>
-          <td>${u.email}</td>
-          <td>${u.phone || '-'}</td>
-          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
-          <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
-          <td>
-            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.showUserDetail('${u.id}')" title="Detail User">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteUserModal('${u.id}')" title="Hapus User">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `, 'users-table-body', 'users-pagination-info', 'users-pagination-controls');
+      this.renderTablePagination('users', (u) => {
+        const initials = (u.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const avatarHtml = u.profile_pic_url ? 
+          `<img src="${u.profile_pic_url}" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e1e9ff;">` : 
+          `<div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 0.8rem; border: 1px solid #e1e9ff;">${initials}</div>`;
+
+        return `
+          <tr>
+            <td class="fw-semibold" style="color: #181c32;">
+              <div class="d-flex align-items-center gap-2">
+                ${avatarHtml}
+                <span>${u.name}</span>
+              </div>
+            </td>
+            <td>${u.email}</td>
+            <td>${u.phone || '-'}</td>
+            <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
+            <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
+            <td><span class="text-dark fw-medium fs-7">${u.expired_at || '-'}</span></td>
+            <td>
+              <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.showUserDetail('${u.id}')" title="Detail User">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteUserModal('${u.id}')" title="Hapus User">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }, 'users-table-body', 'users-pagination-info', 'users-pagination-controls');
     },
 
     showModal: function (modalId) {
