@@ -1419,7 +1419,7 @@
                 <div class="form-check">
                   <input class="form-check-input role-menu-checkbox" type="checkbox" value="${m.permission_code}" id="${mode}-role-menu-${m.menu_code}">
                   <label class="form-check-label fw-medium text-dark" for="${mode}-role-menu-${m.menu_code}">
-                    ${m.parent_id ? '— ' : ''}${m.menu_name} <span class="text-muted small">(${m.permission_code})</span>
+                    ${m.parent_id ? '— ' : ''}${m.menu_name} <span class="text-muted small">(${m.permission_code || 'Publik'})</span>
                   </label>
                 </div>
               `;
@@ -1437,60 +1437,145 @@
       }
 
       if (permListDiv) {
-        const permCodes = [
-          { code: 'DASHBOARD_VIEW', name: 'Lihat Dashboard' },
-          { code: 'USER_VIEW', name: 'Lihat Users' },
-          { code: 'USER_CREATE', name: 'Tambah User' },
-          { code: 'USER_UPDATE', name: 'Edit User' },
-          { code: 'USER_DELETE', name: 'Hapus User' },
-          { code: 'ROLE_VIEW', name: 'Lihat Roles' },
-          { code: 'ROLE_CREATE', name: 'Tambah Role' },
-          { code: 'ROLE_DELETE', name: 'Hapus Role' },
-          { code: 'PERMISSION_VIEW', name: 'Lihat Permissions' },
-          { code: 'PERMISSION_CREATE', name: 'Tambah Permission' },
-          { code: 'PERMISSION_DELETE', name: 'Hapus Permission' },
-          { code: 'CONFIG_VIEW', name: 'Lihat System Config' },
-          { code: 'CONFIG_UPDATE', name: 'Update System Config' },
-          { code: 'AUDIT_VIEW', name: 'Lihat Audit Logs' },
-          { code: 'MENU_VIEW', name: 'Lihat Menu Management' },
-          { code: 'MENU_CREATE', name: 'Tambah Menu' },
-          { code: 'MENU_UPDATE', name: 'Edit Menu' },
-          { code: 'MENU_DELETE', name: 'Hapus Menu' }
-        ];
+        permListDiv.innerHTML = '<div class="col-12 text-center py-2"><span class="spinner-border spinner-border-sm"></span> Memuat hak akses...</div>';
+        google.script.run.withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.data)) {
+            permListDiv.innerHTML = '';
 
-        permListDiv.innerHTML = '';
-        permCodes.forEach(p => {
-          const col = document.createElement('div');
-          col.className = 'col-md-6 mb-2';
-          col.innerHTML = `
-            <div class="form-check">
-              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${p.code}" id="${mode}-role-perm-${p.code}">
-              <label class="form-check-label text-dark" for="${mode}-role-perm-${p.code}">${p.name}</label>
-            </div>
-          `;
-          permListDiv.appendChild(col);
-        });
+            // Group existing permissions to extract unique prefixes
+            const prefixes = new Set();
+            res.data.forEach(p => {
+              const code = String(p.permission_code).trim().toUpperCase();
+              const parts = code.split('_');
+              if (parts.length > 1) {
+                parts.pop();
+                prefixes.add(parts.join('_'));
+              } else {
+                prefixes.add(code);
+              }
+            });
 
-        // Recheck granular perms list if editing
-        if (mode === 'edit' && this.state.activeEditRolePermissions) {
-          this.state.activeEditRolePermissions.forEach(code => {
-            const cb = permListDiv.querySelector(`input[value="${code}"]`);
-            if (cb) cb.checked = true;
-          });
-          
-          // Verify if all granular permissions are checked to tick the Select All checkbox
-          const checkboxes = permListDiv.querySelectorAll('.role-perm-checkbox');
-          const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-          const selectAllCb = document.getElementById('edit-role-select-all-perms');
-          if (selectAllCb) selectAllCb.checked = allChecked;
-        }
+            // Build table header
+            let tableHtml = `
+              <div class="table-responsive w-100">
+                <table class="table table-aef align-middle mb-0">
+                  <thead>
+                    <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
+                      <th style="min-width: 180px;">Permission Code</th>
+                      <th class="text-center" style="width: 90px;">Select All</th>
+                      <th class="text-center" style="width: 90px;">Create (C)</th>
+                      <th class="text-center" style="width: 90px;">Read (R)</th>
+                      <th class="text-center" style="width: 90px;">Update (U)</th>
+                      <th class="text-center" style="width: 90px;">Delete (D)</th>
+                      <th class="text-center" style="width: 110px;">Export/Import (E)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+            `;
+
+            const iconMap = {
+              'USER': 'bi-people-fill',
+              'ROLE': 'bi-shield-check',
+              'PERMISSION': 'bi-key-fill',
+              'CONFIG': 'bi-sliders',
+              'AUDIT': 'bi-journal-text',
+              'MENU': 'bi-menu-button-wide-fill',
+              'DASHBOARD': 'bi-grid-1x2-fill'
+            };
+
+            Array.from(prefixes).sort().forEach(prefix => {
+              const viewCode = `${prefix}_VIEW`;
+              const createCode = `${prefix}_CREATE`;
+              const updateCode = `${prefix}_UPDATE`;
+              const deleteCode = `${prefix}_DELETE`;
+              const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
+              const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+
+              tableHtml += `
+                <tr id="${mode}-row-${prefix}">
+                  <td class="fw-semibold text-dark">
+                    <i class="bi ${icon} me-2 text-secondary"></i>${viewCode}
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${createCode}" id="${mode}-cb-${createCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${viewCode}" id="${mode}-cb-${viewCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${updateCode}" id="${mode}-cb-${updateCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${deleteCode}" id="${mode}-cb-${deleteCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                  </td>
+                </tr>
+              `;
+            });
+
+            tableHtml += `
+                  </tbody>
+                </table>
+              </div>
+            `;
+
+            permListDiv.innerHTML = tableHtml;
+
+            // Recheck granular perms list if editing
+            if (mode === 'edit' && this.state.activeEditRolePermissions) {
+              this.state.activeEditRolePermissions.forEach(code => {
+                const cb = permListDiv.querySelector(`input[value*="${code}"]`);
+                if (cb) {
+                  cb.checked = true;
+                }
+              });
+              // Update Select All state for each row
+              Array.from(prefixes).forEach(prefix => {
+                this.updateRowSelectAll('edit', prefix);
+              });
+            }
+          }
+        }).apiGetPermissions();
       }
+    },
+
+    toggleRowCheckboxes: function (mode, prefix, checked) {
+      const row = document.getElementById(`${mode}-row-${prefix}`);
+      if (!row) return;
+      row.querySelectorAll('.role-perm-checkbox').forEach(cb => {
+        cb.checked = checked;
+      });
+      this.updateMasterSelectAll(mode);
+    },
+
+    updateRowSelectAll: function (mode, prefix) {
+      const row = document.getElementById(`${mode}-row-${prefix}`);
+      if (!row) return;
+      const selectAllCb = row.querySelector('.select-all-row-cb');
+      if (!selectAllCb) return;
+      const checkboxes = Array.from(row.querySelectorAll('.role-perm-checkbox'));
+      selectAllCb.checked = checkboxes.every(cb => cb.checked);
+      this.updateMasterSelectAll(mode);
+    },
+
+    updateMasterSelectAll: function (mode) {
+      const container = document.getElementById(mode + '-role-perms-list');
+      if (!container) return;
+      const checkboxes = container.querySelectorAll('.role-perm-checkbox');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      const selectAllCb = document.getElementById(mode + '-role-select-all-perms');
+      if (selectAllCb) selectAllCb.checked = allChecked;
     },
 
     toggleAllGranularPerms: function (mode, checked) {
       const container = document.getElementById(mode + '-role-perms-list');
       if (container) {
-        const checkboxes = container.querySelectorAll('.role-perm-checkbox');
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(cb => {
           cb.checked = checked;
         });
@@ -1614,7 +1699,11 @@
       // Gather Checked Permissions (Menu + Granular)
       const permissions = [];
       document.querySelectorAll('#addRoleModal .role-menu-checkbox:checked, #addRoleModal .role-perm-checkbox:checked').forEach(cb => {
-        permissions.push(cb.value);
+        if (cb.value.indexOf(',') !== -1) {
+          cb.value.split(',').forEach(v => permissions.push(v));
+        } else {
+          permissions.push(cb.value);
+        }
       });
 
       // Gather assigned user IDs
@@ -1691,7 +1780,11 @@
       // Gather Checked Permissions (Menu + Granular)
       const permissions = [];
       document.querySelectorAll('#editRoleModal .role-menu-checkbox:checked, #editRoleModal .role-perm-checkbox:checked').forEach(cb => {
-        permissions.push(cb.value);
+        if (cb.value.indexOf(',') !== -1) {
+          cb.value.split(',').forEach(v => permissions.push(v));
+        } else {
+          permissions.push(cb.value);
+        }
       });
 
       // Gather assigned user IDs
