@@ -37,7 +37,7 @@ class PermissionService {
     return Response.success('Permission berhasil dihapus', null, 'PERMISSION_DELETE_SUCCESS');
   }
 
-  createPermissionsForPrefix(prefix, actorId = 'SYSTEM') {
+  createPermissionsForPrefix(prefix, permissionName = null, status = 'ACTIVE', actorId = 'SYSTEM') {
     if (!prefix) return Response.error('Prefix wajib diisi', 'VALIDATION_ERROR');
     const cleanPrefix = String(prefix).trim().toUpperCase();
     const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
@@ -55,8 +55,8 @@ class PermissionService {
           id: Utils.generateUuid(),
           role_id: 'ROLE_SUPER_ADMIN',
           permission_code: permCode,
-          permission_name: `${permCode} Permission`,
-          status: 'ACTIVE'
+          permission_name: permissionName ? `${permissionName} - ${suffix}` : `${permCode} Permission`,
+          status: status
         };
         const inserted = this.permRepo.insert(newPerm, actorId);
         created.push(inserted);

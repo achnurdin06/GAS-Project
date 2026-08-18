@@ -170,7 +170,12 @@ function apiDeletePermission(payload) {
 function apiCreatePermissionsForPrefix(payload) {
   try {
     checkApiPermission(payload, 'PERMISSION_CREATE');
-    return new PermissionService().createPermissionsForPrefix(payload.prefix, payload ? payload.actor_id : 'SYSTEM');
+    return new PermissionService().createPermissionsForPrefix(
+      payload.prefix,
+      payload.permission_name || null,
+      payload.status || 'ACTIVE',
+      payload ? payload.actor_id : 'SYSTEM'
+    );
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiCreatePermissionsForPrefix failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');

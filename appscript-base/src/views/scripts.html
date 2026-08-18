@@ -1727,29 +1727,61 @@
       AEF.updateRowSelectAll(mode, prefix);
     },
 
+    togglePermissionForm: function(mode) {
+      const formEl = document.getElementById(`${mode}-role-perm-form`);
+      if (formEl) {
+        formEl.classList.toggle('d-none');
+      }
+    },
+
     addNewPermissionPrefix: function (mode) {
-      const inputEl = document.getElementById(`${mode}-role-new-perm-prefix`);
-      if (!inputEl) return;
-      const prefix = inputEl.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+      const prefixEl = document.getElementById(`${mode}-role-new-perm-prefix`);
+      const nameEl = document.getElementById(`${mode}-role-new-perm-name`);
+      const statusEl = document.getElementById(`${mode}-role-new-perm-status`);
+      
+      if (!prefixEl) return;
+      const prefix = prefixEl.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+      const name = nameEl ? nameEl.value.trim() : '';
+      const status = statusEl ? statusEl.value : 'ACTIVE';
+      
       if (!prefix) {
         alert('Masukkan prefix permission yang valid (huruf, angka, dan underscore)!');
         return;
       }
 
-      google.script.run
-        .withSuccessHandler((res) => {
-          if (res.success) {
-            alert(`Berhasil menambahkan prefix permission: ${prefix}`);
-            inputEl.value = '';
-            AEF.renderRoleFormCheckboxes(mode);
-          } else {
-            alert('Gagal menambahkan: ' + res.message);
-          }
-        })
-        .withFailureHandler((err) => {
-          alert('Error koneksi: ' + err.message);
-        })
-        .apiCreatePermissionsForPrefix({ prefix: prefix });
+      if (!AEF.state.pendingNewPrefixes) AEF.state.pendingNewPrefixes = {};
+      if (!AEF.state.pendingNewPrefixes[mode]) AEF.state.pendingNewPrefixes[mode] = [];
+      
+      // Check if already exists in granularPrefixes
+      if (AEF.state.granularPrefixes && AEF.state.granularPrefixes.includes(prefix)) {
+        alert('Prefix sudah ada di daftar.');
+        return;
+      }
+
+      AEF.state.pendingNewPrefixes[mode].push({ prefix, name, status });
+      if (AEF.state.granularPrefixes) {
+        AEF.state.granularPrefixes.push(prefix);
+        AEF.state.granularPrefixes.sort();
+      }
+      
+      // Select all for this new prefix by default
+      if (!AEF.state.activeAddRolePermissions) AEF.state.activeAddRolePermissions = [];
+      if (!AEF.state.activeEditRolePermissions) AEF.state.activeEditRolePermissions = [];
+      const stateArr = mode === 'add' ? AEF.state.activeAddRolePermissions : AEF.state.activeEditRolePermissions;
+      const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
+      suffixes.forEach(s => {
+        const code = `${prefix}_${s}`;
+        if (!stateArr.includes(code)) {
+          stateArr.push(code);
+        }
+      });
+
+      prefixEl.value = '';
+      if(nameEl) nameEl.value = '';
+      if(statusEl) statusEl.value = 'ACTIVE';
+      
+      alert(`Berhasil menambahkan prefix permission sementara: ${prefix}. Jangan lupa simpan role.`);
+      AEF.renderGranularTable(mode);
     },
 
     deletePermissionPrefix: function (mode, prefix) {
@@ -1767,23 +1799,50 @@
         return;
       }
 
-      if (!confirm(`Apakah Anda yakin ingin menghapus seluruh kode permission untuk prefix "${prefix}"?`)) {
+      if (!confirm(`Apakah Anda yakin ingin menghapus sementara kode permission untuk prefix "${prefix}"? Perubahan baru permanen setelah simpan role.`)) {
         return;
       }
 
-      google.script.run
-        .withSuccessHandler((res) => {
-          if (res.success) {
-            alert(`Berhasil menghapus prefix permission: ${prefix}`);
-            AEF.renderRoleFormCheckboxes(mode);
-          } else {
-            alert('Gagal menghapus: ' + res.message);
+      // Check if it's a newly added pending prefix
+      if (AEF.state.pendingNewPrefixes && AEF.state.pendingNewPrefixes[mode]) {
+        const pendingIndex = AEF.state.pendingNewPrefixes[mode].findIndex(p => p.prefix === prefix);
+        if (pendingIndex !== -1) {
+          // Remove from pending new
+          AEF.state.pendingNewPrefixes[mode].splice(pendingIndex, 1);
+        } else {
+          // It's an existing prefix, mark for deletion
+          if (!AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes = {};
+          if (!AEF.state.pendingDeletePrefixes[mode]) AEF.state.pendingDeletePrefixes[mode] = [];
+          AEF.state.pendingDeletePrefixes[mode].push(prefix);
+        }
+      } else {
+        if (!AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes = {};
+        if (!AEF.state.pendingDeletePrefixes[mode]) AEF.state.pendingDeletePrefixes[mode] = [];
+        AEF.state.pendingDeletePrefixes[mode].push(prefix);
+      }
+
+      // Remove from granularPrefixes array
+      if (AEF.state.granularPrefixes) {
+        const index = AEF.state.granularPrefixes.indexOf(prefix);
+        if (index > -1) {
+          AEF.state.granularPrefixes.splice(index, 1);
+        }
+      }
+      
+      // Remove from active permissions array
+      const stateArr = mode === 'add' ? AEF.state.activeAddRolePermissions : AEF.state.activeEditRolePermissions;
+      if (stateArr) {
+        const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
+        suffixes.forEach(s => {
+          const code = `${prefix}_${s}`;
+          const codeIdx = stateArr.indexOf(code);
+          if (codeIdx > -1) {
+            stateArr.splice(codeIdx, 1);
           }
-        })
-        .withFailureHandler((err) => {
-          alert('Error koneksi: ' + err.message);
-        })
-        .apiDeletePermissionsByPrefix({ prefix: prefix });
+        });
+      }
+
+      AEF.renderGranularTable(mode);
     },
 
     toggleRowCheckboxes: function (mode, prefix, checked) {
@@ -1930,8 +1989,26 @@
       this.showModal('addRoleModal');
       document.getElementById('form-add-role').reset();
       
-      // Initialize activeAddRolePermissions
+      // Initialize activeAddRolePermissions and pending prefixes
       AEF.state.activeAddRolePermissions = [];
+      if (!AEF.state.pendingNewPrefixes) AEF.state.pendingNewPrefixes = {};
+      if (!AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes = {};
+      AEF.state.pendingNewPrefixes['add'] = [];
+      AEF.state.pendingDeletePrefixes['add'] = [];
+
+      // Clear add new permission form inputs
+      const prefixEl = document.getElementById('add-role-new-perm-prefix');
+      const nameEl = document.getElementById('add-role-new-perm-name');
+      const statusEl = document.getElementById('add-role-new-perm-status');
+      if (prefixEl) prefixEl.value = '';
+      if (nameEl) nameEl.value = '';
+      if (statusEl) statusEl.value = 'ACTIVE';
+
+      // Hide the add permission form by default
+      const formEl = document.getElementById('add-role-perm-form');
+      if (formEl && !formEl.classList.contains('d-none')) {
+        formEl.classList.add('d-none');
+      }
 
       // Select Tab 1 by default
       AEF.switchTab('add-role-detail-tab');
@@ -1958,12 +2035,19 @@
       // Gather assigned user IDs
       const assignedUsers = (this.state.addRoleAssignedUsers || []).map(u => u.id);
 
+      // Gather pending prefixes
+      const pendingNew = AEF.state.pendingNewPrefixes && AEF.state.pendingNewPrefixes['add'] ? AEF.state.pendingNewPrefixes['add'] : [];
+      const pendingDelete = AEF.state.pendingDeletePrefixes && AEF.state.pendingDeletePrefixes['add'] ? AEF.state.pendingDeletePrefixes['add'] : [];
+
       if (!name || !code) return alert('Nama Role dan Role Code wajib diisi!');
 
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success) {
             this.hideModal('addRoleModal');
+            // Clear pending prefixes
+            if (AEF.state.pendingNewPrefixes) AEF.state.pendingNewPrefixes['add'] = [];
+            if (AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes['add'] = [];
             this.loadRolesTable();
           } else {
             alert('Gagal membuat role: ' + res.message);
@@ -1976,6 +2060,8 @@
           status: status,
           permissions: permissions,
           assigned_users: assignedUsers,
+          pending_new_prefixes: pendingNew,
+          pending_delete_prefixes: pendingDelete,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
         });
     },
@@ -1986,6 +2072,26 @@
       // Reset Select All Perms
       const selectAllCb = document.getElementById('edit-role-select-all-perms');
       if (selectAllCb) selectAllCb.checked = false;
+
+      // Initialize pending prefixes for edit mode
+      if (!AEF.state.pendingNewPrefixes) AEF.state.pendingNewPrefixes = {};
+      if (!AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes = {};
+      AEF.state.pendingNewPrefixes['edit'] = [];
+      AEF.state.pendingDeletePrefixes['edit'] = [];
+
+      // Clear add new permission form inputs
+      const prefixEl = document.getElementById('edit-role-new-perm-prefix');
+      const nameEl = document.getElementById('edit-role-new-perm-name');
+      const statusEl = document.getElementById('edit-role-new-perm-status');
+      if (prefixEl) prefixEl.value = '';
+      if (nameEl) nameEl.value = '';
+      if (statusEl) statusEl.value = 'ACTIVE';
+
+      // Hide the add permission form by default
+      const formEl = document.getElementById('edit-role-perm-form');
+      if (formEl && !formEl.classList.contains('d-none')) {
+        formEl.classList.add('d-none');
+      }
 
       // Select Tab 1 by default
       AEF.switchTab('edit-role-detail-tab');
@@ -2052,10 +2158,17 @@
       // Gather assigned user IDs
       const assignedUsers = (this.state.editRoleAssignedUsers || []).map(u => u.id);
 
+      // Gather pending prefixes
+      const pendingNew = AEF.state.pendingNewPrefixes && AEF.state.pendingNewPrefixes['edit'] ? AEF.state.pendingNewPrefixes['edit'] : [];
+      const pendingDelete = AEF.state.pendingDeletePrefixes && AEF.state.pendingDeletePrefixes['edit'] ? AEF.state.pendingDeletePrefixes['edit'] : [];
+
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success) {
             this.hideModal('editRoleModal');
+            // Clear pending prefixes
+            if (AEF.state.pendingNewPrefixes) AEF.state.pendingNewPrefixes['edit'] = [];
+            if (AEF.state.pendingDeletePrefixes) AEF.state.pendingDeletePrefixes['edit'] = [];
             this.loadRolesTable();
           } else {
             alert('Gagal menyimpan perubahan: ' + res.message);
@@ -2068,6 +2181,8 @@
           status: status,
           permissions: permissions,
           assigned_users: assignedUsers,
+          pending_new_prefixes: pendingNew,
+          pending_delete_prefixes: pendingDelete,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
         });
     },

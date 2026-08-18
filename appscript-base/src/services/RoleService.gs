@@ -78,6 +78,19 @@ class RoleService {
       inserted = this.roleRepo.insert(newRole, actorId);
     }
 
+    // Process pending granular permissions
+    const permService = new PermissionService();
+    if (roleData.pending_new_prefixes && roleData.pending_new_prefixes.length > 0) {
+      roleData.pending_new_prefixes.forEach(p => {
+        permService.createPermissionsForPrefix(p.prefix, p.name, p.status, actorId);
+      });
+    }
+    if (roleData.pending_delete_prefixes && roleData.pending_delete_prefixes.length > 0) {
+      roleData.pending_delete_prefixes.forEach(prefix => {
+        permService.deletePermissionsByPrefix(prefix, actorId);
+      });
+    }
+
     // Save Permissions
     this.saveRolePermissions(code, roleData.permissions || [], actorId);
 
@@ -100,6 +113,19 @@ class RoleService {
     };
 
     this.roleRepo.updateById(roleId, updated, actorId);
+
+    // Process pending granular permissions
+    const permService = new PermissionService();
+    if (roleData.pending_new_prefixes && roleData.pending_new_prefixes.length > 0) {
+      roleData.pending_new_prefixes.forEach(p => {
+        permService.createPermissionsForPrefix(p.prefix, p.name, p.status, actorId);
+      });
+    }
+    if (roleData.pending_delete_prefixes && roleData.pending_delete_prefixes.length > 0) {
+      roleData.pending_delete_prefixes.forEach(prefix => {
+        permService.deletePermissionsByPrefix(prefix, actorId);
+      });
+    }
 
     // Save Permissions
     this.saveRolePermissions(code, roleData.permissions || [], actorId);
