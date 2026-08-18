@@ -44,6 +44,14 @@
       });
     },
 
+    toggleProfileDropdown: function (event) {
+      event.stopPropagation();
+      const dropdown = document.querySelector('.dropdown-menu[aria-labelledby="profileDropdown"]');
+      if (dropdown) {
+        dropdown.classList.toggle('show');
+      }
+    },
+
     checkSessionState: function () {
       const stored = localStorage.getItem('AEF_AUTH_DATA');
       if (stored) {
@@ -2457,5 +2465,13 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     AEF.init();
+    
+    // Close profile dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = document.querySelector('.dropdown-menu[aria-labelledby="profileDropdown"]');
+      if (dropdown && !dropdown.contains(e.target) && !e.target.closest('#profileDropdown')) {
+        dropdown.classList.remove('show');
+      }
+    });
   });
 </script>
