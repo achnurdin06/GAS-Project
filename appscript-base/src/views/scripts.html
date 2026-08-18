@@ -390,18 +390,49 @@
         .withFailureHandler((err) => {
           navContainer.innerHTML = '<div class="text-danger small p-2">Gagal memuat menu.</div>';
         })
-        .apiGetMenu({ role_id: this.state.user ? this.state.user.role_id : 'ROLE_SUPER_ADMIN' });
+        .apiGetMenu({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     navigateTo: function (route) {
       this.state.currentRoute = route;
 
+      const contentCanvas = document.getElementById('aef-main-content');
+      if (!contentCanvas) return;
+
+      // 1. Route guarding validation
+      const routePermissions = {
+        '/users': 'USER_VIEW',
+        '/roles': 'ROLE_VIEW',
+        '/permissions': 'PERMISSION_VIEW',
+        '/config': 'CONFIG_VIEW',
+        '/audit': 'AUDIT_VIEW',
+        '/menus': 'MENU_VIEW'
+      };
+
+      const requiredPerm = routePermissions[route];
+      if (requiredPerm) {
+        const userRole = this.state.user ? String(this.state.user.role_id).trim().toUpperCase() : '';
+        const isSuperOrAdmin = (userRole === 'ROLE_SUPER_ADMIN' || userRole === 'ROLE_ADMIN');
+        const hasPerm = isSuperOrAdmin || (this.state.permissions && this.state.permissions.includes(requiredPerm));
+
+        if (!hasPerm) {
+          contentCanvas.innerHTML = `
+            <div class="aef-card text-center py-5 border-0 shadow-sm" style="border-radius: 0.5rem; background-color: #ffffff; margin-top: 1rem;">
+              <div class="mx-auto bg-light-danger rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px; background-color: #ffeef0;">
+                <i class="bi bi-shield-slash text-danger" style="font-size: 2.2rem; color: #f1416c;"></i>
+              </div>
+              <h4 class="fw-bold mt-3 text-dark" style="color: #181c32;">Akses Ditolak</h4>
+              <p class="text-muted mx-auto px-4" style="max-width: 500px;">Anda tidak memiliki hak otorisasi (hak akses <code>${requiredPerm}</code>) untuk melihat halaman ini. Silakan hubungi administrator jika Anda merasa ini adalah kesalahan.</p>
+            </div>
+          `;
+          return;
+        }
+      }
+
       // Active state highlight
       document.querySelectorAll('.aef-nav-link').forEach(el => el.classList.remove('active'));
       const activeNav = document.querySelector(`.aef-nav-link[onclick*="${route}"]`);
       if (activeNav) activeNav.classList.add('active');
-
-      const contentCanvas = document.getElementById('aef-main-content');
       
       if (route === '/dashboard') {
         contentCanvas.innerHTML = document.getElementById('tpl-dashboard').innerHTML;

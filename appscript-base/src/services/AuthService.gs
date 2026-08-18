@@ -69,6 +69,7 @@ class AuthService {
         role_id: user.role_id,
         profile_pic_url: user.profile_pic_url || ''
       },
+      permissions: this.getUserPermissions(user.role_id),
       logged_in_at: Utils.formatIsoDate()
     };
 
@@ -125,6 +126,7 @@ class AuthService {
         role_id: user.role_id,
         profile_pic_url: user.profile_pic_url || ''
       },
+      permissions: this.getUserPermissions(user.role_id),
       logged_in_at: Utils.formatIsoDate()
     };
 
@@ -158,5 +160,25 @@ class AuthService {
       if (cached) return JSON.parse(cached);
     } catch (e) {}
     return null;
+  }
+
+  getUserPermissions(roleId) {
+    if (!roleId) return [];
+    const rId = String(roleId).trim().toUpperCase();
+    if (rId === 'ROLE_SUPER_ADMIN' || rId === 'ROLE_ADMIN') {
+      return [
+        'DASHBOARD_VIEW', 'USER_VIEW', 'USER_CREATE', 'USER_UPDATE', 'USER_DELETE',
+        'ROLE_VIEW', 'ROLE_CREATE', 'ROLE_DELETE', 'PERMISSION_VIEW', 'PERMISSION_CREATE',
+        'PERMISSION_DELETE', 'CONFIG_VIEW', 'CONFIG_UPDATE', 'AUDIT_VIEW',
+        'MENU_VIEW', 'MENU_CREATE', 'MENU_UPDATE', 'MENU_DELETE'
+      ];
+    }
+    try {
+      const userPerms = new PermissionRepository().findByRoleId(rId);
+      return userPerms.map(p => String(p.permission_code).trim().toUpperCase());
+    } catch (e) {
+      LoggerUtil.error('AuthService', 'Failed to retrieve permissions for role: ' + rId, e);
+      return [];
+    }
   }
 }
