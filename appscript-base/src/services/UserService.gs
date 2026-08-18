@@ -10,6 +10,9 @@ class UserService {
       id: u.id,
       name: u.name,
       email: u.email,
+      phone: u.phone || '',
+      username: u.username || '',
+      force_password_change: u.force_password_change === true || u.force_password_change === 'TRUE' || u.force_password_change === 1 || u.force_password_change === '1' ? 1 : 0,
       role_id: u.role_id,
       status: u.status,
       created_at: u.created_at
@@ -19,19 +22,27 @@ class UserService {
   }
 
   createUser(userData, actorId = 'SYSTEM') {
-    if (!userData.name || !userData.email || !userData.password) {
-      return Response.error('Nama, Email, dan Password wajib diisi', 'VALIDATION_ERROR');
+    if (!userData.name || !userData.email || !userData.password || !userData.username) {
+      return Response.error('Nama, Email, Username, dan Password wajib diisi', 'VALIDATION_ERROR');
     }
 
-    const existing = this.userRepo.findByEmail(userData.email);
-    if (existing) {
+    const existingEmail = this.userRepo.findByEmail(userData.email);
+    if (existingEmail) {
       return Response.error('Email sudah terdaftar', 'USER_ALREADY_EXISTS');
+    }
+
+    const existingUsername = this.userRepo.find(row => String(row.username).trim().toLowerCase() === String(userData.username).trim().toLowerCase());
+    if (existingUsername.length > 0) {
+      return Response.error('Username sudah digunakan', 'USERNAME_ALREADY_EXISTS');
     }
 
     const newUser = {
       id: Utils.generateUuid(),
       name: userData.name,
       email: userData.email,
+      phone: userData.phone || '',
+      username: String(userData.username).trim().toLowerCase(),
+      force_password_change: userData.force_password_change ? 'TRUE' : 'FALSE',
       password_hash: Utils.hashSha256(userData.password),
       role_id: userData.role_id || 'ROLE_USER',
       status: 'ACTIVE'
@@ -51,9 +62,13 @@ class UserService {
     if (!existing) return Response.error('User tidak ditemukan', 'USER_NOT_FOUND');
 
     const updateFields = {};
-    if (updatePayload.name) updateFields.name = updatePayload.name;
-    if (updatePayload.email) updateFields.email = updatePayload.email;
-    if (updatePayload.role_id) updateFields.role_id = updatePayload.role_id;
+    if (updatePayload.name !== undefined) updateFields.name = updatePayload.name;
+    if (updatePayload.email !== undefined) updateFields.email = updatePayload.email;
+    if (updatePayload.phone !== undefined) updateFields.phone = updatePayload.phone;
+    if (updatePayload.force_password_change !== undefined) {
+      updateFields.force_password_change = updatePayload.force_password_change ? 'TRUE' : 'FALSE';
+    }
+    if (updatePayload.role_id !== undefined) updateFields.role_id = updatePayload.role_id;
     if (updatePayload.password) updateFields.password_hash = Utils.hashSha256(updatePayload.password);
 
     const success = this.userRepo.updateById(userId, updateFields, actorId);

@@ -48,13 +48,16 @@ function setupDatabase() {
   }
 
   // 1. mst_user Sheet (Super Admin & Admin & Standard User)
-  const userHeaders = ['id', 'name', 'email', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
+  const userHeaders = ['id', 'name', 'email', 'phone', 'username', 'force_password_change', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
   const adminPasswordHash = Utils.hashSha256('admin123');
   const userSeed = [
     {
       id: Utils.generateUuid(),
       name: 'Super Administrator',
       email: 'superadmin@aef.com',
+      phone: '+62 812-3456-7890',
+      username: 'superadmin',
+      force_password_change: 'FALSE',
       password_hash: adminPasswordHash,
       role_id: 'ROLE_SUPER_ADMIN',
       created_at: Utils.formatIsoDate(),
@@ -67,6 +70,9 @@ function setupDatabase() {
       id: Utils.generateUuid(),
       name: 'System Administrator',
       email: 'admin@aef.com',
+      phone: '+62 812-3456-7891',
+      username: 'sysadmin',
+      force_password_change: 'FALSE',
       password_hash: adminPasswordHash,
       role_id: 'ROLE_ADMIN',
       created_at: Utils.formatIsoDate(),
@@ -79,6 +85,9 @@ function setupDatabase() {
       id: Utils.generateUuid(),
       name: 'Standard User',
       email: 'user@aef.com',
+      phone: '+62 812-3456-7892',
+      username: 'stduser',
+      force_password_change: 'FALSE',
       password_hash: Utils.hashSha256('user123'),
       role_id: 'ROLE_USER',
       created_at: Utils.formatIsoDate(),

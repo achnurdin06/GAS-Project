@@ -1,36 +1,232 @@
 <template id="tpl-users">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="fw-bold mb-1" style="color: #181c32;">User Management</h3>
-      <p class="text-muted small mb-0">Kelola pengguna sistem dan pendelegasian role hak akses.</p>
+  <!-- 1. MAIN USERS LIST VIEW -->
+  <div id="users-list-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="fw-bold mb-1" style="color: #181c32;">User Management</h3>
+        <p class="text-muted small mb-0">Kelola pengguna sistem dan pendelegasian role hak akses.</p>
+      </div>
+      <button class="btn btn-aef-primary" onclick="AEF.showModal('addUserModal')">
+        <i class="bi bi-person-plus me-1"></i> Tambah User
+      </button>
     </div>
-    <button class="btn btn-aef-primary" onclick="AEF.showModal('addUserModal')">
-      <i class="bi bi-person-plus me-1"></i> Tambah User
-    </button>
+
+    <div class="aef-card">
+      <div class="table-responsive">
+        <table class="table table-aef align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Nama Lengkap</th>
+              <th>Email</th>
+              <th>Nomor Telepon</th>
+              <th>Role ID</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <!-- Dynamically populated via AEF.loadUsersTable() -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
+        <div class="text-muted small" id="users-pagination-info">Memuat entri...</div>
+        <ul class="pagination pagination-sm mb-0" id="users-pagination-controls"></ul>
+      </div>
+    </div>
   </div>
 
-  <div class="aef-card">
-    <div class="table-responsive">
-      <table class="table table-aef align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Nama Lengkap</th>
-            <th>Email</th>
-            <th>Role ID</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="users-table-body">
-          <!-- Dynamically populated via AEF.loadUsersTable() -->
-        </tbody>
-      </table>
+  <!-- 2. USER DETAILS VIEW (Matches Lampiran 2) -->
+  <div id="users-detail-view" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="fw-bold mb-1" id="detail-header-title" style="color: #181c32;">User Details: Budi Santoso</h3>
+        <p class="text-muted small mb-0">Informasi profil lengkap, aktivitas audit log, dan detail hak akses.</p>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" onclick="AEF.hideUserDetail()">
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar
+      </button>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="users-pagination-info">Memuat entri...</div>
-      <ul class="pagination pagination-sm mb-0" id="users-pagination-controls"></ul>
+    <div class="row g-4">
+      <!-- Left Profile Card -->
+      <div class="col-lg-4">
+        <div class="aef-card text-center p-4">
+          <div class="d-flex justify-content-center mb-3">
+            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold fs-1" id="detail-avatar" style="width: 100px; height: 100px; border: 3px solid #e1e9ff;">
+              BS
+            </div>
+          </div>
+          <h4 class="fw-bold text-dark mb-1" id="detail-profile-name">Budi Santoso</h4>
+          
+          <div class="d-flex justify-content-center gap-2 mb-4" id="detail-role-badges">
+            <span class="badge bg-light-primary text-primary px-3 py-1 fs-8">System Admin</span>
+          </div>
+
+          <hr class="border-light-subtle my-3">
+
+          <div class="text-start mb-4">
+            <div class="d-flex align-items-center gap-3 py-2">
+              <i class="bi bi-envelope text-muted fs-5"></i>
+              <span class="text-dark small text-break" id="detail-profile-email">budi.santoso@example.com</span>
+            </div>
+            <div class="d-flex align-items-center gap-3 py-2">
+              <i class="bi bi-telephone text-muted fs-5"></i>
+              <span class="text-dark small" id="detail-profile-phone">+62 812-3456-7890</span>
+            </div>
+            <div class="d-flex align-items-center gap-3 py-2">
+              <i class="bi bi-check-circle text-success fs-5"></i>
+              <span class="badge bg-light-success text-success px-3 py-1 fs-8" id="detail-profile-status">Active Account</span>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button class="btn btn-aef-primary w-100" id="detail-edit-btn">
+              <i class="bi bi-pencil me-1"></i> Edit Profil
+            </button>
+            <button class="btn btn-light text-muted w-100 border" onclick="AEF.hideUserDetail()">
+              Kembali ke Daftar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Tabbed Panel -->
+      <div class="col-lg-8">
+        <div class="aef-card p-0">
+          <!-- Navigation Tabs -->
+          <div class="border-bottom p-3 bg-light-subtle" style="border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem;">
+            <ul class="nav nav-tabs nav-line-tabs border-0" id="userDetailTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="detail-tab-data" data-bs-toggle="tab" data-bs-target="#pane-data" type="button" role="tab" aria-controls="pane-data" aria-selected="true">Data Diri</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold text-muted px-3 pb-2" id="detail-tab-access" data-bs-toggle="tab" data-bs-target="#pane-access" type="button" role="tab" aria-controls="pane-access" aria-selected="false">Akses & Keamanan</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold text-muted px-3 pb-2" id="detail-tab-activity" data-bs-toggle="tab" data-bs-target="#pane-activity" type="button" role="tab" aria-controls="pane-activity" aria-selected="false">Log Aktivitas</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link fw-semibold text-muted px-3 pb-2" id="detail-tab-control" data-bs-toggle="tab" data-bs-target="#pane-control" type="button" role="tab" aria-controls="pane-control" aria-selected="false">Kontrol</button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="p-4">
+            <div class="tab-content" id="userDetailTabsContent">
+              <!-- Tab 1: Data Diri -->
+              <div class="tab-pane fade show active" id="pane-data" role="tabpanel" aria-labelledby="detail-tab-data">
+                <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark-emphasis" style="font-size: 1rem;">Informasi Personal</h5>
+                <div class="row g-3 mb-4">
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Nama Lengkap</label>
+                    <div class="fw-semibold text-dark" id="detail-info-name">Budi Santoso</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Username</label>
+                    <div class="fw-semibold text-dark" id="detail-info-username">bsantoso</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Email Utama</label>
+                    <div class="fw-semibold text-dark" id="detail-info-email">budi.santoso@example.com</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Nomor Telepon</label>
+                    <div class="fw-semibold text-dark" id="detail-info-phone">+62 812-3456-7890</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Dibuat Pada</label>
+                    <div class="fw-semibold text-dark" id="detail-info-created">12 Oct 2023, 14:30 WIB</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Pembaruan Terakhir</label>
+                    <div class="fw-semibold text-dark" id="detail-info-updated">05 Nov 2023, 09:15 WIB</div>
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="fw-bold mb-0 text-dark-emphasis" style="font-size: 1rem;">Recent Activity Log</h5>
+                  <button class="btn btn-xs btn-outline-secondary" onclick="AEF.downloadUserDetailAuditCsv()">
+                    <i class="bi bi-download me-1"></i> Download CSV
+                  </button>
+                </div>
+                
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle text-muted small mb-0">
+                    <thead>
+                      <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Module</th>
+                        <th>IP Address</th>
+                      </tr>
+                    </thead>
+                    <tbody id="detail-activity-tbody">
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Tab 2: Akses & Keamanan -->
+              <div class="tab-pane fade" id="pane-access" role="tabpanel" aria-labelledby="detail-tab-access">
+                <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark-emphasis" style="font-size: 1rem;">Hak Akses & Role</h5>
+                <div class="p-3 bg-light rounded mb-3">
+                  <div class="fw-bold text-dark" id="detail-access-role">System Admin</div>
+                  <div class="small text-muted mt-1">Mengizinkan pengguna untuk mengakses menu Dashboard, User Management, Role Management, Permission Control, System Configuration, dan Audit Log.</div>
+                </div>
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="detail-access-force" disabled>
+                  <label class="form-check-label fw-semibold text-dark small" for="detail-access-force">Paksa ubah password pada login pertama</label>
+                </div>
+              </div>
+
+              <!-- Tab 3: Log Aktivitas -->
+              <div class="tab-pane fade" id="pane-activity" role="tabpanel" aria-labelledby="detail-tab-activity">
+                <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark-emphasis" style="font-size: 1rem;">Daftar Log Aktivitas Lengkap</h5>
+                <div class="table-responsive">
+                  <table class="table table-sm table-striped align-middle text-muted small mb-0">
+                    <thead>
+                      <tr>
+                        <th>Tanggal & Waktu</th>
+                        <th>Aksi</th>
+                        <th>Modul</th>
+                        <th>Detail Aktivitas</th>
+                      </tr>
+                    </thead>
+                    <tbody id="detail-full-activity-tbody">
+                      <!-- Rendered dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Tab 4: Kontrol -->
+              <div class="tab-pane fade" id="pane-control" role="tabpanel" aria-labelledby="detail-tab-control">
+                <h5 class="fw-bold mb-3 border-bottom pb-2 text-dark-emphasis" style="font-size: 1rem;">Tindakan Kontrol Akun</h5>
+                <div class="d-flex flex-column gap-3">
+                  <div class="p-3 border rounded border-warning-subtle bg-warning-subtle bg-opacity-10 d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-bold text-warning-emphasis small">Ubah Kata Sandi Pengguna</div>
+                      <div class="text-muted small" style="font-size: 0.75rem;">Reset atau ubah kata sandi pengguna secara manual.</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-warning" id="detail-reset-pass-btn">Reset Password</button>
+                  </div>
+                  <div class="p-3 border rounded border-danger-subtle bg-danger-subtle bg-opacity-10 d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-bold text-danger small">Hapus Akun Pengguna</div>
+                      <div class="text-muted small" style="font-size: 0.75rem;">Menonaktifkan dan menghapus pengguna dari sistem secara permanen.</div>
+                    </div>
+                    <button class="btn btn-sm btn-danger" id="detail-delete-user-btn">Hapus Akun</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

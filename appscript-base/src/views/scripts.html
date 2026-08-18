@@ -17,6 +17,31 @@
 
     init: function () {
       this.checkSessionState();
+      
+      // Global manual tab switching fallback when bootstrap is not defined
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-bs-toggle="tab"]');
+        if (btn && typeof bootstrap === 'undefined') {
+          e.preventDefault();
+          const targetId = btn.getAttribute('data-bs-target');
+          if (targetId) {
+            const nav = btn.closest('.nav-tabs');
+            if (nav) {
+              nav.querySelectorAll('[data-bs-toggle="tab"]').forEach(b => b.classList.remove('active'));
+            }
+            btn.classList.add('active');
+            
+            const pane = document.querySelector(targetId);
+            if (pane) {
+              const parent = pane.parentElement;
+              if (parent) {
+                parent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+              }
+              pane.classList.add('show', 'active');
+            }
+          }
+        }
+      });
     },
 
     checkSessionState: function () {
@@ -305,13 +330,17 @@
         <tr>
           <td class="fw-semibold" style="color: #181c32;">${u.name}</td>
           <td>${u.email}</td>
+          <td>${u.phone || '-'}</td>
           <td><span class="badge badge-light-primary px-3 py-2 fs-7">${u.role_id}</span></td>
           <td><span class="badge badge-light-success px-3 py-2 fs-7">${u.status}</span></td>
           <td>
+            <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.showUserDetail('${u.id}')" title="Detail User">
+              <i class="bi bi-eye"></i>
+            </button>
             <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditUserModal('${u.id}')" title="Edit User">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteUser('${u.id}')" title="Hapus User">
+            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteUserModal('${u.id}')" title="Hapus User">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -417,11 +446,14 @@
     createUser: function () {
       const name = document.getElementById('new-user-name').value;
       const email = document.getElementById('new-user-email').value;
+      const phone = document.getElementById('new-user-phone').value;
+      const username = document.getElementById('new-user-username').value;
       const password = document.getElementById('new-user-password').value;
       const roleId = document.getElementById('new-user-role').value;
+      const forceChange = document.getElementById('new-user-force-change').checked;
 
-      if (!name || !email || !password) {
-        alert('Mohon isi semua field!');
+      if (!name || !email || !password || !username) {
+        alert('Mohon isi semua field wajib!');
         return;
       }
 
@@ -438,6 +470,9 @@
         .apiCreateUser({
           name: name,
           email: email,
+          phone: phone,
+          username: username,
+          force_password_change: forceChange,
           password: password,
           role_id: roleId,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
@@ -450,7 +485,36 @@
       document.getElementById('edit-user-id').value = user.id;
       document.getElementById('edit-user-name').value = user.name;
       document.getElementById('edit-user-email').value = user.email;
+      document.getElementById('edit-user-phone').value = user.phone || '';
+      document.getElementById('edit-user-username').value = user.username || '';
       document.getElementById('edit-user-password').value = '';
+      document.getElementById('edit-user-force-change').checked = (user.force_password_change === 1);
+      document.getElementById('edit-user-status').value = user.status || 'ACTIVE';
+
+      // Set avatar initials
+      const initials = (user.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('edit-user-avatar').textContent = initials;
+      document.getElementById('edit-user-title-text').textContent = `Edit User: ${user.name}`;
+      document.getElementById('edit-user-subtitle-text').textContent = `UID: ${user.id.substring(0, 8).toUpperCase()}`;
+
+      // Reset tabs
+      const firstTab = document.querySelector('#editUserTabs button:first-child');
+      if (firstTab) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+          const tabTrigger = new bootstrap.Tab(firstTab);
+          tabTrigger.show();
+        } else {
+          // Manual Fallback
+          document.querySelectorAll('#editUserTabs button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('#editUserTabsContent .tab-pane').forEach(p => p.classList.remove('show', 'active'));
+          firstTab.classList.add('active');
+          const targetId = firstTab.getAttribute('data-bs-target');
+          if (targetId) {
+            const pane = document.querySelector(targetId);
+            if (pane) pane.classList.add('show', 'active');
+          }
+        }
+      }
 
       this.populateRoleDropdowns(user.role_id, ['edit-user-role']);
       this.showModal('editUserModal');
@@ -460,14 +524,21 @@
       const userId = document.getElementById('edit-user-id').value;
       const name = document.getElementById('edit-user-name').value;
       const email = document.getElementById('edit-user-email').value;
+      const phone = document.getElementById('edit-user-phone').value;
       const roleId = document.getElementById('edit-user-role').value;
       const password = document.getElementById('edit-user-password').value;
+      const forceChange = document.getElementById('edit-user-force-change').checked;
+      const status = document.getElementById('edit-user-status').value;
 
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success) {
             this.hideModal('editUserModal');
             this.loadUsersTable();
+            // If user detail is active, refresh it
+            if (document.getElementById('users-detail-view').style.display !== 'none') {
+              this.showUserDetail(userId);
+            }
           } else {
             alert('Gagal memperbarui user: ' + res.message);
           }
@@ -476,17 +547,198 @@
           user_id: userId,
           name: name,
           email: email,
+          phone: phone,
           role_id: roleId,
           password: password || undefined,
+          force_password_change: forceChange,
+          status: status,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
         });
     },
 
-    deleteUser: function (userId) {
-      if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
+    togglePasswordVisibility: function (inputId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(inputId + '-toggle-icon');
+      if (input && icon) {
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.className = 'bi bi-eye';
+        } else {
+          input.type = 'password';
+          icon.className = 'bi bi-eye-slash';
+        }
+      }
+    },
+
+    showUserDetail: function (userId) {
+      const user = (this.usersCache || []).find(u => u.id === userId);
+      if (!user) return;
+
+      // Populate layout
+      document.getElementById('detail-header-title').textContent = `User Details: ${user.name}`;
+      
+      const initials = (user.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      document.getElementById('detail-avatar').textContent = initials;
+      document.getElementById('detail-profile-name').textContent = user.name;
+      document.getElementById('detail-profile-email').textContent = user.email;
+      document.getElementById('detail-profile-phone').textContent = user.phone || '-';
+      document.getElementById('detail-profile-status').textContent = user.status === 'ACTIVE' ? 'Active Account' : 'Inactive Account';
+      document.getElementById('detail-profile-status').className = `badge px-3 py-1 fs-8 ${user.status === 'ACTIVE' ? 'bg-light-success text-success' : 'bg-light-danger text-danger'}`;
+
+      document.getElementById('detail-role-badges').innerHTML = `<span class="badge bg-light-primary text-primary px-3 py-1 fs-8">${user.role_id}</span>`;
+
+      // Data Diri tab
+      document.getElementById('detail-info-name').textContent = user.name;
+      document.getElementById('detail-info-username').textContent = user.username || '-';
+      document.getElementById('detail-info-email').textContent = user.email;
+      document.getElementById('detail-info-phone').textContent = user.phone || '-';
+      document.getElementById('detail-info-created').textContent = user.created_at || '-';
+      document.getElementById('detail-info-updated').textContent = user.updated_at || '-';
+
+      // Access tab
+      document.getElementById('detail-access-role').textContent = user.role_id;
+      document.getElementById('detail-access-force').checked = (user.force_password_change === 1);
+
+      // Buttons binding
+      document.getElementById('detail-edit-btn').onclick = () => this.openEditUserModal(user.id);
+      document.getElementById('detail-reset-pass-btn').onclick = () => this.openEditUserModal(user.id);
+      document.getElementById('detail-delete-user-btn').onclick = () => this.openDeleteUserModal(user.id);
+
+      // Reset tabs on detail view
+      const firstTab = document.querySelector('#userDetailTabs button:first-child');
+      if (firstTab) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+          const tabTrigger = new bootstrap.Tab(firstTab);
+          tabTrigger.show();
+        } else {
+          // Manual Fallback
+          document.querySelectorAll('#userDetailTabs button').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('#userDetailTabsContent .tab-pane').forEach(p => p.classList.remove('show', 'active'));
+          firstTab.classList.add('active');
+          const targetId = firstTab.getAttribute('data-bs-target');
+          if (targetId) {
+            const pane = document.querySelector(targetId);
+            if (pane) pane.classList.add('show', 'active');
+          }
+        }
+      }
+
+      // Load user activity logs from global audit state
+      this.loadUserAuditLogs(user);
+
+      // Toggle views
+      document.getElementById('users-list-view').style.display = 'none';
+      document.getElementById('users-detail-view').style.display = 'block';
+    },
+
+    hideUserDetail: function () {
+      document.getElementById('users-detail-view').style.display = 'none';
+      document.getElementById('users-list-view').style.display = 'block';
+    },
+
+    loadUserAuditLogs: function (user) {
+      google.script.run.withSuccessHandler((res) => {
+        const tbody = document.getElementById('detail-activity-tbody');
+        const fullTbody = document.getElementById('detail-full-activity-tbody');
+        if (!tbody || !fullTbody) return;
+
+        if (res.success && Array.isArray(res.data)) {
+          const userLogs = res.data.filter(log => 
+            String(log.actor_id).toLowerCase() === String(user.email).toLowerCase() ||
+            String(log.actor_id).toLowerCase() === String(user.id).toLowerCase() ||
+            String(log.details).toLowerCase().includes(String(user.email).toLowerCase()) ||
+            String(log.details).toLowerCase().includes(String(user.id).toLowerCase())
+          );
+
+          this.currentUserDetailLogs = userLogs;
+
+          if (userLogs.length === 0) {
+            const emptyRow = `<tr><td colspan="4" class="text-center py-2 text-muted">Belum ada aktivitas tercatat</td></tr>`;
+            tbody.innerHTML = emptyRow;
+            fullTbody.innerHTML = emptyRow;
+            return;
+          }
+
+          let recentHtml = '';
+          userLogs.slice(0, 5).forEach(log => {
+            recentHtml += `<tr>
+              <td>${log.timestamp || '-'}</td>
+              <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
+              <td>${log.module}</td>
+              <td>${log.ip_address || '192.168.1.1'}</td>
+            </tr>`;
+          });
+          tbody.innerHTML = recentHtml;
+
+          let fullHtml = '';
+          userLogs.forEach(log => {
+            fullHtml += `<tr>
+              <td>${log.timestamp || '-'}</td>
+              <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
+              <td>${log.module}</td>
+              <td>${log.details || '-'}</td>
+            </tr>`;
+          });
+          fullTbody.innerHTML = fullHtml;
+        } else {
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat log</td></tr>`;
+          fullTbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat log</td></tr>`;
+        }
+      }).apiGetAuditLogs();
+    },
+
+    downloadUserDetailAuditCsv: function () {
+      const logs = this.currentUserDetailLogs || [];
+      if (logs.length === 0) {
+        alert('Tidak ada log aktivitas untuk diunduh.');
+        return;
+      }
+
+      let csvContent = 'data:text/csv;charset=utf-8,Timestamp,Action,Module,IP Address,Details\n';
+      logs.forEach(log => {
+        const row = [
+          log.timestamp,
+          log.action,
+          log.module,
+          log.ip_address || '192.168.1.1',
+          `"${(log.details || '').replace(/"/g, '""')}"`
+        ].join(',');
+        csvContent += row + '\n';
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `audit_log_${this.currentUserDetailLogs[0].actor_id || 'user'}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+
+    openDeleteUserModal: function (userId) {
+      const user = (this.usersCache || []).find(u => u.id === userId);
+      if (!user) return;
+
+      document.getElementById('delete-user-id').value = user.id;
+      document.getElementById('delete-user-display-name').textContent = user.name;
+      document.getElementById('delete-confirm-checkbox').checked = false;
+      document.getElementById('delete-confirm-btn').disabled = true;
+
+      this.showModal('deleteUserModal');
+    },
+
+    toggleDeleteButton: function (checked) {
+      document.getElementById('delete-confirm-btn').disabled = !checked;
+    },
+
+    submitDeleteUser: function () {
+      const userId = document.getElementById('delete-user-id').value;
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success) {
+            this.hideModal('deleteUserModal');
+            document.getElementById('users-detail-view').style.display = 'none';
+            document.getElementById('users-list-view').style.display = 'block';
             this.loadUsersTable();
           } else {
             alert('Gagal menghapus user: ' + res.message);

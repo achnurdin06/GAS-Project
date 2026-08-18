@@ -4,6 +4,10 @@
  */
 function doGet(e) {
   try {
+    if (e && e.parameter && e.parameter.setup === 'true') {
+      setupDatabase();
+      return HtmlService.createHtmlOutput('<h3>Database reinitialized successfully!</h3>');
+    }
     const template = HtmlService.createTemplateFromFile('views/Index');
     return template.evaluate()
       .setTitle('AppScript Enterprise Framework (AEF)')
