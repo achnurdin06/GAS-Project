@@ -4,21 +4,50 @@
       <h3 class="fw-bold mb-1" style="color: #181c32;">Permission Control</h3>
       <p class="text-muted small mb-0">Atur pemetaan izin fitur (permission_code) terhadap role ID.</p>
     </div>
-    <button id="btn-add-perm-trigger" class="btn btn-aef-primary" onclick="AEF.showModal('addPermModal')">
-      <i class="bi bi-key-fill me-1"></i> Tambah Permission
+    <button id="btn-add-perm-trigger" class="btn btn-aef-primary" onclick="AEF.openAddPermissionModal()">
+      <i class="bi bi-key-fill me-1"></i> Tambah Permission Baru
     </button>
   </div>
 
-  <div class="aef-card">
-    <div class="table-responsive">
+  <div class="row mb-4 align-items-end g-3">
+    <div class="col-md-4">
+      <label class="form-label text-muted small fw-semibold mb-1">Pilih Role</label>
+      <select id="perm-role-select" class="form-select form-select-solid" onchange="AEF.handlePermRoleChange(this.value)">
+        <!-- Dynamically populated -->
+      </select>
+    </div>
+  </div>
+
+  <div class="aef-card border-0 shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
+      <h5 class="fw-bold mb-0 text-dark" style="color: #3f4254;">
+        <i class="bi bi-shield-check text-primary me-2"></i>Matrix Hak Akses: <span id="perm-matrix-role-name">-</span>
+      </h5>
+      <div class="d-flex gap-2">
+        <button id="btn-edit-perm-matrix" class="btn btn-sm btn-light-primary text-primary" onclick="AEF.enablePermMatrixEdit()">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </button>
+        <button id="btn-save-perm-matrix" class="btn btn-sm btn-success d-none" onclick="AEF.savePermMatrix()">
+          <i class="bi bi-check2-circle me-1"></i>Simpan
+        </button>
+        <button id="btn-cancel-perm-matrix" class="btn btn-sm btn-light text-muted d-none" onclick="AEF.cancelPermMatrixEdit()">
+          <i class="bi bi-x-circle me-1"></i>Batal
+        </button>
+      </div>
+    </div>
+
+    <div class="table-responsive w-100">
       <table class="table table-aef align-middle mb-0">
         <thead>
-          <tr>
-            <th>Role ID</th>
-            <th>Permission Code</th>
-            <th>Nama Permission</th>
-            <th>Status</th>
-            <th>Aksi</th>
+          <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
+            <th style="min-width: 220px;">Permission Code</th>
+            <th class="text-center" style="width: 100px;">Select All</th>
+            <th class="text-center" style="width: 100px;">Create (C)</th>
+            <th class="text-center" style="width: 100px;">Read (R)</th>
+            <th class="text-center" style="width: 100px;">Update (U)</th>
+            <th class="text-center" style="width: 100px;">Delete (D)</th>
+            <th class="text-center" style="width: 120px;">Export/Import (E)</th>
+            <th class="text-center" style="width: 80px;">Aksi</th>
           </tr>
         </thead>
         <tbody id="perms-table-body">
@@ -28,7 +57,7 @@
     </div>
 
     <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
+    <div id="perms-pagination-container" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
       <div class="text-muted small" id="perms-pagination-info">Memuat entri...</div>
       <ul class="pagination pagination-sm mb-0" id="perms-pagination-controls"></ul>
     </div>

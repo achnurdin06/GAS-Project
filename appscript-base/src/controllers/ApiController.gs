@@ -147,6 +147,17 @@ function apiGetPermissions(payload) {
   }
 }
 
+function apiUpdateRolePermissions(payload) {
+  try {
+    checkApiPermission(payload, 'PERMISSION_CREATE');
+    new RoleService().saveRolePermissions(payload.role_code, payload.permissions || [], payload ? payload.actor_id : 'SYSTEM');
+    return Response.success('Permission matrix berhasil diperbarui', null, 'PERMISSION_MATRIX_UPDATE_SUCCESS');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateRolePermissions failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 function apiCreatePermission(payload) {
   try {
     checkApiPermission(payload, 'PERMISSION_CREATE');

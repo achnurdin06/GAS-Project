@@ -720,25 +720,25 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-key-fill text-primary me-2"></i>Tambah
-          Permission</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-key-fill text-primary me-2"></i>Tambah Permission</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('addPermModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
         <form id="form-add-perm" onsubmit="event.preventDefault(); AEF.createPermission();">
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Target Role (Relasi mst_role)</label>
-            <select id="new-perm-role" class="form-select" required>
-              <option value="">-- Pilih Role --</option>
+            <label class="form-label text-muted small fw-semibold">Prefix Code (e.g. CUSTOMER)</label>
+            <input type="text" id="new-perm-prefix" class="form-control" placeholder="CUSTOMER" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Nama Permission (Deskripsi)</label>
+            <input type="text" id="new-perm-name" class="form-control" placeholder="Manajemen Customer" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Status</label>
+            <select id="new-perm-status" class="form-select" required>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
             </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Permission Code (e.g. REPORT_VIEW)</label>
-            <input type="text" id="new-perm-code" class="form-control" placeholder="REPORT_VIEW" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Nama Label Permission</label>
-            <input type="text" id="new-perm-name" class="form-control" placeholder="Lihat Laporan" required>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
             <button type="button" class="btn btn-light text-muted"

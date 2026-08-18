@@ -2268,7 +2268,7 @@
     loadPermissionsTable: function () {
       const tbody = document.getElementById('perms-table-body');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
 
       const addBtn = document.getElementById('btn-add-perm-trigger');
       if (addBtn) {
@@ -2279,51 +2279,354 @@
         }
       }
 
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          this.paginationState.perms.data = res.data;
-          this.paginationState.perms.page = 1;
-          this.renderPermissionsPage();
+      const editBtn = document.getElementById('btn-edit-perm-matrix');
+      if (editBtn) {
+        if (this.hasPermission('PERMISSION_CREATE')) {
+          editBtn.classList.remove('d-none');
+        } else {
+          editBtn.classList.add('d-none');
         }
-      }).apiGetPermissions();
+      }
+
+      const loadMatrixAndRoles = () => {
+        // Populate role dropdown
+        const select = document.getElementById('perm-role-select');
+        if (select) {
+          const currentVal = select.value;
+          select.innerHTML = (this.rolesCache || []).map(r => `<option value="${r.role_code}">${r.role_name} (${r.role_code})</option>`).join('');
+          if (currentVal && (this.rolesCache || []).some(r => r.role_code === currentVal)) {
+            select.value = currentVal;
+          } else if ((this.rolesCache || []).some(r => r.role_code === 'ROLE_SUPER_ADMIN')) {
+            select.value = 'ROLE_SUPER_ADMIN';
+          } else if (select.options.length > 0) {
+            select.value = select.options[0].value;
+          }
+        }
+
+        const selectedRole = select ? select.value : '';
+
+        google.script.run.withSuccessHandler((res) => {
+          if (res.success && Array.isArray(res.data)) {
+            this.permissionsCache = res.data;
+            
+            // Extract prefixes
+            const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
+            res.data.forEach(p => {
+              const code = String(p.permission_code || '').trim().toUpperCase();
+              if (!code) return;
+              const parts = code.split('_');
+              if (parts.length > 1) {
+                parts.pop();
+                prefixes.add(parts.join('_'));
+              } else {
+                prefixes.add(code);
+              }
+            });
+            AEF.state.granularPrefixes = Array.from(prefixes).sort();
+            
+            this.renderPermissionsMatrix(selectedRole);
+          } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat matrix: ${res ? res.message : 'Respon kosong'}</td></tr>`;
+          }
+        }).apiGetPermissions();
+      };
+
+      if (!this.rolesCache) {
+        google.script.run.withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.data)) {
+            this.rolesCache = res.data;
+            loadMatrixAndRoles();
+          } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat list role.</td></tr>`;
+          }
+        }).apiGetRoles();
+      } else {
+        loadMatrixAndRoles();
+      }
     },
 
-    renderPermissionsPage: function () {
+    renderPermissionsMatrix: function (roleCode) {
+      const tbody = document.getElementById('perms-table-body');
+      if (!tbody) return;
+
+      const role = (this.rolesCache || []).find(r => r.role_code === roleCode);
+      const roleName = role ? role.role_name : roleCode;
+      const matrixRoleLabel = document.getElementById('perm-matrix-role-name');
+      if (matrixRoleLabel) matrixRoleLabel.textContent = roleName;
+
+      const page = (this.paginationState.perms && this.paginationState.perms.page) || 1;
+      const pageSize = (this.paginationState.perms && this.paginationState.perms.pageSize) || 20;
+      const prefixes = AEF.state.granularPrefixes || [];
+      const totalItems = prefixes.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      const startIdx = (page - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, totalItems);
+      const pageSlice = prefixes.slice(startIdx, endIdx);
+
+      // Get active permissions for this specific role from permissionsCache
+      const rolePerms = (this.permissionsCache || [])
+        .filter(p => p.role_id === roleCode && String(p.status).toUpperCase() === 'ACTIVE')
+        .map(p => p.permission_code);
+
+      const isEditMode = AEF.state.permMatrixEditMode === true;
+      const isDisabledAttr = isEditMode ? '' : 'disabled';
       const showDelete = this.hasPermission('PERMISSION_DELETE') ? '' : 'd-none';
 
-      this.renderTablePagination('perms', (p) => `
-        <tr>
-          <td><span class="badge badge-light-primary px-3 py-2 fs-7">${p.role_id}</span></td>
-          <td><code>${p.permission_code}</code></td>
-          <td class="fw-semibold" style="color: #181c32;">${p.permission_name}</td>
-          <td><span class="badge badge-light-success px-3 py-2 fs-7">${p.status}</span></td>
-          <td>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.deletePermission('${p.id}')"><i class="bi bi-trash"></i></button>
-          </td>
-        </tr>
-      `, 'perms-table-body', 'perms-pagination-info', 'perms-pagination-controls');
+      const iconMap = {
+        'USER': 'bi-people-fill',
+        'ROLE': 'bi-shield-check',
+        'PERMISSION': 'bi-key-fill',
+        'CONFIG': 'bi-sliders',
+        'AUDIT': 'bi-journal-text',
+        'MENU': 'bi-menu-button-wide-fill',
+        'DASHBOARD': 'bi-grid-1x2-fill'
+      };
+
+      let html = '';
+      pageSlice.forEach(prefix => {
+        const viewCode = `${prefix}_VIEW`;
+        const createCode = `${prefix}_CREATE`;
+        const updateCode = `${prefix}_UPDATE`;
+        const deleteCode = `${prefix}_DELETE`;
+        const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
+        const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+
+        // Check active states
+        const hasView = rolePerms.includes(viewCode);
+        const hasCreate = rolePerms.includes(createCode);
+        const hasUpdate = rolePerms.includes(updateCode);
+        const hasDelete = rolePerms.includes(deleteCode);
+        const hasExportImport = rolePerms.includes(`${prefix}_EXPORT`) && rolePerms.includes(`${prefix}_IMPORT`);
+
+        html += `
+          <tr id="matrix-row-${prefix}">
+            <td class="fw-semibold text-dark">
+              <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-select-all" type="checkbox" ${isDisabledAttr} onchange="AEF.toggleMatrixRow('${prefix}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-cb" type="checkbox" value="${createCode}" ${hasCreate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-cb" type="checkbox" value="${viewCode}" ${hasView ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-cb" type="checkbox" value="${updateCode}" ${hasUpdate ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-cb" type="checkbox" value="${deleteCode}" ${hasDelete ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input matrix-cb" type="checkbox" value="${exportImportCode}" ${hasExportImport ? 'checked' : ''} ${isDisabledAttr} onchange="AEF.updateMatrixRowSelectAll('${prefix}')">
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle ${showDelete}" onclick="AEF.deletePermissionPrefixFromControl('${prefix}')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html || '<tr><td colspan="8" class="text-center py-3">Tidak ada data prefix.</td></tr>';
+
+      // Update the select all checks for each row
+      pageSlice.forEach(prefix => {
+        this.updateMatrixRowSelectAll(prefix);
+      });
+
+      // Render Pagination controls
+      const pagContainer = document.getElementById('perms-pagination-container');
+      const pagInfo = document.getElementById('perms-pagination-info');
+      const pagControls = document.getElementById('perms-pagination-controls');
+
+      if (pagInfo && pagControls) {
+        if (totalItems === 0) {
+          pagContainer.classList.add('d-none');
+          return;
+        }
+        pagContainer.classList.remove('d-none');
+        pagInfo.textContent = `Showing ${startIdx + 1} to ${endIdx} of ${totalItems} entries`;
+
+        let paginationHtml = `
+          <li class="page-item ${page === 1 ? 'disabled' : ''}">
+            <a class="page-link py-1" href="javascript:void(0)" onclick="AEF.handleMatrixPageChange(${page - 1})"><i class="bi bi-chevron-left"></i></a>
+          </li>
+        `;
+
+        for (let i = 1; i <= totalPages; i++) {
+          paginationHtml += `
+            <li class="page-item ${page === i ? 'active' : ''}">
+              <a class="page-link py-1" href="javascript:void(0)" onclick="AEF.handleMatrixPageChange(${i})">${i}</a>
+            </li>
+          `;
+        }
+
+        paginationHtml += `
+          <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+            <a class="page-link py-1" href="javascript:void(0)" onclick="AEF.handleMatrixPageChange(${page + 1})"><i class="bi bi-chevron-right"></i></a>
+          </li>
+        `;
+
+        pagControls.innerHTML = paginationHtml;
+      }
+    },
+
+    handleMatrixPageChange: function (newPage) {
+      if (!this.paginationState.perms) this.paginationState.perms = { page: 1, pageSize: 20 };
+      this.paginationState.perms.page = newPage;
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      this.renderPermissionsMatrix(selectedRole);
+    },
+
+    toggleMatrixRow: function (prefix, checked) {
+      const row = document.getElementById(`matrix-row-${prefix}`);
+      if (!row) return;
+      row.querySelectorAll('.matrix-cb').forEach(cb => {
+        cb.checked = checked;
+      });
+    },
+
+    updateMatrixRowSelectAll: function (prefix) {
+      const row = document.getElementById(`matrix-row-${prefix}`);
+      if (!row) return;
+      const checkboxes = row.querySelectorAll('.matrix-cb');
+      const selectAll = row.querySelector('.matrix-select-all');
+      if (checkboxes.length > 0 && selectAll) {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        selectAll.checked = allChecked;
+      }
+    },
+
+    handlePermRoleChange: function (roleCode) {
+      this.cancelPermMatrixEdit();
+      if (!this.paginationState.perms) this.paginationState.perms = { page: 1, pageSize: 20 };
+      this.paginationState.perms.page = 1;
+      this.renderPermissionsMatrix(roleCode);
+    },
+
+    enablePermMatrixEdit: function () {
+      AEF.state.permMatrixEditMode = true;
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      this.renderPermissionsMatrix(selectedRole);
+
+      // Toggle buttons
+      document.getElementById('btn-edit-perm-matrix').classList.add('d-none');
+      document.getElementById('btn-save-perm-matrix').classList.remove('d-none');
+      document.getElementById('btn-cancel-perm-matrix').classList.remove('d-none');
+    },
+
+    cancelPermMatrixEdit: function () {
+      AEF.state.permMatrixEditMode = false;
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      this.renderPermissionsMatrix(selectedRole);
+
+      // Toggle buttons
+      document.getElementById('btn-edit-perm-matrix').classList.remove('d-none');
+      document.getElementById('btn-save-perm-matrix').classList.add('d-none');
+      document.getElementById('btn-cancel-perm-matrix').classList.add('d-none');
+    },
+
+    savePermMatrix: function () {
+      const select = document.getElementById('perm-role-select');
+      const selectedRole = select ? select.value : '';
+      if (!selectedRole) return;
+
+      const checkedPermissions = [];
+      document.querySelectorAll('#perms-table-body .matrix-cb:checked').forEach(cb => {
+        cb.value.split(',').forEach(val => {
+          if (val) checkedPermissions.push(val);
+        });
+      });
+
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          alert('Berhasil: Matrix hak akses berhasil diperbarui.');
+          AEF.state.permMatrixEditMode = false;
+          
+          // Toggle buttons back
+          document.getElementById('btn-edit-perm-matrix').classList.remove('d-none');
+          document.getElementById('btn-save-perm-matrix').classList.add('d-none');
+          document.getElementById('btn-cancel-perm-matrix').classList.add('d-none');
+
+          this.loadPermissionsTable();
+        } else {
+          alert('Gagal menyimpan matrix: ' + res.message);
+        }
+      }).apiUpdateRolePermissions({
+        role_code: selectedRole,
+        permissions: checkedPermissions,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      });
+    },
+
+    openAddPermissionModal: function () {
+      document.getElementById('form-add-perm').reset();
+      this.showModal('addPermModal');
     },
 
     createPermission: function () {
-      const roleId = document.getElementById('new-perm-role').value;
-      const code = document.getElementById('new-perm-code').value;
-      const name = document.getElementById('new-perm-name').value;
-      if (!roleId || !code) return alert('Role ID dan Permission Code wajib diisi!');
+      const prefixEl = document.getElementById('new-perm-prefix');
+      const nameEl = document.getElementById('new-perm-name');
+      const statusEl = document.getElementById('new-perm-status');
+      
+      const prefix = prefixEl ? prefixEl.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '') : '';
+      const name = nameEl ? nameEl.value.trim() : '';
+      const status = statusEl ? statusEl.value : 'ACTIVE';
+
+      if (!prefix) return alert('Gagal menambahkan: Prefix Code wajib diisi!');
+
       google.script.run.withSuccessHandler((res) => {
         if (res.success) {
+          alert(`Berhasil: Permission code dengan prefix "${prefix}" berhasil ditambahkan.`);
           this.hideModal('addPermModal');
-          document.getElementById('form-add-perm').reset();
           this.loadPermissionsTable();
-        } else alert('Gagal: ' + res.message);
-      }).apiCreatePermission({ role_id: roleId, permission_code: code, permission_name: name, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+        } else {
+          alert('Gagal menambahkan: ' + res.message);
+        }
+      }).apiCreatePermissionsForPrefix({
+        prefix: prefix,
+        permission_name: name,
+        status: status,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      });
     },
 
-    deletePermission: function (permId) {
-      if (!confirm('Hapus permission ini?')) return;
+    deletePermissionPrefixFromControl: function (prefix) {
+      const viewCode = `${prefix}_VIEW`;
+
+      if (!AEF.menusCache) {
+        alert('Gagal menghapus: Data menu sedang dimuat, mohon tunggu sebentar...');
+        return;
+      }
+
+      const isUsed = AEF.menusCache.some(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
+      if (isUsed) {
+        const menuObj = AEF.menusCache.find(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
+        alert(`Gagal menghapus: Tidak boleh dihapus karena masih digunakan di Menu Management khususnya menu: "${menuObj.menu_name}"`);
+        return;
+      }
+
+      if (!confirm(`Apakah Anda yakin ingin menghapus permanent seluruh kode permission untuk prefix "${prefix}"?`)) {
+        return;
+      }
+
       google.script.run.withSuccessHandler((res) => {
-        if (res.success) this.loadPermissionsTable();
-        else alert('Gagal: ' + res.message);
-      }).apiDeletePermission({ perm_id: permId, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+        if (res.success) {
+          alert(`Berhasil: Seluruh permission code dengan prefix "${prefix}" berhasil dihapus.`);
+          this.loadPermissionsTable();
+        } else {
+          alert('Gagal menghapus: ' + res.message);
+        }
+      }).apiDeletePermissionsByPrefix({
+        prefix: prefix,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      });
     },
 
     // CONFIG CRUD
