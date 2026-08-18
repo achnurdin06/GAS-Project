@@ -1448,23 +1448,54 @@
         menuListDiv.innerHTML = '<div class="col-12 text-center py-2"><span class="spinner-border spinner-border-sm"></span> Memuat menu...</div>';
         google.script.run.withSuccessHandler((res) => {
           if (res && res.success && Array.isArray(res.data)) {
+            AEF.menusCache = res.data; // Cache menus for permission delete validations
             menuListDiv.innerHTML = '';
+
+            // Group menus into parent and children
+            const parents = res.data.filter(m => !m.parent_id);
+            const childrenMap = {};
             res.data.forEach(m => {
-              const col = document.createElement('div');
-              col.className = 'col-md-6 mb-2';
-              col.innerHTML = `
-                <div class="form-check">
-                  <input class="form-check-input role-menu-checkbox" type="checkbox" value="${m.permission_code}" id="${mode}-role-menu-${m.menu_code}">
-                  <label class="form-check-label fw-medium text-dark" for="${mode}-role-menu-${m.menu_code}">
-                    ${m.parent_id ? '— ' : ''}${m.menu_name} <span class="text-muted small">(${m.permission_code || 'Publik'})</span>
+              if (m.parent_id) {
+                if (!childrenMap[m.parent_id]) childrenMap[m.parent_id] = [];
+                childrenMap[m.parent_id].push(m);
+              }
+            });
+
+            parents.forEach(p => {
+              const pId = p.menu_id || p.id;
+              const pChildren = childrenMap[pId] || [];
+
+              const parentCol = document.createElement('div');
+              parentCol.className = 'col-12 mb-3';
+
+              let childrenHtml = '';
+              pChildren.forEach(c => {
+                childrenHtml += `
+                  <div class="form-check ms-4 mb-2">
+                    <input class="form-check-input role-menu-checkbox" type="checkbox" value="${c.permission_code || ''}" id="${mode}-role-menu-${c.menu_code}">
+                    <label class="form-check-label text-dark" for="${mode}-role-menu-${c.menu_code}">
+                      <i class="bi ${c.icon || 'bi-circle'} me-1 text-muted"></i>${c.menu_name} <span class="text-muted small">(${c.permission_code || 'Publik'})</span>
+                    </label>
+                  </div>
+                `;
+              });
+
+              parentCol.innerHTML = `
+                <div class="form-check mb-2">
+                  <input class="form-check-input role-menu-checkbox" type="checkbox" value="${p.permission_code || ''}" id="${mode}-role-menu-${p.menu_code}">
+                  <label class="form-check-label fw-bold text-dark" for="${mode}-role-menu-${p.menu_code}">
+                    <i class="bi ${p.icon || 'bi-folder'} me-1 text-primary"></i>${p.menu_name} <span class="text-muted small">(${p.permission_code || 'Publik'})</span>
                   </label>
                 </div>
+                ${childrenHtml}
               `;
-              menuListDiv.appendChild(col);
+              menuListDiv.appendChild(parentCol);
             });
+
             // Recheck menu list if editing
-            if (mode === 'edit' && this.state.activeEditRolePermissions) {
-              this.state.activeEditRolePermissions.forEach(code => {
+            if (mode === 'edit' && AEF.state.activeEditRolePermissions) {
+              AEF.state.activeEditRolePermissions.forEach(code => {
+                if (!code) return;
                 const cb = menuListDiv.querySelector(`input[value="${code}"]`);
                 if (cb) cb.checked = true;
               });
@@ -1533,7 +1564,12 @@
                 tableHtml += `
                   <tr id="${mode}-row-${prefix}">
                     <td class="fw-semibold text-dark">
-                      <i class="bi ${icon} me-2 text-secondary"></i>${viewCode}
+                      <div class="d-flex align-items-center justify-content-between">
+                        <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
+                        <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="AEF.deletePermissionPrefix('${mode}', '${prefix}')" title="Hapus Permission Code">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
                     </td>
                     <td class="text-center">
                       <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
@@ -1566,8 +1602,8 @@
               permListDiv.innerHTML = tableHtml;
 
               // Recheck granular perms list if editing
-              if (mode === 'edit' && this.state.activeEditRolePermissions) {
-                this.state.activeEditRolePermissions.forEach(code => {
+              if (mode === 'edit' && AEF.state.activeEditRolePermissions) {
+                AEF.state.activeEditRolePermissions.forEach(code => {
                   const cb = permListDiv.querySelector(`input[value*="${code}"]`);
                   if (cb) {
                     cb.checked = true;
@@ -1589,13 +1625,71 @@
       }
     },
 
+    addNewPermissionPrefix: function (mode) {
+      const inputEl = document.getElementById(`${mode}-role-new-perm-prefix`);
+      if (!inputEl) return;
+      const prefix = inputEl.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '');
+      if (!prefix) {
+        alert('Masukkan prefix permission yang valid (huruf, angka, dan underscore)!');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            alert(`Berhasil menambahkan prefix permission: ${prefix}`);
+            inputEl.value = '';
+            AEF.renderRoleFormCheckboxes(mode);
+          } else {
+            alert('Gagal menambahkan: ' + res.message);
+          }
+        })
+        .withFailureHandler((err) => {
+          alert('Error koneksi: ' + err.message);
+        })
+        .apiCreatePermissionsForPrefix({ prefix: prefix });
+    },
+
+    deletePermissionPrefix: function (mode, prefix) {
+      const viewCode = `${prefix}_VIEW`;
+
+      if (!AEF.menusCache) {
+        alert('Data menu sedang dimuat, mohon tunggu sebentar...');
+        return;
+      }
+
+      const isUsed = AEF.menusCache.some(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
+      if (isUsed) {
+        const menuObj = AEF.menusCache.find(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
+        alert(`Tidak boleh dihapus karena masih digunakan di Menu Management khususnya menu: "${menuObj.menu_name}"`);
+        return;
+      }
+
+      if (!confirm(`Apakah Anda yakin ingin menghapus seluruh kode permission untuk prefix "${prefix}"?`)) {
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            alert(`Berhasil menghapus prefix permission: ${prefix}`);
+            AEF.renderRoleFormCheckboxes(mode);
+          } else {
+            alert('Gagal menghapus: ' + res.message);
+          }
+        })
+        .withFailureHandler((err) => {
+          alert('Error koneksi: ' + err.message);
+        })
+        .apiDeletePermissionsByPrefix({ prefix: prefix });
+    },
+
     toggleRowCheckboxes: function (mode, prefix, checked) {
       const row = document.getElementById(`${mode}-row-${prefix}`);
       if (!row) return;
       row.querySelectorAll('.role-perm-checkbox').forEach(cb => {
         cb.checked = checked;
       });
-      this.updateMasterSelectAll(mode);
     },
 
     updateRowSelectAll: function (mode, prefix) {

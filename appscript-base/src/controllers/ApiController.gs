@@ -167,6 +167,26 @@ function apiDeletePermission(payload) {
   }
 }
 
+function apiCreatePermissionsForPrefix(payload) {
+  try {
+    checkApiPermission(payload, 'PERMISSION_CREATE');
+    return new PermissionService().createPermissionsForPrefix(payload.prefix, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreatePermissionsForPrefix failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeletePermissionsByPrefix(payload) {
+  try {
+    checkApiPermission(payload, 'PERMISSION_DELETE');
+    return new PermissionService().deletePermissionsByPrefix(payload.prefix, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeletePermissionsByPrefix failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 // SYSTEM CONFIG CRUD
 function apiGetConfigs(payload) {
   try {

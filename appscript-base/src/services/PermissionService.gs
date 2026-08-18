@@ -36,4 +36,53 @@ class PermissionService {
     this.auditService.log('PERMISSION', 'DELETE', 'SUCCESS', actorId, `Permission deleted: ${permId}`, permId);
     return Response.success('Permission berhasil dihapus', null, 'PERMISSION_DELETE_SUCCESS');
   }
+
+  createPermissionsForPrefix(prefix, actorId = 'SYSTEM') {
+    if (!prefix) return Response.error('Prefix wajib diisi', 'VALIDATION_ERROR');
+    const cleanPrefix = String(prefix).trim().toUpperCase();
+    const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
+    const created = [];
+
+    suffixes.forEach(suffix => {
+      const permCode = `${cleanPrefix}_${suffix}`;
+      const exists = this.permRepo.find(row => 
+        String(row.role_id).trim().toUpperCase() === 'ROLE_SUPER_ADMIN' && 
+        String(row.permission_code).trim().toUpperCase() === permCode &&
+        String(row.status).trim().toUpperCase() === 'ACTIVE'
+      );
+      if (exists.length === 0) {
+        const newPerm = {
+          id: Utils.generateUuid(),
+          role_id: 'ROLE_SUPER_ADMIN',
+          permission_code: permCode,
+          permission_name: `${permCode} Permission`,
+          status: 'ACTIVE'
+        };
+        const inserted = this.permRepo.insert(newPerm, actorId);
+        created.push(inserted);
+      }
+    });
+
+    this.auditService.log('PERMISSION', 'CREATE_PREFIX', 'SUCCESS', actorId, `Permissions created for prefix: ${cleanPrefix}`, cleanPrefix);
+    return Response.success('Prefix permission berhasil dibuat', created, 'PERMISSION_PREFIX_CREATE_SUCCESS');
+  }
+
+  deletePermissionsByPrefix(prefix, actorId = 'SYSTEM') {
+    if (!prefix) return Response.error('Prefix wajib diisi', 'VALIDATION_ERROR');
+    const cleanPrefix = String(prefix).trim().toUpperCase();
+
+    const toDelete = this.permRepo.find(row => {
+      const code = String(row.permission_code).trim().toUpperCase();
+      return code.startsWith(`${cleanPrefix}_`) || code === cleanPrefix;
+    });
+
+    let deletedCount = 0;
+    toDelete.forEach(row => {
+      const success = this.permRepo.deleteById(row.id, actorId);
+      if (success) deletedCount++;
+    });
+
+    this.auditService.log('PERMISSION', 'DELETE_PREFIX', 'SUCCESS', actorId, `Deleted ${deletedCount} permissions for prefix: ${cleanPrefix}`, cleanPrefix);
+    return Response.success(`Berhasil menghapus ${deletedCount} records permission`, null, 'PERMISSION_PREFIX_DELETE_SUCCESS');
+  }
 }
