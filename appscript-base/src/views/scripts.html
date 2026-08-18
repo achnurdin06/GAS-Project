@@ -1438,109 +1438,117 @@
 
       if (permListDiv) {
         permListDiv.innerHTML = '<div class="col-12 text-center py-2"><span class="spinner-border spinner-border-sm"></span> Memuat hak akses...</div>';
-        google.script.run.withSuccessHandler((res) => {
-          if (res && res.success && Array.isArray(res.data)) {
-            permListDiv.innerHTML = '';
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.success && Array.isArray(res.data)) {
+              permListDiv.innerHTML = '';
 
-            // Group existing permissions to extract unique prefixes
-            const prefixes = new Set();
-            res.data.forEach(p => {
-              const code = String(p.permission_code).trim().toUpperCase();
-              const parts = code.split('_');
-              if (parts.length > 1) {
-                parts.pop();
-                prefixes.add(parts.join('_'));
-              } else {
-                prefixes.add(code);
-              }
-            });
-
-            // Build table header
-            let tableHtml = `
-              <div class="table-responsive w-100">
-                <table class="table table-aef align-middle mb-0">
-                  <thead>
-                    <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                      <th style="min-width: 180px;">Permission Code</th>
-                      <th class="text-center" style="width: 90px;">Select All</th>
-                      <th class="text-center" style="width: 90px;">Create (C)</th>
-                      <th class="text-center" style="width: 90px;">Read (R)</th>
-                      <th class="text-center" style="width: 90px;">Update (U)</th>
-                      <th class="text-center" style="width: 90px;">Delete (D)</th>
-                      <th class="text-center" style="width: 110px;">Export/Import (E)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-            `;
-
-            const iconMap = {
-              'USER': 'bi-people-fill',
-              'ROLE': 'bi-shield-check',
-              'PERMISSION': 'bi-key-fill',
-              'CONFIG': 'bi-sliders',
-              'AUDIT': 'bi-journal-text',
-              'MENU': 'bi-menu-button-wide-fill',
-              'DASHBOARD': 'bi-grid-1x2-fill'
-            };
-
-            Array.from(prefixes).sort().forEach(prefix => {
-              const viewCode = `${prefix}_VIEW`;
-              const createCode = `${prefix}_CREATE`;
-              const updateCode = `${prefix}_UPDATE`;
-              const deleteCode = `${prefix}_DELETE`;
-              const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
-              const icon = iconMap[prefix] || 'bi-shield-lock-fill';
-
-              tableHtml += `
-                <tr id="${mode}-row-${prefix}">
-                  <td class="fw-semibold text-dark">
-                    <i class="bi ${icon} me-2 text-secondary"></i>${viewCode}
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${createCode}" id="${mode}-cb-${createCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${viewCode}" id="${mode}-cb-${viewCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${updateCode}" id="${mode}-cb-${updateCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${deleteCode}" id="${mode}-cb-${deleteCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                  </td>
-                  <td class="text-center">
-                    <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                  </td>
-                </tr>
-              `;
-            });
-
-            tableHtml += `
-                  </tbody>
-                </table>
-              </div>
-            `;
-
-            permListDiv.innerHTML = tableHtml;
-
-            // Recheck granular perms list if editing
-            if (mode === 'edit' && this.state.activeEditRolePermissions) {
-              this.state.activeEditRolePermissions.forEach(code => {
-                const cb = permListDiv.querySelector(`input[value*="${code}"]`);
-                if (cb) {
-                  cb.checked = true;
+              // Group existing permissions to extract unique prefixes, seeded with default cores
+              const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
+              res.data.forEach(p => {
+                const code = String(p.permission_code || '').trim().toUpperCase();
+                if (!code) return;
+                const parts = code.split('_');
+                if (parts.length > 1) {
+                  parts.pop();
+                  prefixes.add(parts.join('_'));
+                } else {
+                  prefixes.add(code);
                 }
               });
-              // Update Select All state for each row
-              Array.from(prefixes).forEach(prefix => {
-                this.updateRowSelectAll('edit', prefix);
+
+              // Build table header
+              let tableHtml = `
+                <div class="table-responsive w-100">
+                  <table class="table table-aef align-middle mb-0">
+                    <thead>
+                      <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
+                        <th style="min-width: 180px;">Permission Code</th>
+                        <th class="text-center" style="width: 90px;">Select All</th>
+                        <th class="text-center" style="width: 90px;">Create (C)</th>
+                        <th class="text-center" style="width: 90px;">Read (R)</th>
+                        <th class="text-center" style="width: 90px;">Update (U)</th>
+                        <th class="text-center" style="width: 90px;">Delete (D)</th>
+                        <th class="text-center" style="width: 110px;">Export/Import (E)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+              `;
+
+              const iconMap = {
+                'USER': 'bi-people-fill',
+                'ROLE': 'bi-shield-check',
+                'PERMISSION': 'bi-key-fill',
+                'CONFIG': 'bi-sliders',
+                'AUDIT': 'bi-journal-text',
+                'MENU': 'bi-menu-button-wide-fill',
+                'DASHBOARD': 'bi-grid-1x2-fill'
+              };
+
+              Array.from(prefixes).sort().forEach(prefix => {
+                const viewCode = `${prefix}_VIEW`;
+                const createCode = `${prefix}_CREATE`;
+                const updateCode = `${prefix}_UPDATE`;
+                const deleteCode = `${prefix}_DELETE`;
+                const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
+                const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+
+                tableHtml += `
+                  <tr id="${mode}-row-${prefix}">
+                    <td class="fw-semibold text-dark">
+                      <i class="bi ${icon} me-2 text-secondary"></i>${viewCode}
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${createCode}" id="${mode}-cb-${createCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${viewCode}" id="${mode}-cb-${viewCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${updateCode}" id="${mode}-cb-${updateCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${deleteCode}" id="${mode}-cb-${deleteCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                    </td>
+                    <td class="text-center">
+                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
+                    </td>
+                  </tr>
+                `;
               });
+
+              tableHtml += `
+                    </tbody>
+                  </table>
+                </div>
+              `;
+
+              permListDiv.innerHTML = tableHtml;
+
+              // Recheck granular perms list if editing
+              if (mode === 'edit' && this.state.activeEditRolePermissions) {
+                this.state.activeEditRolePermissions.forEach(code => {
+                  const cb = permListDiv.querySelector(`input[value*="${code}"]`);
+                  if (cb) {
+                    cb.checked = true;
+                  }
+                });
+                // Update Select All state for each row
+                Array.from(prefixes).forEach(prefix => {
+                  AEF.updateRowSelectAll('edit', prefix);
+                });
+              }
+            } else {
+              permListDiv.innerHTML = `<div class="text-danger p-3 text-center">Gagal: ${res ? res.message : 'Respon kosong'}</div>`;
             }
-          }
-        }).apiGetPermissions();
+          })
+          .withFailureHandler((err) => {
+            permListDiv.innerHTML = `<div class="text-danger p-3 text-center">Error koneksi: ${err.message || 'Koneksi ke Apps Script terputus'}</div>`;
+          })
+          .apiGetPermissions();
       }
     },
 
