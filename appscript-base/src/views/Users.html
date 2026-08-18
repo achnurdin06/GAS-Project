@@ -55,8 +55,9 @@
       <div class="col-lg-4">
         <div class="aef-card text-center p-4">
           <div class="d-flex justify-content-center mb-3">
-            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold fs-1" id="detail-avatar" style="width: 100px; height: 100px; border: 3px solid #e1e9ff;">
-              BS
+            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold fs-1 overflow-hidden" id="detail-avatar" style="width: 100px; height: 100px; border: 3px solid #e1e9ff;">
+              <span id="detail-avatar-initials">BS</span>
+              <img id="detail-avatar-img" class="w-100 h-100 object-fit-cover d-none" src="" alt="Profile Photo">
             </div>
           </div>
           <h4 class="fw-bold text-dark mb-1" id="detail-profile-name">Budi Santoso</h4>
@@ -135,6 +136,14 @@
                   <div class="col-md-6">
                     <label class="form-label text-muted small mb-0">Nomor Telepon</label>
                     <div class="fw-semibold text-dark" id="detail-info-phone">+62 812-3456-7890</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Masa Berlaku Akun</label>
+                    <div class="fw-semibold text-dark" id="detail-info-expired">31 Dec 2027</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label text-muted small mb-0">Status 2FA</label>
+                    <div class="fw-semibold text-dark" id="detail-info-two-fa">Non-Aktif</div>
                   </div>
                   <div class="col-md-6">
                     <label class="form-label text-muted small mb-0">Dibuat Pada</label>

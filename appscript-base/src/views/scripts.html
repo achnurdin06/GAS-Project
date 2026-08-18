@@ -73,6 +73,24 @@
       document.getElementById('aef-app-shell').classList.remove('d-none-important');
       if (this.state.user) {
         document.getElementById('user-display-name').innerText = this.state.user.name;
+        const displayEmail = document.getElementById('user-display-email');
+        if (displayEmail) displayEmail.innerText = this.state.user.email;
+
+        // Render header profile avatar/image
+        const headerInitials = document.getElementById('header-avatar-initials');
+        const headerImg = document.getElementById('header-avatar-img');
+        if (headerInitials && headerImg) {
+          if (this.state.user.profile_pic_url) {
+            headerImg.src = this.state.user.profile_pic_url;
+            headerImg.classList.remove('d-none');
+            headerInitials.classList.add('d-none');
+          } else {
+            headerImg.src = '';
+            headerImg.classList.add('d-none');
+            headerInitials.classList.remove('d-none');
+            headerInitials.innerText = this.state.user.name ? this.state.user.name.substring(0, 2).toUpperCase() : 'A';
+          }
+        }
       }
     },
 
@@ -86,15 +104,25 @@
       google.script.run
         .withSuccessHandler((res) => {
           btn.disabled = false;
-          btn.innerHTML = 'Sign In';
+          btn.innerHTML = 'Sign In Super Admin';
           if (res.success) {
-            this.state.user = res.data.user;
-            this.state.session = res.data.session;
-            this.state.permissions = res.data.permissions;
-            localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
-            this.showAppShell();
-            this.loadSidebarMenu();
-            this.navigateTo('/dashboard');
+            if (res.data && res.data.require_2fa) {
+              // Redirect to 2FA layout
+              this.state.pending2FAEmail = email;
+              document.getElementById('login-form-container').classList.add('d-none');
+              document.getElementById('twofa-email-display').innerText = email;
+              document.getElementById('twofa-form-container').classList.remove('d-none');
+              document.getElementById('twofa-code').value = '';
+              document.getElementById('twofa-error-alert').classList.add('d-none');
+            } else {
+              this.state.user = res.data.user;
+              this.state.session = res.data.session;
+              this.state.permissions = res.data.permissions;
+              localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
+              this.showAppShell();
+              this.loadSidebarMenu();
+              this.navigateTo('/dashboard');
+            }
           } else {
             errorAlert.innerText = res.message || 'Login Gagal';
             errorAlert.classList.remove('d-none');
@@ -102,11 +130,78 @@
         })
         .withFailureHandler((err) => {
           btn.disabled = false;
-          btn.innerHTML = 'Sign In';
+          btn.innerHTML = 'Sign In Super Admin';
           errorAlert.innerText = 'Error: ' + err.message;
           errorAlert.classList.remove('d-none');
         })
         .apiLogin({ email, password });
+    },
+
+    verify2FA: function (otpCode) {
+      const btn = document.getElementById('btn-twofa-submit');
+      const errorAlert = document.getElementById('twofa-error-alert');
+      errorAlert.classList.add('d-none');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+      const email = this.state.pending2FAEmail;
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Verifikasi & Masuk';
+          if (res.success) {
+            this.state.user = res.data.user;
+            this.state.session = res.data.session;
+            this.state.permissions = res.data.permissions;
+            localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
+            
+            document.getElementById('twofa-form-container').classList.add('d-none');
+            document.getElementById('login-form-container').classList.remove('d-none');
+            document.getElementById('twofa-code').value = '';
+            this.state.pending2FAEmail = null;
+
+            this.showAppShell();
+            this.loadSidebarMenu();
+            this.navigateTo('/dashboard');
+          } else {
+            errorAlert.innerText = res.message || 'Verification Failed';
+            errorAlert.classList.remove('d-none');
+          }
+        })
+        .withFailureHandler((err) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Verifikasi & Masuk';
+          errorAlert.innerText = 'Error: ' + err.message;
+          errorAlert.classList.remove('d-none');
+        })
+        .apiVerify2FA({ email, otp_code: otpCode });
+    },
+
+    cancel2FA: function () {
+      document.getElementById('twofa-form-container').classList.add('d-none');
+      document.getElementById('login-form-container').classList.remove('d-none');
+      document.getElementById('twofa-code').value = '';
+      this.state.pending2FAEmail = null;
+    },
+
+    getFileBase64: function (fileInputId) {
+      return new Promise((resolve) => {
+        const input = document.getElementById(fileInputId);
+        if (!input || !input.files || input.files.length === 0) {
+          resolve({ base64: null, name: null });
+          return;
+        }
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          resolve({ base64: e.target.result, name: file.name });
+        };
+        reader.onerror = function () {
+          resolve({ base64: null, name: null });
+        };
+        reader.readAsDataURL(file);
+      });
     },
 
     logout: function () {
@@ -349,7 +444,18 @@
     },
 
     showModal: function (modalId) {
-      if (modalId === 'addUserModal') this.populateRoleDropdowns('', ['new-user-role']);
+      if (modalId === 'addUserModal') {
+        this.populateRoleDropdowns('', ['new-user-role']);
+        // Pre-set new-user-expired-at to 1 year from now
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        const yyyy = oneYearFromNow.getFullYear();
+        const mm = String(oneYearFromNow.getMonth() + 1).padStart(2, '0');
+        const dd = String(oneYearFromNow.getDate()).padStart(2, '0');
+        document.getElementById('new-user-expired-at').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('new-user-profile-pic').value = '';
+        document.getElementById('new-user-two-fa').checked = false;
+      }
       if (modalId === 'addPermModal') this.populateRoleDropdowns('', ['new-perm-role']);
       if (modalId === 'addMenuModal') {
         this.populatePermissionDropdowns('', ['new-menu-perm']);
@@ -443,7 +549,7 @@
       if (backdrop) backdrop.remove();
     },
 
-    createUser: function () {
+    createUser: async function () {
       const name = document.getElementById('new-user-name').value;
       const email = document.getElementById('new-user-email').value;
       const phone = document.getElementById('new-user-phone').value;
@@ -451,14 +557,27 @@
       const password = document.getElementById('new-user-password').value;
       const roleId = document.getElementById('new-user-role').value;
       const forceChange = document.getElementById('new-user-force-change').checked;
+      const expiredAt = document.getElementById('new-user-expired-at').value;
+      const twoFaEnabled = document.getElementById('new-user-two-fa').checked;
 
-      if (!name || !email || !password || !username) {
-        alert('Mohon isi semua field wajib!');
+      if (!name || !email || !password || !username || !expiredAt) {
+        alert('Mohon isi semua field wajib termasuk Masa Berlaku!');
         return;
       }
 
+      // Show loader
+      const form = document.getElementById('form-add-user');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const origText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+
+      const fileData = await this.getFileBase64('new-user-profile-pic');
+
       google.script.run
         .withSuccessHandler((res) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
           if (res.success) {
             this.hideModal('addUserModal');
             document.getElementById('form-add-user').reset();
@@ -466,6 +585,11 @@
           } else {
             alert('Gagal membuat user: ' + res.message);
           }
+        })
+        .withFailureHandler((err) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+          alert('Error: ' + err.message);
         })
         .apiCreateUser({
           name: name,
@@ -475,6 +599,10 @@
           force_password_change: forceChange,
           password: password,
           role_id: roleId,
+          expired_at: expiredAt,
+          two_fa_enabled: twoFaEnabled,
+          profile_pic_base64: fileData.base64,
+          profile_pic_name: fileData.name,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
         });
     },
@@ -490,6 +618,15 @@
       document.getElementById('edit-user-password').value = '';
       document.getElementById('edit-user-force-change').checked = (user.force_password_change === 1);
       document.getElementById('edit-user-status').value = user.status || 'ACTIVE';
+      
+      // Load new fields
+      if (user.expired_at) {
+        document.getElementById('edit-user-expired-at').value = user.expired_at.substring(0, 10);
+      } else {
+        document.getElementById('edit-user-expired-at').value = '';
+      }
+      document.getElementById('edit-user-two-fa').checked = (user.two_fa_enabled === 1 || user.two_fa_enabled === '1' || user.two_fa_enabled === true);
+      document.getElementById('edit-user-profile-pic').value = '';
 
       // Set avatar initials
       const initials = (user.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -520,7 +657,7 @@
       this.showModal('editUserModal');
     },
 
-    submitUpdateUser: function () {
+    submitUpdateUser: async function () {
       const userId = document.getElementById('edit-user-id').value;
       const name = document.getElementById('edit-user-name').value;
       const email = document.getElementById('edit-user-email').value;
@@ -529,9 +666,22 @@
       const password = document.getElementById('edit-user-password').value;
       const forceChange = document.getElementById('edit-user-force-change').checked;
       const status = document.getElementById('edit-user-status').value;
+      const expiredAt = document.getElementById('edit-user-expired-at').value;
+      const twoFaEnabled = document.getElementById('edit-user-two-fa').checked;
+
+      // Show loader
+      const form = document.getElementById('form-edit-user');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const origText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+
+      const fileData = await this.getFileBase64('edit-user-profile-pic');
 
       google.script.run
         .withSuccessHandler((res) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
           if (res.success) {
             this.hideModal('editUserModal');
             this.loadUsersTable();
@@ -543,6 +693,11 @@
             alert('Gagal memperbarui user: ' + res.message);
           }
         })
+        .withFailureHandler((err) => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+          alert('Error: ' + err.message);
+        })
         .apiUpdateUser({
           user_id: userId,
           name: name,
@@ -552,6 +707,10 @@
           password: password || undefined,
           force_password_change: forceChange,
           status: status,
+          expired_at: expiredAt,
+          two_fa_enabled: twoFaEnabled,
+          profile_pic_base64: fileData.base64,
+          profile_pic_name: fileData.name,
           actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
         });
     },
@@ -578,7 +737,25 @@
       document.getElementById('detail-header-title').textContent = `User Details: ${user.name}`;
       
       const initials = (user.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-      document.getElementById('detail-avatar').textContent = initials;
+      
+      // Profile pic handling
+      const imgEl = document.getElementById('detail-avatar-img');
+      const textEl = document.getElementById('detail-avatar-initials');
+      if (imgEl && textEl) {
+        if (user.profile_pic_url) {
+          imgEl.src = user.profile_pic_url;
+          imgEl.classList.remove('d-none');
+          textEl.classList.add('d-none');
+        } else {
+          imgEl.src = '';
+          imgEl.classList.add('d-none');
+          textEl.classList.remove('d-none');
+          textEl.textContent = initials;
+        }
+      } else {
+        document.getElementById('detail-avatar').textContent = initials;
+      }
+
       document.getElementById('detail-profile-name').textContent = user.name;
       document.getElementById('detail-profile-email').textContent = user.email;
       document.getElementById('detail-profile-phone').textContent = user.phone || '-';
@@ -592,6 +769,8 @@
       document.getElementById('detail-info-username').textContent = user.username || '-';
       document.getElementById('detail-info-email').textContent = user.email;
       document.getElementById('detail-info-phone').textContent = user.phone || '-';
+      document.getElementById('detail-info-expired').textContent = user.expired_at || '-';
+      document.getElementById('detail-info-two-fa').textContent = (user.two_fa_enabled === 1 || user.two_fa_enabled === '1' || user.two_fa_enabled === true) ? 'Aktif' : 'Non-Aktif';
       document.getElementById('detail-info-created').textContent = user.created_at || '-';
       document.getElementById('detail-info-updated').textContent = user.updated_at || '-';
 
@@ -1385,6 +1564,17 @@
         const trend = data.loginTrend || {};
 
         // Update Stat Cards Counts
+        const renewalAlert = document.getElementById('renewal-warning-alert');
+        const renewalText = document.getElementById('renewal-warning-text');
+        if (renewalAlert && renewalText) {
+          if (data.renewalWarning) {
+            renewalText.innerText = data.renewalWarning.message;
+            renewalAlert.classList.remove('d-none');
+          } else {
+            renewalAlert.classList.add('d-none');
+          }
+        }
+
         const cMenu = document.getElementById('dash-count-menu');
         if (cMenu) cMenu.innerText = counts.menus || 0;
 

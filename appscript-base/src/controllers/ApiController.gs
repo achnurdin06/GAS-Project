@@ -10,6 +10,15 @@ function apiLogin(payload) {
   }
 }
 
+function apiVerify2FA(payload) {
+  try {
+    return new AuthService().verify2FA(payload.email, payload.otp_code);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiVerify2FA failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 function apiLogout(payload) {
   try {
     return new AuthService().logout(payload ? payload.token : null, payload ? payload.actor_id : 'SYSTEM');

@@ -35,7 +35,10 @@
         <button class="aef-icon-btn" title="More Options"><i class="bi bi-three-dots-vertical"></i></button>
 
         <div class="aef-user-profile" onclick="AEF.navigateTo('/profile')">
-          <div class="aef-avatar" id="user-avatar-char">A</div>
+          <div class="aef-avatar overflow-hidden d-flex align-items-center justify-content-center" id="user-avatar-char">
+            <span id="header-avatar-initials">A</span>
+            <img id="header-avatar-img" class="w-100 h-100 object-fit-cover d-none" src="" alt="Profile">
+          </div>
           <div class="d-none d-sm-block text-start" style="line-height: 1.2;">
             <div id="user-display-name" class="fw-bold text-dark fs-7">Administrator</div>
             <div id="user-display-email" class="text-muted small" style="font-size: 0.72rem;">admin@example.com</div>

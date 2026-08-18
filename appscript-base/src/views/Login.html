@@ -9,27 +9,59 @@
 
     <div id="login-error-alert" class="alert alert-danger d-none text-start small mb-3"></div>
 
-    <form onsubmit="event.preventDefault(); AEF.login(document.getElementById('login-email').value, document.getElementById('login-password').value);">
-      <div class="text-start mb-3">
-        <label class="form-label text-muted small fw-semibold">Email Address</label>
-        <div class="input-group">
-          <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
-          <input type="email" id="login-email" class="form-control border-start-0 ps-0" placeholder="superadmin@aef.com" required value="superadmin@aef.com">
+    <!-- Container Form Login -->
+    <div id="login-form-container">
+      <form onsubmit="event.preventDefault(); AEF.login(document.getElementById('login-email').value, document.getElementById('login-password').value);">
+        <div class="text-start mb-3">
+          <label class="form-label text-muted small fw-semibold">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+            <input type="email" id="login-email" class="form-control border-start-0 ps-0" placeholder="superadmin@aef.com" required value="superadmin@aef.com">
+          </div>
+        </div>
+
+        <div class="text-start mb-4">
+          <label class="form-label text-muted small fw-semibold">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+            <input type="password" id="login-password" class="form-control border-start-0 ps-0" placeholder="••••••••" required value="admin123">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn btn-aef-primary w-100 py-2.5">
+          Sign In Super Admin
+        </button>
+      </form>
+    </div>
+
+    <!-- Container Form 2FA -->
+    <div id="twofa-form-container" class="d-none text-start">
+      <div class="d-flex align-items-center justify-content-center mb-3">
+        <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+          <i class="bi bi-shield-lock-fill fs-3"></i>
         </div>
       </div>
-
-      <div class="text-start mb-4">
-        <label class="form-label text-muted small fw-semibold">Password</label>
-        <div class="input-group">
-          <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
-          <input type="password" id="login-password" class="form-control border-start-0 ps-0" placeholder="••••••••" required value="admin123">
+      <h5 class="fw-bold text-center mb-2">Two-Factor Authentication</h5>
+      <p class="text-muted text-center small mb-4" style="font-size: 0.8rem;">Kami telah mengirimkan kode verifikasi OTP 6-digit ke email: <strong id="twofa-email-display" class="text-dark"></strong></p>
+      
+      <div id="twofa-error-alert" class="alert alert-danger d-none text-start small mb-3"></div>
+      
+      <form onsubmit="event.preventDefault(); AEF.verify2FA(document.getElementById('twofa-code').value);">
+        <div class="mb-4">
+          <label class="form-label text-muted small fw-semibold">Kode Verifikasi (OTP)</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+            <input type="text" id="twofa-code" class="form-control border-start-0 ps-0" placeholder="123456" minlength="6" maxlength="6" required>
+          </div>
         </div>
-      </div>
-
-      <button type="submit" id="btn-login-submit" class="btn btn-aef-primary w-100 py-2.5">
-        Sign In Super Admin
-      </button>
-    </form>
+        <button type="submit" id="btn-twofa-submit" class="btn btn-aef-primary w-100 py-2.5 mb-2">
+          Verifikasi & Masuk
+        </button>
+        <button type="button" class="btn btn-light text-muted w-100 py-2.5 border" onclick="AEF.cancel2FA()">
+          Batal
+        </button>
+      </form>
+    </div>
 
     <div class="mt-4 pt-3 border-top border-light text-muted small">
       <span class="badge badge-light-danger me-1">Super Admin Demo:</span>

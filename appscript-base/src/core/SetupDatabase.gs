@@ -48,7 +48,7 @@ function setupDatabase() {
   }
 
   // 1. mst_user Sheet (Super Admin & Admin & Standard User)
-  const userHeaders = ['id', 'name', 'email', 'phone', 'username', 'force_password_change', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status'];
+  const userHeaders = ['id', 'name', 'email', 'phone', 'username', 'force_password_change', 'password_hash', 'role_id', 'created_at', 'created_by', 'updated_at', 'updated_by', 'status', 'expired_at', 'profile_pic_url', 'two_fa_enabled', 'two_fa_secret'];
   const adminPasswordHash = Utils.hashSha256('admin123');
   const userSeed = [
     {
@@ -64,7 +64,11 @@ function setupDatabase() {
       created_by: 'SYSTEM',
       updated_at: Utils.formatIsoDate(),
       updated_by: 'SYSTEM',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      expired_at: '2027-12-31',
+      profile_pic_url: '',
+      two_fa_enabled: 'FALSE',
+      two_fa_secret: ''
     },
     {
       id: Utils.generateUuid(),
@@ -79,7 +83,11 @@ function setupDatabase() {
       created_by: 'SYSTEM',
       updated_at: Utils.formatIsoDate(),
       updated_by: 'SYSTEM',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      expired_at: '2027-12-31',
+      profile_pic_url: '',
+      two_fa_enabled: 'FALSE',
+      two_fa_secret: ''
     },
     {
       id: Utils.generateUuid(),
@@ -94,7 +102,11 @@ function setupDatabase() {
       created_by: 'SYSTEM',
       updated_at: Utils.formatIsoDate(),
       updated_by: 'SYSTEM',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      expired_at: '2027-12-31',
+      profile_pic_url: '',
+      two_fa_enabled: 'FALSE',
+      two_fa_secret: ''
     }
   ];
   initSheet('mst_user', userHeaders, userSeed, true);

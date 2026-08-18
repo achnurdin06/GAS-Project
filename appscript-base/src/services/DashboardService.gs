@@ -104,6 +104,28 @@ class DashboardService {
       loginData.push(dayLogins > 0 ? dayLogins : Math.floor(8 + Math.random() * 10));
     }
 
+    // 5. User Expiration Renewal Warning Check
+    let renewalWarning = null;
+    if (actorId && actorId !== 'SYSTEM') {
+      const currentUser = this.userRepo.findById(actorId);
+      if (currentUser && currentUser.expired_at) {
+        const today = new Date();
+        // Zero out time
+        today.setHours(0,0,0,0);
+        const expiry = new Date(currentUser.expired_at);
+        expiry.setHours(0,0,0,0);
+        const diffTime = expiry.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays <= 30) {
+          renewalWarning = {
+            days_left: diffDays,
+            expired_at: currentUser.expired_at,
+            message: `Peringatan: Masa berlaku akun Anda akan habis dalam ${diffDays} hari (pada ${currentUser.expired_at}). Silakan lakukan perpanjangan akun.`
+          };
+        }
+      }
+    }
+
     const payload = {
       counts: counts,
       auditByAction: actionCounts,
@@ -111,7 +133,8 @@ class DashboardService {
       loginTrend: {
         labels: dates,
         data: loginData
-      }
+      },
+      renewalWarning: renewalWarning
     };
 
     return Response.success('Dashboard analytics fetched successfully', payload, 'DASHBOARD_DATA_SUCCESS');

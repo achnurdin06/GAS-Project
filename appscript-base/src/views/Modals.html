@@ -42,9 +42,23 @@
                 </button>
               </div>
             </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold mb-1">Masa Berlaku Akun</label>
+              <input type="date" id="new-user-expired-at" class="form-control form-control-solid" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold mb-1">Foto Profil</label>
+              <input type="file" id="new-user-profile-pic" class="form-control form-control-solid" accept="image/*">
+            </div>
           </div>
 
           <div class="mt-4 border-top pt-3">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="new-user-two-fa">
+              <label class="form-check-label fw-semibold text-dark small" for="new-user-two-fa">
+                Aktifkan Two-Factor Authentication (2FA) via Email OTP
+              </label>
+            </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="new-user-force-change">
               <label class="form-check-label fw-semibold text-dark small" for="new-user-force-change">
@@ -119,6 +133,14 @@
                   <input type="text" id="edit-user-username" class="form-control bg-light" readonly>
                   <div class="text-muted" style="font-size: 0.7rem; margin-top: 0.25rem;">Username tidak dapat diubah setelah dibuat.</div>
                 </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small fw-semibold mb-1">Masa Berlaku Akun</label>
+                  <input type="date" id="edit-user-expired-at" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small fw-semibold mb-1">Foto Profil Baru</label>
+                  <input type="file" id="edit-user-profile-pic" class="form-control" accept="image/*">
+                </div>
               </div>
 
               <div class="mt-4 border-top pt-3">
@@ -160,6 +182,13 @@
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="INACTIVE">INACTIVE</option>
                 </select>
+              </div>
+              <div class="form-check form-switch mt-4 p-3 bg-light rounded border border-light-subtle">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="edit-user-two-fa">
+                <label class="form-check-label fw-semibold text-dark small" for="edit-user-two-fa">
+                  Aktifkan Two-Factor Authentication (2FA) via Email OTP
+                </label>
+                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Setiap login akan memerlukan kode verifikasi OTP yang dikirimkan ke email user.</div>
               </div>
             </div>
           </div>
