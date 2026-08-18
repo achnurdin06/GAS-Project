@@ -187,6 +187,7 @@ function apiCreatePermissionsForPrefix(payload) {
     checkApiPermission(payload, 'PERMISSION_CREATE');
     return new PermissionService().createPermissionsForPrefix(
       payload.prefix,
+      payload.role_id || 'ROLE_SUPER_ADMIN',
       payload.permission_name || null,
       payload.status || 'ACTIVE',
       payload ? payload.actor_id : 'SYSTEM'

@@ -37,23 +37,24 @@ class PermissionService {
     return Response.success('Permission berhasil dihapus', null, 'PERMISSION_DELETE_SUCCESS');
   }
 
-  createPermissionsForPrefix(prefix, permissionName = null, status = 'ACTIVE', actorId = 'SYSTEM') {
+  createPermissionsForPrefix(prefix, roleId = 'ROLE_SUPER_ADMIN', permissionName = null, status = 'ACTIVE', actorId = 'SYSTEM') {
     if (!prefix) return Response.error('Prefix wajib diisi', 'VALIDATION_ERROR');
     const cleanPrefix = String(prefix).trim().toUpperCase();
+    const cleanRole = String(roleId || 'ROLE_SUPER_ADMIN').trim().toUpperCase();
     const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
     const created = [];
 
     suffixes.forEach(suffix => {
       const permCode = `${cleanPrefix}_${suffix}`;
       const exists = this.permRepo.find(row => 
-        String(row.role_id).trim().toUpperCase() === 'ROLE_SUPER_ADMIN' && 
+        String(row.role_id).trim().toUpperCase() === cleanRole && 
         String(row.permission_code).trim().toUpperCase() === permCode &&
         String(row.status).trim().toUpperCase() === 'ACTIVE'
       );
       if (exists.length === 0) {
         const newPerm = {
           id: Utils.generateUuid(),
-          role_id: 'ROLE_SUPER_ADMIN',
+          role_id: cleanRole,
           permission_code: permCode,
           permission_name: permissionName ? `${permissionName} - ${suffix}` : `${permCode} Permission`,
           status: status
@@ -63,7 +64,7 @@ class PermissionService {
       }
     });
 
-    this.auditService.log('PERMISSION', 'CREATE_PREFIX', 'SUCCESS', actorId, `Permissions created for prefix: ${cleanPrefix}`, cleanPrefix);
+    this.auditService.log('PERMISSION', 'CREATE_PREFIX', 'SUCCESS', actorId, `Permissions created for prefix: ${cleanPrefix} and role: ${cleanRole}`, cleanPrefix);
     return Response.success('Prefix permission berhasil dibuat', created, 'PERMISSION_PREFIX_CREATE_SUCCESS');
   }
 

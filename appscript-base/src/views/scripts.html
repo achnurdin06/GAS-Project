@@ -2389,7 +2389,17 @@
 
       const isEditMode = AEF.state.permMatrixEditMode === true;
       const isDisabledAttr = isEditMode ? '' : 'disabled';
-      const showDelete = this.hasPermission('PERMISSION_DELETE') ? '' : 'd-none';
+      const showDelete = (this.hasPermission('PERMISSION_DELETE') && !isEditMode) ? '' : 'd-none';
+
+      // Disable/Enable Add button based on edit mode
+      const addBtn = document.getElementById('btn-add-perm-trigger');
+      if (addBtn) {
+        if (isEditMode) {
+          addBtn.setAttribute('disabled', 'true');
+        } else {
+          addBtn.removeAttribute('disabled');
+        }
+      }
 
       let html = '';
       pageSlice.forEach(row => {
@@ -2624,19 +2634,23 @@
 
     openAddPermissionModal: function () {
       document.getElementById('form-add-perm').reset();
+      this.populateRoleDropdowns('', ['new-perm-role']);
       this.showModal('addPermModal');
     },
 
     createPermission: function () {
       const prefixEl = document.getElementById('new-perm-prefix');
       const nameEl = document.getElementById('new-perm-name');
+      const roleEl = document.getElementById('new-perm-role');
       const statusEl = document.getElementById('new-perm-status');
       
       const prefix = prefixEl ? prefixEl.value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '') : '';
       const name = nameEl ? nameEl.value.trim() : '';
+      const roleId = roleEl ? roleEl.value : '';
       const status = statusEl ? statusEl.value : 'ACTIVE';
 
       if (!prefix) return alert('Gagal menambahkan: Prefix Code wajib diisi!');
+      if (!roleId) return alert('Gagal menambahkan: Target Role wajib dipilih!');
 
       google.script.run.withSuccessHandler((res) => {
         if (res.success) {
@@ -2648,6 +2662,7 @@
         }
       }).apiCreatePermissionsForPrefix({
         prefix: prefix,
+        role_id: roleId,
         permission_name: name,
         status: status,
         actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
