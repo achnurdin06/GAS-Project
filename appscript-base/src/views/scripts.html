@@ -1745,7 +1745,7 @@
       const status = statusEl ? statusEl.value : 'ACTIVE';
       
       if (!prefix) {
-        alert('Masukkan prefix permission yang valid (huruf, angka, dan underscore)!');
+        alert('Gagal menambahkan: Masukkan prefix permission yang valid (huruf, angka, dan underscore)!');
         return;
       }
 
@@ -1754,7 +1754,7 @@
       
       // Check if already exists in granularPrefixes
       if (AEF.state.granularPrefixes && AEF.state.granularPrefixes.includes(prefix)) {
-        alert('Prefix sudah ada di daftar.');
+        alert(`Gagal menambahkan: Prefix "${prefix}" sudah ada di daftar.`);
         return;
       }
 
@@ -1780,7 +1780,7 @@
       if(nameEl) nameEl.value = '';
       if(statusEl) statusEl.value = 'ACTIVE';
       
-      alert(`Berhasil menambahkan prefix permission sementara: ${prefix}. Jangan lupa simpan role.`);
+      alert(`Berhasil: Permission code dengan prefix "${prefix}" berhasil ditambahkan ke state lokal.`);
       AEF.renderGranularTable(mode);
     },
 
@@ -1788,14 +1788,14 @@
       const viewCode = `${prefix}_VIEW`;
 
       if (!AEF.menusCache) {
-        alert('Data menu sedang dimuat, mohon tunggu sebentar...');
+        alert('Gagal menghapus: Data menu sedang dimuat, mohon tunggu sebentar...');
         return;
       }
 
       const isUsed = AEF.menusCache.some(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
       if (isUsed) {
         const menuObj = AEF.menusCache.find(m => m.permission_code && String(m.permission_code).trim().toUpperCase() === viewCode);
-        alert(`Tidak boleh dihapus karena masih digunakan di Menu Management khususnya menu: "${menuObj.menu_name}"`);
+        alert(`Gagal menghapus: Tidak boleh dihapus karena masih digunakan di Menu Management khususnya menu: "${menuObj.menu_name}"`);
         return;
       }
 
@@ -1842,6 +1842,7 @@
         });
       }
 
+      alert(`Berhasil: Permission code dengan prefix "${prefix}" berhasil dihapus dari daftar.`);
       AEF.renderGranularTable(mode);
     },
 
