@@ -1162,6 +1162,45 @@
       document.getElementById('detail-reset-pass-btn').onclick = () => this.openEditUserModal(user.id);
       document.getElementById('detail-delete-user-btn').onclick = () => this.openDeleteUserModal(user.id);
 
+      // Apply permission checks
+      const editBtn = document.getElementById('detail-edit-btn');
+      if (editBtn) {
+        if (this.hasPermission('USER_UPDATE')) {
+          editBtn.classList.remove('d-none');
+        } else {
+          editBtn.classList.add('d-none');
+        }
+      }
+
+      const resetPassContainer = document.getElementById('detail-reset-pass-btn').closest('.p-3');
+      const deleteUserContainer = document.getElementById('detail-delete-user-btn').closest('.p-3');
+      const canUpdate = this.hasPermission('USER_UPDATE');
+      const canDelete = this.hasPermission('USER_DELETE');
+
+      if (resetPassContainer) {
+        if (canUpdate) {
+          resetPassContainer.classList.remove('d-none');
+        } else {
+          resetPassContainer.classList.add('d-none');
+        }
+      }
+      if (deleteUserContainer) {
+        if (canDelete) {
+          deleteUserContainer.classList.remove('d-none');
+        } else {
+          deleteUserContainer.classList.add('d-none');
+        }
+      }
+
+      const controlTabHeader = document.getElementById('detail-tab-control');
+      if (controlTabHeader) {
+        if (canUpdate || canDelete) {
+          controlTabHeader.parentElement.classList.remove('d-none');
+        } else {
+          controlTabHeader.parentElement.classList.add('d-none');
+        }
+      }
+
       // Reset tabs on detail view
       const firstTab = document.querySelector('#userDetailTabs button:first-child');
       if (firstTab) {
@@ -3133,6 +3172,25 @@
         const isInactive = (menu.status || 'ACTIVE').toUpperCase() === 'INACTIVE';
         statusBadge.className = isInactive ? 'badge bg-danger-subtle text-danger border border-danger-subtle' : 'badge bg-success-subtle text-success border border-success-subtle';
         statusBadge.innerText = isInactive ? 'INACTIVE' : 'ACTIVE';
+      }
+
+      // Check permissions for Edit Menu and Sub-Menu in details panel
+      const detailEditBtn = document.querySelector('[onclick="AEF.openEditFromDetail()"]');
+      const detailSubBtn = document.querySelector('[onclick="AEF.openAddSubFromDetail()"]');
+      
+      if (detailEditBtn) {
+        if (this.hasPermission('MENU_UPDATE')) {
+          detailEditBtn.classList.remove('d-none');
+        } else {
+          detailEditBtn.classList.add('d-none');
+        }
+      }
+      if (detailSubBtn) {
+        if (this.hasPermission('MENU_CREATE')) {
+          detailSubBtn.classList.remove('d-none');
+        } else {
+          detailSubBtn.classList.add('d-none');
+        }
       }
     },
 
