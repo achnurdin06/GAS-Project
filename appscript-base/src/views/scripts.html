@@ -106,13 +106,22 @@
           if (res.success && Array.isArray(res.data)) {
             let html = '';
             res.data.forEach(item => {
-              const iconClass = item.icon || 'bi-circle';
+              const route = item.route || (item.slug ? '/' + item.slug : '#');
               const menuTitle = item.name || item.menu_name || item.code || 'Menu';
               const menuCode = item.code || item.menu_code || item.id;
+
+              // Ensure only 1 Dashboard menu is rendered in the sidebar
+              if (route === '/dashboard' || item.slug === 'dashboard' || item.menu_code === 'MENU_DASHBOARD' || menuTitle === 'Dashboard') {
+                return;
+              }
+
+              const iconClass = item.icon || 'bi-circle';
               html += `
-                <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${item.route}'); return false;" id="nav-item-${menuCode}">
-                  <i class="bi ${iconClass}"></i>
-                  <span>${menuTitle}</span>
+                <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${route}'); return false;" id="nav-item-${menuCode}">
+                  <div class="aef-nav-left">
+                    <span>${menuTitle}</span>
+                    <i class="bi ${iconClass}"></i>
+                  </div>
                 </a>
               `;
             });
