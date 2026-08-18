@@ -407,19 +407,23 @@
     transition: transform 0.2s ease;
     display: inline-block;
   }
+
   .tree-toggle-btn.collapsed {
     transform: rotate(-90deg);
   }
+
   .tree-child-row.d-none {
     display: none !important;
   }
+
   .tree-indent-level-1 {
     padding-left: 2rem !important;
   }
+
   .tree-indent-level-2 {
     padding-left: 3.25rem !important;
   }
-  
+
   /* PAGINATION STYLING */
   .pagination .page-item .page-link {
     color: #475569;
@@ -427,12 +431,13 @@
     margin: 0 2px;
     border-color: #e2e8f0;
   }
+
   .pagination .page-item.active .page-link {
     background-color: var(--aef-primary-blue);
     border-color: var(--aef-primary-blue);
     color: #ffffff;
   }
-  
+
   /* Full screen loader overlay */
   .logout-loader-overlay {
     position: fixed;
@@ -447,10 +452,5 @@
     justify-content: center;
     z-index: 9999;
     transition: opacity 0.3s ease;
-  
-  @media (min-width: 992px) {
-      .modal-lg, .modal-xl {
-          --bs-modal-width: 1000px;
-      }
   }
 </style>

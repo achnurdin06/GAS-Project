@@ -5,7 +5,8 @@
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-person-plus text-primary me-2"></i>Tambah User Baru</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i
+            class="bi bi-person-plus text-primary me-2"></i>Tambah User Baru</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('addUserModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
@@ -13,19 +14,23 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Nama Lengkap</label>
-              <input type="text" id="new-user-name" class="form-control form-control-solid" placeholder="Siti Aminah" required>
+              <input type="text" id="new-user-name" class="form-control form-control-solid" placeholder="Siti Aminah"
+                required>
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Alamat Email</label>
-              <input type="email" id="new-user-email" class="form-control form-control-solid" placeholder="siti.aminah@company.co.id" required>
+              <input type="email" id="new-user-email" class="form-control form-control-solid"
+                placeholder="siti.aminah@company.co.id" required>
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Nomor Telepon</label>
-              <input type="text" id="new-user-phone" class="form-control form-control-solid" placeholder="+62 812-3456-7890">
+              <input type="text" id="new-user-phone" class="form-control form-control-solid"
+                placeholder="+62 812-3456-7890">
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Username</label>
-              <input type="text" id="new-user-username" class="form-control form-control-solid" placeholder="sitiaminah_ops" required>
+              <input type="text" id="new-user-username" class="form-control form-control-solid"
+                placeholder="sitiaminah_ops" required>
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Role (Relasi mst_role)</label>
@@ -36,8 +41,10 @@
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold mb-1">Password</label>
               <div class="input-group">
-                <input type="password" id="new-user-password" class="form-control form-control-solid" placeholder="••••••••" required>
-                <button class="btn btn-outline-secondary" type="button" onclick="AEF.togglePasswordVisibility('new-user-password')">
+                <input type="password" id="new-user-password" class="form-control form-control-solid"
+                  placeholder="••••••••" required>
+                <button class="btn btn-outline-secondary" type="button"
+                  onclick="AEF.togglePasswordVisibility('new-user-password')">
                   <i class="bi bi-eye-slash" id="new-user-password-toggle-icon"></i>
                 </button>
               </div>
@@ -64,12 +71,14 @@
               <label class="form-check-label fw-semibold text-dark small" for="new-user-force-change">
                 Ubah password pada login pertama
               </label>
-              <div class="text-muted small ms-4" style="font-size: 0.75rem;">Pengguna akan dipaksa untuk memperbarui kata sandi saat sesi login berikutnya.</div>
+              <div class="text-muted small ms-4" style="font-size: 0.75rem;">Pengguna akan dipaksa untuk memperbarui
+                kata sandi saat sesi login berikutnya.</div>
             </div>
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('addUserModal')">Batal</button>
+            <button type="button" class="btn btn-light text-muted"
+              onclick="AEF.hideModal('addUserModal')">Batal</button>
             <button type="submit" class="btn btn-aef-primary">Simpan User</button>
           </div>
         </form>
@@ -85,25 +94,35 @@
       <div class="modal-header border-light py-3 px-4 flex-column align-items-start">
         <div class="d-flex justify-content-between w-100 align-items-center">
           <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" id="edit-user-avatar" style="width: 45px; height: 45px; font-size: 1.1rem;">SA</div>
+            <div
+              class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold"
+              id="edit-user-avatar" style="width: 45px; height: 45px; font-size: 1.1rem;">SA</div>
             <div>
-              <h5 class="modal-title fw-bold" id="edit-user-title-text" style="color: #181c32;">Edit User: Siti Aminah</h5>
-              <div class="text-muted small" style="font-size: 0.75rem;" id="edit-user-subtitle-text">UID: USR-88492-X</div>
+              <h5 class="modal-title fw-bold" id="edit-user-title-text" style="color: #181c32;">Edit User: Siti Aminah
+              </h5>
+              <div class="text-muted small" style="font-size: 0.75rem;" id="edit-user-subtitle-text">UID: USR-88492-X
+              </div>
             </div>
           </div>
           <button type="button" class="btn-close" onclick="AEF.hideModal('editUserModal')" aria-label="Close"></button>
         </div>
-        
+
         <!-- Tabs Nav -->
         <ul class="nav nav-tabs nav-line-tabs mt-3 border-0 w-100" id="editUserTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="tab-basic-info" data-bs-toggle="tab" data-bs-target="#edit-pane-basic" type="button" role="tab" aria-controls="edit-pane-basic" aria-selected="true">Informasi Dasar</button>
+            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="tab-basic-info" data-bs-toggle="tab"
+              data-bs-target="#edit-pane-basic" type="button" role="tab" aria-controls="edit-pane-basic"
+              aria-selected="true">Informasi Dasar</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="tab-role-permission" data-bs-toggle="tab" data-bs-target="#edit-pane-role" type="button" role="tab" aria-controls="edit-pane-role" aria-selected="false">Role & Izin</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="tab-role-permission" data-bs-toggle="tab"
+              data-bs-target="#edit-pane-role" type="button" role="tab" aria-controls="edit-pane-role"
+              aria-selected="false">Role & Izin</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="tab-security" data-bs-toggle="tab" data-bs-target="#edit-pane-security" type="button" role="tab" aria-controls="edit-pane-security" aria-selected="false">Keamanan</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="tab-security" data-bs-toggle="tab"
+              data-bs-target="#edit-pane-security" type="button" role="tab" aria-controls="edit-pane-security"
+              aria-selected="false">Keamanan</button>
           </li>
         </ul>
       </div>
@@ -111,10 +130,11 @@
       <div class="modal-body p-4">
         <form id="form-edit-user" onsubmit="event.preventDefault(); AEF.submitUpdateUser();">
           <input type="hidden" id="edit-user-id">
-          
+
           <div class="tab-content" id="editUserTabsContent">
             <!-- Tab 1: Informasi Dasar -->
-            <div class="tab-pane fade show active" id="edit-pane-basic" role="tabpanel" aria-labelledby="tab-basic-info">
+            <div class="tab-pane fade show active" id="edit-pane-basic" role="tabpanel"
+              aria-labelledby="tab-basic-info">
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label text-muted small fw-semibold mb-1">Nama Lengkap</label>
@@ -131,7 +151,8 @@
                 <div class="col-md-6">
                   <label class="form-label text-muted small fw-semibold mb-1">Username</label>
                   <input type="text" id="edit-user-username" class="form-control bg-light" readonly>
-                  <div class="text-muted" style="font-size: 0.7rem; margin-top: 0.25rem;">Username tidak dapat diubah setelah dibuat.</div>
+                  <div class="text-muted" style="font-size: 0.7rem; margin-top: 0.25rem;">Username tidak dapat diubah
+                    setelah dibuat.</div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label text-muted small fw-semibold mb-1">Masa Berlaku Akun</label>
@@ -148,8 +169,10 @@
                 <div class="mb-3">
                   <label class="form-label text-muted small fw-semibold mb-1">Kata Sandi Baru</label>
                   <div class="input-group">
-                    <input type="password" id="edit-user-password" class="form-control" placeholder="Kosongkan jika tidak ingin diubah">
-                    <button class="btn btn-outline-secondary" type="button" onclick="AEF.togglePasswordVisibility('edit-user-password')">
+                    <input type="password" id="edit-user-password" class="form-control"
+                      placeholder="Kosongkan jika tidak ingin diubah">
+                    <button class="btn btn-outline-secondary" type="button"
+                      onclick="AEF.togglePasswordVisibility('edit-user-password')">
                       <i class="bi bi-eye-slash" id="edit-user-password-toggle-icon"></i>
                     </button>
                   </div>
@@ -159,7 +182,8 @@
                   <label class="form-check-label fw-semibold text-dark small" for="edit-user-force-change">
                     Ubah password pada login pertama
                   </label>
-                  <div class="text-muted small ms-4" style="font-size: 0.75rem;">Pengguna akan dipaksa untuk memperbarui kata sandi saat sesi login berikutnya.</div>
+                  <div class="text-muted small ms-4" style="font-size: 0.75rem;">Pengguna akan dipaksa untuk memperbarui
+                    kata sandi saat sesi login berikutnya.</div>
                 </div>
               </div>
             </div>
@@ -188,13 +212,15 @@
                 <label class="form-check-label fw-semibold text-dark small" for="edit-user-two-fa">
                   Aktifkan Two-Factor Authentication (2FA) via Email OTP
                 </label>
-                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Setiap login akan memerlukan kode verifikasi OTP yang dikirimkan ke email user.</div>
+                <div class="text-muted small mt-1" style="font-size: 0.75rem;">Setiap login akan memerlukan kode
+                  verifikasi OTP yang dikirimkan ke email user.</div>
               </div>
             </div>
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top border-light">
-            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('editUserModal')">Batal</button>
+            <button type="button" class="btn btn-light text-muted"
+              onclick="AEF.hideModal('editUserModal')">Batal</button>
             <button type="submit" class="btn btn-aef-primary">Simpan</button>
           </div>
         </form>
@@ -209,19 +235,23 @@
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-body p-4 text-center">
         <!-- Warning Icon badge -->
-        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-4" style="width: 60px; height: 60px;">
+        <div
+          class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-4"
+          style="width: 60px; height: 60px;">
           <i class="bi bi-exclamation-triangle-fill fs-2"></i>
         </div>
-        
+
         <h5 class="fw-bold text-dark mb-3">Hapus Pengguna</h5>
         <p class="text-muted small mb-4">
           Anda akan menghapus pengguna <strong id="delete-user-display-name" class="text-dark">Siti Aminah</strong>.<br>
-          Tindakan ini akan menghapus semua data terkait dan akses sistem secara permanen. Tindakan ini tidak dapat dibatalkan.
+          Tindakan ini akan menghapus semua data terkait dan akses sistem secara permanen. Tindakan ini tidak dapat
+          dibatalkan.
         </p>
 
         <div class="p-3 bg-light rounded text-start mb-4">
           <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="delete-confirm-checkbox" onchange="AEF.toggleDeleteButton(this.checked)">
+            <input class="form-check-input" type="checkbox" id="delete-confirm-checkbox"
+              onchange="AEF.toggleDeleteButton(this.checked)">
             <label class="form-check-label fw-semibold text-dark small" for="delete-confirm-checkbox">
               Saya mengerti bahwa tindakan ini bersifat permanen.
             </label>
@@ -231,8 +261,10 @@
         <input type="hidden" id="delete-user-id">
 
         <div class="d-flex gap-2 w-100">
-          <button type="button" class="btn btn-light text-muted w-50" onclick="AEF.hideModal('deleteUserModal')">Batal</button>
-          <button type="button" id="delete-confirm-btn" class="btn btn-danger w-50" disabled onclick="AEF.submitDeleteUser()">Hapus Permanen</button>
+          <button type="button" class="btn btn-light text-muted w-50"
+            onclick="AEF.hideModal('deleteUserModal')">Batal</button>
+          <button type="button" id="delete-confirm-btn" class="btn btn-danger w-50" disabled
+            onclick="AEF.submitDeleteUser()">Hapus Permanen</button>
         </div>
       </div>
     </div>
@@ -241,32 +273,38 @@
 
 <!-- 3. Add Role Modal (Lampiran 1) -->
 <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-role-custom-wide modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4 flex-column align-items-start">
         <div class="d-flex justify-content-between w-100 align-items-center">
           <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
+            <div
+              class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold"
+              style="width: 45px; height: 45px; font-size: 1.1rem;">
               <i class="bi bi-shield-plus text-primary"></i>
             </div>
             <div>
               <h5 class="modal-title fw-bold" style="color: #181c32;">Tambah Role Baru</h5>
-              <div class="text-muted small" style="font-size: 0.75rem;">Buat role baru dan definisikan izin hak akses</div>
+              <div class="text-muted small" style="font-size: 0.75rem;">Buat role baru dan definisikan izin hak akses
+              </div>
             </div>
           </div>
           <button type="button" class="btn-close" onclick="AEF.hideModal('addRoleModal')" aria-label="Close"></button>
         </div>
-        
+
         <!-- Tabs Nav -->
         <ul class="nav nav-tabs nav-line-tabs mt-3 border-0 w-100" id="addRoleTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="add-role-detail-tab" data-bs-toggle="tab" data-bs-target="#add-role-detail" type="button" role="tab">Detail Role</button>
+            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="add-role-detail-tab"
+              data-bs-toggle="tab" data-bs-target="#add-role-detail" type="button" role="tab">Detail Role</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-menus-tab" data-bs-toggle="tab" data-bs-target="#add-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-menus-tab" data-bs-toggle="tab"
+              data-bs-target="#add-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-granular-tab" data-bs-toggle="tab" data-bs-target="#add-role-granular" type="button" role="tab">Hak Akses Granular</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-granular-tab" data-bs-toggle="tab"
+              data-bs-target="#add-role-granular" type="button" role="tab">Hak Akses Granular</button>
           </li>
         </ul>
       </div>
@@ -274,30 +312,37 @@
       <form id="form-add-role" onsubmit="event.preventDefault(); AEF.submitCreateRole();">
         <div class="modal-body p-4" style="background-color: #f8f9fa;">
           <div class="tab-content" id="addRoleTabContent">
-            
+
             <!-- TAB 1: DETAIL ROLE -->
             <div class="tab-pane fade show active" id="add-role-detail" role="tabpanel">
               <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i
+                    class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
                 <div class="mb-3">
-                  <label class="form-label text-muted small fw-semibold">Nama Role <span class="text-danger">*</span></label>
-                  <input type="text" id="new-role-name" class="form-control" placeholder="Masukkan nama role" required oninput="AEF.generateRoleCodeFromInput('add', this.value)">
+                  <label class="form-label text-muted small fw-semibold">Nama Role <span
+                      class="text-danger">*</span></label>
+                  <input type="text" id="new-role-name" class="form-control" placeholder="Masukkan nama role" required
+                    oninput="AEF.generateRoleCodeFromInput('add', this.value)">
                 </div>
                 <div class="mb-3">
                   <label class="form-label text-muted small fw-semibold">Role Code (Otomatis)</label>
-                  <input type="text" id="new-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly required>
+                  <input type="text" id="new-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly
+                    required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label text-muted small fw-semibold">Deskripsi Role</label>
-                  <textarea id="new-role-desc" class="form-control" rows="3" placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
+                  <textarea id="new-role-desc" class="form-control" rows="3"
+                    placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
                 </div>
-                <div class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
+                <div
+                  class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
                   <div>
                     <label class="form-check-label fw-bold mb-0" style="color: #3f4254;">Status Role</label>
                     <p class="text-muted small mb-0">Role aktif dapat di-assign ke user.</p>
                   </div>
                   <div class="d-flex align-items-center gap-2">
-                    <input class="form-check-input ms-0" type="checkbox" id="new-role-status" checked style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                    <input class="form-check-input ms-0" type="checkbox" id="new-role-status" checked
+                      style="width: 2.5em; height: 1.25em; cursor: pointer;">
                     <span class="fw-bold small text-primary">Aktif</span>
                   </div>
                 </div>
@@ -305,15 +350,19 @@
 
               <!-- User Assignment -->
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i> User Assignment</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i>
+                  User Assignment</h6>
                 <div class="position-relative">
                   <label class="form-label text-muted small fw-semibold">Tambahkan User ke Role Ini</label>
                   <div class="input-group input-group-sm mb-2">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" id="add-role-user-search" class="form-control border-start-0 ps-0" placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('add', this.value)">
+                    <input type="text" id="add-role-user-search" class="form-control border-start-0 ps-0"
+                      placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('add', this.value)">
                   </div>
                   <!-- Autocomplete dropdown -->
-                  <div id="add-role-user-results" class="position-absolute bg-white border rounded shadow-sm w-100 d-none" style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
+                  <div id="add-role-user-results"
+                    class="position-absolute bg-white border rounded shadow-sm w-100 d-none"
+                    style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
                 </div>
                 <!-- Selected user chips -->
                 <div id="add-role-user-chips" class="d-flex flex-wrap gap-2 mt-2"></div>
@@ -323,7 +372,8 @@
             <!-- TAB 2: MENU ACCESS -->
             <div class="tab-pane fade" id="add-role-menus" role="tabpanel">
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i
+                    class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
                 <p class="text-muted small mb-3">Pilih menu apa saja yang dapat diakses oleh role ini:</p>
                 <div id="add-role-menu-list" class="row">
                   <!-- Dynamically populated -->
@@ -334,20 +384,26 @@
             <!-- TAB 3: GRANULAR PERMISSIONS -->
             <div class="tab-pane fade" id="add-role-granular" role="tabpanel">
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i> Otorisasi Granular Sistem</h6>
-                
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i>
+                  Otorisasi Granular Sistem</h6>
+
                 <!-- Add New Permission Code Input -->
                 <div class="input-group input-group-sm mb-3">
-                  <input type="text" id="add-role-new-perm-prefix" class="form-control form-control-sm" placeholder="Masukkan prefix permission baru (misal: CUSTOMER)">
-                  <button class="btn btn-sm btn-aef-primary text-white px-3" type="button" onclick="AEF.addNewPermissionPrefix('add')"><i class="bi bi-plus-circle me-1"></i>Tambah Code</button>
+                  <input type="text" id="add-role-new-perm-prefix" class="form-control form-control-sm"
+                    placeholder="Masukkan prefix permission baru (misal: CUSTOMER)">
+                  <button class="btn btn-sm btn-aef-primary text-white px-3" type="button"
+                    onclick="AEF.addNewPermissionPrefix('add')"><i class="bi bi-plus-circle me-1"></i>Tambah
+                    Code</button>
                 </div>
 
                 <div id="add-role-perms-list" class="row">
                   <!-- Dynamically populated -->
                 </div>
-                
+
                 <!-- Granular Pagination -->
-                <div id="add-role-granular-pagination" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 0.5rem;">
+                <div id="add-role-granular-pagination"
+                  class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle"
+                  style="margin: 0.5rem;">
                   <!-- Populated dynamically -->
                 </div>
               </div>
@@ -356,7 +412,8 @@
           </div>
         </div>
         <div class="modal-footer border-light py-3 px-4 bg-white d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('addRoleModal')">Batal</button>
+          <button type="button" class="btn btn-light text-muted border"
+            onclick="AEF.hideModal('addRoleModal')">Batal</button>
           <button type="submit" class="btn btn-aef-primary">Simpan Role</button>
         </div>
       </form>
@@ -366,12 +423,14 @@
 
 <!-- 3b. Edit Role Modal (Lampiran 2) -->
 <div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4 flex-column align-items-start">
         <div class="d-flex justify-content-between w-100 align-items-center">
           <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
+            <div
+              class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold"
+              style="width: 45px; height: 45px; font-size: 1.1rem;">
               <i class="bi bi-shield-fill text-primary"></i>
             </div>
             <div>
@@ -381,17 +440,20 @@
           </div>
           <button type="button" class="btn-close" onclick="AEF.hideModal('editRoleModal')" aria-label="Close"></button>
         </div>
-        
+
         <!-- Tabs Nav -->
         <ul class="nav nav-tabs nav-line-tabs mt-3 border-0 w-100" id="editRoleTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="edit-role-detail-tab" data-bs-toggle="tab" data-bs-target="#edit-role-detail" type="button" role="tab">Detail Role</button>
+            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="edit-role-detail-tab"
+              data-bs-toggle="tab" data-bs-target="#edit-role-detail" type="button" role="tab">Detail Role</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-menus-tab" data-bs-toggle="tab" data-bs-target="#edit-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-menus-tab" data-bs-toggle="tab"
+              data-bs-target="#edit-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-granular-tab" data-bs-toggle="tab" data-bs-target="#edit-role-granular" type="button" role="tab">Hak Akses Granular</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-granular-tab" data-bs-toggle="tab"
+              data-bs-target="#edit-role-granular" type="button" role="tab">Hak Akses Granular</button>
           </li>
         </ul>
       </div>
@@ -400,30 +462,36 @@
         <input type="hidden" id="edit-role-id">
         <div class="modal-body p-4" style="background-color: #f8f9fa;">
           <div class="tab-content" id="editRoleTabContent">
-            
+
             <!-- TAB 1: DETAIL ROLE -->
             <div class="tab-pane fade show active" id="edit-role-detail" role="tabpanel">
               <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i
+                    class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
                 <div class="mb-3">
-                  <label class="form-label text-muted small fw-semibold">Nama Role <span class="text-danger">*</span></label>
+                  <label class="form-label text-muted small fw-semibold">Nama Role <span
+                      class="text-danger">*</span></label>
                   <input type="text" id="edit-role-name" class="form-control" placeholder="Masukkan nama role" required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label text-muted small fw-semibold">Role Code</label>
-                  <input type="text" id="edit-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly required>
+                  <input type="text" id="edit-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly
+                    required>
                 </div>
                 <div class="mb-3">
                   <label class="form-label text-muted small fw-semibold">Deskripsi Role</label>
-                  <textarea id="edit-role-desc" class="form-control" rows="3" placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
+                  <textarea id="edit-role-desc" class="form-control" rows="3"
+                    placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
                 </div>
-                <div class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
+                <div
+                  class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
                   <div>
                     <label class="form-check-label fw-bold mb-0" style="color: #3f4254;">Status Role</label>
                     <p class="text-muted small mb-0">Role aktif dapat di-assign ke user.</p>
                   </div>
                   <div class="d-flex align-items-center gap-2">
-                    <input class="form-check-input ms-0" type="checkbox" id="edit-role-status" style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                    <input class="form-check-input ms-0" type="checkbox" id="edit-role-status"
+                      style="width: 2.5em; height: 1.25em; cursor: pointer;">
                     <span id="edit-role-status-text" class="fw-bold small text-primary">Aktif</span>
                   </div>
                 </div>
@@ -431,15 +499,19 @@
 
               <!-- User Assignment -->
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i> User Assignment</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i>
+                  User Assignment</h6>
                 <div class="position-relative">
                   <label class="form-label text-muted small fw-semibold">Tambahkan User ke Role Ini</label>
                   <div class="input-group input-group-sm mb-2">
                     <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" id="edit-role-user-search" class="form-control border-start-0 ps-0" placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('edit', this.value)">
+                    <input type="text" id="edit-role-user-search" class="form-control border-start-0 ps-0"
+                      placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('edit', this.value)">
                   </div>
                   <!-- Autocomplete dropdown -->
-                  <div id="edit-role-user-results" class="position-absolute bg-white border rounded shadow-sm w-100 d-none" style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
+                  <div id="edit-role-user-results"
+                    class="position-absolute bg-white border rounded shadow-sm w-100 d-none"
+                    style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
                 </div>
                 <!-- Selected user chips -->
                 <div id="edit-role-user-chips" class="d-flex flex-wrap gap-2 mt-2"></div>
@@ -449,7 +521,8 @@
             <!-- TAB 2: MENU ACCESS -->
             <div class="tab-pane fade" id="edit-role-menus" role="tabpanel">
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i
+                    class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
                 <p class="text-muted small mb-3">Pilih menu apa saja yang dapat diakses oleh role ini:</p>
                 <div id="edit-role-menu-list" class="row">
                   <!-- Dynamically populated -->
@@ -460,20 +533,26 @@
             <!-- TAB 3: GRANULAR PERMISSIONS -->
             <div class="tab-pane fade" id="edit-role-granular" role="tabpanel">
               <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
-                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i> Otorisasi Granular Sistem</h6>
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i>
+                  Otorisasi Granular Sistem</h6>
 
                 <!-- Add New Permission Code Input -->
                 <div class="input-group input-group-sm mb-3">
-                  <input type="text" id="edit-role-new-perm-prefix" class="form-control form-control-sm" placeholder="Masukkan prefix permission baru (misal: CUSTOMER)">
-                  <button class="btn btn-sm btn-aef-primary text-white px-3" type="button" onclick="AEF.addNewPermissionPrefix('edit')"><i class="bi bi-plus-circle me-1"></i>Tambah Code</button>
+                  <input type="text" id="edit-role-new-perm-prefix" class="form-control form-control-sm"
+                    placeholder="Masukkan prefix permission baru (misal: CUSTOMER)">
+                  <button class="btn btn-sm btn-aef-primary text-white px-3" type="button"
+                    onclick="AEF.addNewPermissionPrefix('edit')"><i class="bi bi-plus-circle me-1"></i>Tambah
+                    Code</button>
                 </div>
 
                 <div id="edit-role-perms-list" class="row">
                   <!-- Dynamically populated -->
                 </div>
-                
+
                 <!-- Granular Pagination -->
-                <div id="edit-role-granular-pagination" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 0.5rem;">
+                <div id="edit-role-granular-pagination"
+                  class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle"
+                  style="margin: 0.5rem;">
                   <!-- Populated dynamically -->
                 </div>
               </div>
@@ -482,7 +561,8 @@
           </div>
         </div>
         <div class="modal-footer border-light py-3 px-4 bg-white d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('editRoleModal')">Batal</button>
+          <button type="button" class="btn btn-light text-muted border"
+            onclick="AEF.hideModal('editRoleModal')">Batal</button>
           <button type="submit" class="btn btn-aef-primary">Simpan Perubahan</button>
         </div>
       </form>
@@ -495,32 +575,40 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-files text-primary me-2"></i>Duplikat Role</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('duplicateRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-files text-primary me-2"></i>Duplikat
+          Role</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('duplicateRoleModal')" aria-label="Close"
+          style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
       </div>
       <form id="form-duplicate-role" onsubmit="event.preventDefault(); AEF.submitDuplicateRole();">
         <input type="hidden" id="duplicate-role-id">
         <div class="modal-body p-4">
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold" id="duplicate-role-source-text">Role Sumber: -</label>
+            <label class="form-label text-muted small fw-semibold" id="duplicate-role-source-text">Role Sumber:
+              -</label>
           </div>
           <div class="mb-3">
             <label class="form-label text-muted small fw-semibold">Role Baru <span class="text-danger">*</span></label>
             <input type="text" id="duplicate-role-code" class="form-control" placeholder="ROLE_BARU" required>
-            <div class="form-text small text-muted">Masukkan kode role baru dalam huruf kapital (contoh: ROLE_ASISTEN).</div>
+            <div class="form-text small text-muted">Masukkan kode role baru dalam huruf kapital (contoh: ROLE_ASISTEN).
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label text-muted small fw-semibold">Nama Role Baru</label>
             <input type="text" id="duplicate-role-name" class="form-control" placeholder="Nama Role Baru">
           </div>
           <div class="form-check p-3 bg-light rounded d-flex align-items-center gap-2 mb-2" style="cursor: pointer;">
-            <input class="form-check-input" type="checkbox" id="duplicate-role-copy-perms" checked style="cursor: pointer;">
-            <label class="form-check-label fw-semibold mb-0" for="duplicate-role-copy-perms" style="cursor: pointer; font-size: 0.9rem;">Salin juga semua pengaturan Menu dan Permission.</label>
+            <input class="form-check-input" type="checkbox" id="duplicate-role-copy-perms" checked
+              style="cursor: pointer;">
+            <label class="form-check-label fw-semibold mb-0" for="duplicate-role-copy-perms"
+              style="cursor: pointer; font-size: 0.9rem;">Salin juga semua pengaturan Menu dan Permission.</label>
           </div>
         </div>
         <div class="modal-footer border-light py-3 px-4 d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('duplicateRoleModal')">Batal</button>
-          <button type="submit" class="btn btn-primary" style="background-color: #0b2545; border-color: #0b2545;"><i class="bi bi-file-earmark-plus me-1"></i>Salin</button>
+          <button type="button" class="btn btn-light text-muted border"
+            onclick="AEF.hideModal('duplicateRoleModal')">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background-color: #0b2545; border-color: #0b2545;"><i
+              class="bi bi-file-earmark-plus me-1"></i>Salin</button>
         </div>
       </form>
     </div>
@@ -532,32 +620,43 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Hapus Role</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('deleteRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i
+            class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Hapus Role</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('deleteRoleModal')" aria-label="Close"
+          style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
       </div>
       <form id="form-delete-role" onsubmit="event.preventDefault(); AEF.submitDeleteRole();">
         <input type="hidden" id="delete-role-id">
         <div class="modal-body p-4 text-center">
-          <div class="mx-auto bg-light-danger rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+          <div class="mx-auto bg-light-danger rounded-circle d-flex align-items-center justify-content-center mb-3"
+            style="width: 60px; height: 60px;">
             <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
           </div>
           <h5 class="fw-bold mb-2">Hapus Role</h5>
-          <p id="delete-role-confirm-text" class="text-muted mb-3">Anda akan menghapus role. Tindakan ini tidak dapat dibatalkan.</p>
-          
+          <p id="delete-role-confirm-text" class="text-muted mb-3">Anda akan menghapus role. Tindakan ini tidak dapat
+            dibatalkan.</p>
+
           <!-- Warning banner -->
-          <div class="alert alert-danger border-0 p-3 mb-4 text-start" style="background-color: #ffeef0; color: #f1416c; border-radius: 0.5rem;">
-            <strong class="text-uppercase" style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">PENTING:</strong>
-            <span style="font-size: 0.9rem;">Role yang dihapus akan mencabut semua hak akses dari user yang terkait.</span>
+          <div class="alert alert-danger border-0 p-3 mb-4 text-start"
+            style="background-color: #ffeef0; color: #f1416c; border-radius: 0.5rem;">
+            <strong class="text-uppercase"
+              style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">PENTING:</strong>
+            <span style="font-size: 0.9rem;">Role yang dihapus akan mencabut semua hak akses dari user yang
+              terkait.</span>
           </div>
 
           <div class="form-check d-flex justify-content-start align-items-center gap-2 mb-2" style="cursor: pointer;">
-            <input class="form-check-input" type="checkbox" id="delete-role-understand" onchange="AEF.verifyDeleteRoleConsent(this.checked)" style="cursor: pointer;">
-            <label class="form-check-label text-muted text-start" for="delete-role-understand" style="cursor: pointer; font-size: 0.9rem;">Saya mengerti risikonya dan ingin melanjutkan.</label>
+            <input class="form-check-input" type="checkbox" id="delete-role-understand"
+              onchange="AEF.verifyDeleteRoleConsent(this.checked)" style="cursor: pointer;">
+            <label class="form-check-label text-muted text-start" for="delete-role-understand"
+              style="cursor: pointer; font-size: 0.9rem;">Saya mengerti risikonya dan ingin melanjutkan.</label>
           </div>
         </div>
         <div class="modal-footer border-light py-3 px-4 bg-light-subtle d-flex justify-content-end gap-2">
-          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('deleteRoleModal')">Batal</button>
-          <button type="submit" id="delete-role-submit-btn" class="btn btn-danger" disabled style="background-color: #f1416c; border-color: #f1416c; opacity: 0.5;">Hapus</button>
+          <button type="button" class="btn btn-light text-muted border"
+            onclick="AEF.hideModal('deleteRoleModal')">Batal</button>
+          <button type="submit" id="delete-role-submit-btn" class="btn btn-danger" disabled
+            style="background-color: #f1416c; border-color: #f1416c; opacity: 0.5;">Hapus</button>
         </div>
       </form>
     </div>
@@ -569,7 +668,8 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-key-fill text-primary me-2"></i>Tambah Permission</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-key-fill text-primary me-2"></i>Tambah
+          Permission</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('addPermModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
@@ -589,7 +689,8 @@
             <input type="text" id="new-perm-name" class="form-control" placeholder="Lihat Laporan" required>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('addPermModal')">Batal</button>
+            <button type="button" class="btn btn-light text-muted"
+              onclick="AEF.hideModal('addPermModal')">Batal</button>
             <button type="submit" class="btn btn-aef-primary">Simpan Permission</button>
           </div>
         </form>
@@ -603,7 +704,8 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-gear-fill text-primary me-2"></i>Edit Konfigurasi System</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-gear-fill text-primary me-2"></i>Edit
+          Konfigurasi System</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('editConfigModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
@@ -618,7 +720,8 @@
             <input type="text" id="edit-config-value" class="form-control" required>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('editConfigModal')">Batal</button>
+            <button type="button" class="btn btn-light text-muted"
+              onclick="AEF.hideModal('editConfigModal')">Batal</button>
             <button type="submit" class="btn btn-aef-primary">Perbarui Konfigurasi</button>
           </div>
         </form>
@@ -632,7 +735,8 @@
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-menu-button-wide-fill text-primary me-2"></i>Tambah Menu Baru</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i
+            class="bi bi-menu-button-wide-fill text-primary me-2"></i>Tambah Menu Baru</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('addMenuModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
@@ -646,11 +750,13 @@
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Kode Menu (e.g. MENU_REPORTS)</label>
-              <input type="text" id="new-menu-code" class="form-control form-control-sm" placeholder="MENU_REPORTS" required>
+              <input type="text" id="new-menu-code" class="form-control form-control-sm" placeholder="MENU_REPORTS"
+                required>
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Nama Menu</label>
-              <input type="text" id="new-menu-name" class="form-control form-control-sm" placeholder="Laporan & Analitik" required oninput="AEF.autoGenerateNewMenuSlug()">
+              <input type="text" id="new-menu-name" class="form-control form-control-sm"
+                placeholder="Laporan & Analitik" required oninput="AEF.autoGenerateNewMenuSlug()">
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Slug (e.g. reports)</label>
@@ -667,13 +773,16 @@
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Target Route / URL (e.g. /reports)</label>
-              <input type="text" id="new-menu-route" class="form-control form-control-sm" placeholder="/reports" required>
+              <input type="text" id="new-menu-route" class="form-control form-control-sm" placeholder="/reports"
+                required>
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Icon Class (Bootstrap Icon)</label>
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light text-primary" id="new-menu-icon-preview"><i class="bi bi-circle"></i></span>
-                <input type="text" id="new-menu-icon" class="form-control ps-2" placeholder="bi-file-earmark-text" value="bi-circle" oninput="AEF.updateIconPreviewForModal('new')">
+                <span class="input-group-text bg-light text-primary" id="new-menu-icon-preview"><i
+                    class="bi bi-circle"></i></span>
+                <input type="text" id="new-menu-icon" class="form-control ps-2" placeholder="bi-file-earmark-text"
+                  value="bi-circle" oninput="AEF.updateIconPreviewForModal('new')">
               </div>
             </div>
             <div class="col-md-6">
@@ -695,12 +804,15 @@
             </div>
             <div class="col-12">
               <label class="form-label text-muted small fw-semibold">Deskripsi Singkat</label>
-              <textarea id="new-menu-desc" class="form-control form-control-sm" rows="2" placeholder="Penjelasan singkat modul menu..."></textarea>
+              <textarea id="new-menu-desc" class="form-control form-control-sm" rows="2"
+                placeholder="Penjelasan singkat modul menu..."></textarea>
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top border-light">
-            <button type="button" class="btn btn-light text-muted btn-sm" onclick="AEF.hideModal('addMenuModal')">Batal</button>
-            <button type="submit" class="btn btn-aef-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Simpan Menu</button>
+            <button type="button" class="btn btn-light text-muted btn-sm"
+              onclick="AEF.hideModal('addMenuModal')">Batal</button>
+            <button type="submit" class="btn btn-aef-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Simpan
+              Menu</button>
           </div>
         </form>
       </div>
@@ -713,7 +825,8 @@
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Data Menu</h5>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i
+            class="bi bi-pencil-square text-primary me-2"></i>Edit Data Menu</h5>
         <button type="button" class="btn-close" onclick="AEF.hideModal('editMenuModal')" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
@@ -732,7 +845,8 @@
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Nama Menu</label>
-              <input type="text" id="edit-menu-name" class="form-control form-control-sm" required oninput="AEF.autoGenerateEditMenuSlug()">
+              <input type="text" id="edit-menu-name" class="form-control form-control-sm" required
+                oninput="AEF.autoGenerateEditMenuSlug()">
             </div>
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Slug</label>
@@ -754,8 +868,10 @@
             <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Icon Class (Bootstrap Icon)</label>
               <div class="input-group input-group-sm">
-                <span class="input-group-text bg-light text-primary" id="edit-menu-icon-preview"><i class="bi bi-circle"></i></span>
-                <input type="text" id="edit-menu-icon" class="form-control ps-2" oninput="AEF.updateIconPreviewForModal('edit')">
+                <span class="input-group-text bg-light text-primary" id="edit-menu-icon-preview"><i
+                    class="bi bi-circle"></i></span>
+                <input type="text" id="edit-menu-icon" class="form-control ps-2"
+                  oninput="AEF.updateIconPreviewForModal('edit')">
               </div>
             </div>
             <div class="col-md-6">
@@ -781,8 +897,10 @@
             </div>
           </div>
           <div class="d-flex justify-content-end gap-2 mt-4 pt-2 border-top border-light">
-            <button type="button" class="btn btn-light text-muted btn-sm" onclick="AEF.hideModal('editMenuModal')">Batal</button>
-            <button type="submit" class="btn btn-aef-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Perbarui Menu</button>
+            <button type="button" class="btn btn-light text-muted btn-sm"
+              onclick="AEF.hideModal('editMenuModal')">Batal</button>
+            <button type="submit" class="btn btn-aef-primary btn-sm"><i class="bi bi-check-lg me-1"></i>Perbarui
+              Menu</button>
           </div>
         </form>
       </div>
@@ -795,16 +913,21 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
       <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-person-badge text-primary me-2"></i>Profile Pengguna</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('userProfileModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i
+            class="bi bi-person-badge text-primary me-2"></i>Profile Pengguna</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('userProfileModal')" aria-label="Close"
+          style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
       </div>
       <div class="modal-body p-4 text-center">
         <div class="d-flex flex-column align-items-center mb-4">
           <!-- Profile Pic Container -->
           <div class="position-relative mb-3">
-            <div id="profile-modal-avatar" class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle shadow" style="width: 90px; height: 90px; font-size: 2.2rem; background-color: #2563eb;">
+            <div id="profile-modal-avatar"
+              class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle shadow"
+              style="width: 90px; height: 90px; font-size: 2.2rem; background-color: #2563eb;">
               <span id="profile-modal-avatar-initials"></span>
-              <img id="profile-modal-avatar-img" class="w-100 h-100 object-fit-cover rounded-circle d-none" src="" alt="Avatar">
+              <img id="profile-modal-avatar-img" class="w-100 h-100 object-fit-cover rounded-circle d-none" src=""
+                alt="Avatar">
             </div>
           </div>
           <h4 id="profile-modal-name" class="fw-bold mb-1" style="color: #181c32;">Nama Lengkap</h4>
@@ -833,7 +956,8 @@
         </div>
       </div>
       <div class="modal-footer border-light py-3 px-4 bg-light-subtle d-flex justify-content-end">
-        <button type="button" class="btn btn-light text-muted border btn-sm" onclick="AEF.hideModal('userProfileModal')">Tutup</button>
+        <button type="button" class="btn btn-light text-muted border btn-sm"
+          onclick="AEF.hideModal('userProfileModal')">Tutup</button>
       </div>
     </div>
   </div>
