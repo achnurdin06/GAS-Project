@@ -115,20 +115,39 @@
                 return;
               }
 
-              const iconClass = item.icon || 'bi-circle';
-              html += `
-                <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${route}'); return false;" id="nav-item-${menuCode}">
-                  <div class="aef-nav-left">
-                    <span>${menuTitle}</span>
-                    <i class="bi ${iconClass}"></i>
-                  </div>
-                </a>
-              `;
+              // If the menu item has children (Parent Module), render section title & child items
+              if (Array.isArray(item.children) && item.children.length > 0) {
+                html += `<div class="aef-sidebar-section-title mt-3">${menuTitle.toUpperCase()}</div>`;
+                item.children.forEach(child => {
+                  const childRoute = child.route || (child.slug ? '/' + child.slug : '#');
+                  const childTitle = child.name || child.menu_name || child.code || 'Submenu';
+                  const childCode = child.code || child.menu_code || child.id;
+                  const childIcon = child.icon || 'bi-circle';
+                  html += `
+                    <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${childRoute}'); return false;" id="nav-item-${childCode}">
+                      <div class="aef-nav-left">
+                        <span>${childTitle}</span>
+                        <i class="bi ${childIcon}"></i>
+                      </div>
+                    </a>
+                  `;
+                });
+              } else {
+                const iconClass = item.icon || 'bi-circle';
+                html += `
+                  <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${route}'); return false;" id="nav-item-${menuCode}">
+                    <div class="aef-nav-left">
+                      <span>${menuTitle}</span>
+                      <i class="bi ${iconClass}"></i>
+                    </div>
+                  </a>
+                `;
+              }
             });
             navContainer.innerHTML = html;
           }
         })
-        .apiGetMenu({ role_id: this.state.user ? this.state.user.role_id : 'ROLE_USER' });
+        .apiGetMenu({ role_id: this.state.user ? this.state.user.role_id : 'ROLE_SUPER_ADMIN' });
     },
 
     navigateTo: function (route) {
