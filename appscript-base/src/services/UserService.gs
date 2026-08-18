@@ -16,8 +16,8 @@ class UserService {
       force_password_change: u.force_password_change === true || u.force_password_change === 'TRUE' || u.force_password_change === 1 || u.force_password_change === '1' ? 1 : 0,
       role_id: u.role_id,
       status: u.status,
-      created_at: u.created_at,
-      expired_at: u.expired_at || '',
+      created_at: u.created_at instanceof Date ? u.created_at.toISOString() : String(u.created_at || ''),
+      expired_at: u.expired_at instanceof Date ? u.expired_at.toISOString().split('T')[0] : String(u.expired_at || ''),
       profile_pic_url: u.profile_pic_url || '',
       two_fa_enabled: u.two_fa_enabled === true || u.two_fa_enabled === 'TRUE' || u.two_fa_enabled === 1 || u.two_fa_enabled === '1' ? 1 : 0
     }));
