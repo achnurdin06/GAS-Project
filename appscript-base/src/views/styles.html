@@ -401,24 +401,35 @@
     color: #1d4ed8;
   }
 
-  @media (max-width: 1200px) {
-    .aef-stat-grid, .aef-guide-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  /* TREE VIEW EXPAND/COLLAPSE STYLING */
+  .tree-toggle-btn {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    display: inline-block;
   }
-
-  @media (max-width: 768px) {
-    .aef-sidebar {
-      transform: translateX(-100%);
-    }
-    .aef-header {
-      left: 0;
-    }
-    .aef-main-wrapper {
-      margin-left: 0;
-    }
-    .aef-stat-grid, .aef-guide-grid {
-      grid-template-columns: 1fr;
-    }
+  .tree-toggle-btn.collapsed {
+    transform: rotate(-90deg);
+  }
+  .tree-child-row.d-none {
+    display: none !important;
+  }
+  .tree-indent-level-1 {
+    padding-left: 2rem !important;
+  }
+  .tree-indent-level-2 {
+    padding-left: 3.25rem !important;
+  }
+  
+  /* PAGINATION STYLING */
+  .pagination .page-item .page-link {
+    color: #475569;
+    border-radius: 0.375rem;
+    margin: 0 2px;
+    border-color: #e2e8f0;
+  }
+  .pagination .page-item.active .page-link {
+    background-color: var(--aef-primary-blue);
+    border-color: var(--aef-primary-blue);
+    color: #ffffff;
   }
 </style>

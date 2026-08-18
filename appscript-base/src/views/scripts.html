@@ -99,18 +99,30 @@
 
     loadSidebarMenu: function () {
       const navContainer = document.getElementById('aef-sidebar-nav');
-      navContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-light"></div></div>';
+      if (!navContainer) return;
+      navContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
 
       google.script.run
         .withSuccessHandler((res) => {
           if (res.success && Array.isArray(res.data)) {
             let html = '';
+            
+            // Fixed Dashboard link at top of sidebar
+            html += `
+              <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('/dashboard'); return false;" id="nav-item-dashboard">
+                <div class="aef-nav-left">
+                  <i class="bi bi-grid-1x2-fill"></i>
+                  <span>Dashboard</span>
+                </div>
+              </a>
+            `;
+
             res.data.forEach(item => {
               const route = item.route || (item.slug ? '/' + item.slug : '#');
               const menuTitle = item.name || item.menu_name || item.code || 'Menu';
               const menuCode = item.code || item.menu_code || item.id;
 
-              // Ensure only 1 Dashboard menu is rendered in the sidebar
+              // Ensure Dashboard is not duplicated
               if (route === '/dashboard' || item.slug === 'dashboard' || item.menu_code === 'MENU_DASHBOARD' || menuTitle === 'Dashboard') {
                 return;
               }
@@ -126,8 +138,8 @@
                   html += `
                     <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${childRoute}'); return false;" id="nav-item-${childCode}">
                       <div class="aef-nav-left">
-                        <span>${childTitle}</span>
                         <i class="bi ${childIcon}"></i>
+                        <span>${childTitle}</span>
                       </div>
                     </a>
                   `;
@@ -137,8 +149,8 @@
                 html += `
                   <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('${route}'); return false;" id="nav-item-${menuCode}">
                     <div class="aef-nav-left">
-                      <span>${menuTitle}</span>
                       <i class="bi ${iconClass}"></i>
+                      <span>${menuTitle}</span>
                     </div>
                   </a>
                 `;
@@ -146,6 +158,9 @@
             });
             navContainer.innerHTML = html;
           }
+        })
+        .withFailureHandler((err) => {
+          navContainer.innerHTML = '<div class="text-danger small p-2">Gagal memuat menu.</div>';
         })
         .apiGetMenu({ role_id: this.state.user ? this.state.user.role_id : 'ROLE_SUPER_ADMIN' });
     },
@@ -658,6 +673,10 @@
     },
 
     // MENUS MANAGEMENT CRUD & TREE HIERARCHY
+    menuTreeState: { collapsed: {} },
+    menuPagination: { page: 1, pageSize: 8 },
+    selectedMenuDetailId: null,
+
     loadMenusTable: function () {
       const tbody = document.getElementById('menus-tree-tbody');
       if (!tbody) return;
@@ -666,26 +685,51 @@
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
           this.menusCache = res.data;
-          this.populatePermissionDropdowns('', ['side-menu-perm', 'new-menu-perm']);
-          this.populateParentMenuDropdowns('', ['side-menu-parent', 'new-menu-parent']);
+          this.populatePermissionDropdowns('', ['new-menu-perm', 'edit-menu-perm']);
+          this.populateParentMenuDropdowns('', ['new-menu-parent', 'edit-menu-parent']);
           this.renderMenusTreeTable(res.data);
         }
       }).apiGetAllMenus();
     },
 
+    toggleSubTree: function (event, parentId) {
+      if (event) event.stopPropagation();
+      this.menuTreeState.collapsed[parentId] = !this.menuTreeState.collapsed[parentId];
+      this.renderMenusTreeTable(this.menusCache);
+    },
+
+    toggleAllMenuTree: function () {
+      const parents = (this.menusCache || []).filter(m => !m.parent_id);
+      const anyExpanded = parents.some(p => !this.menuTreeState.collapsed[p.menu_id || p.id]);
+      
+      parents.forEach(p => {
+        const pId = p.menu_id || p.id;
+        this.menuTreeState.collapsed[pId] = anyExpanded;
+      });
+
+      const btnIcon = document.getElementById('btn-toggle-all-tree-icon');
+      const btnText = document.getElementById('btn-toggle-all-tree-text');
+      if (btnIcon) btnIcon.className = anyExpanded ? 'bi bi-arrows-expand me-1' : 'bi bi-arrows-collapse me-1';
+      if (btnText) btnText.innerText = anyExpanded ? 'Expand All' : 'Collapse All';
+
+      this.renderMenusTreeTable(this.menusCache);
+    },
+
     renderMenusTreeTable: function (dataList) {
       const tbody = document.getElementById('menus-tree-tbody');
       const infoElem = document.getElementById('menus-pagination-info');
+      const controlsElem = document.getElementById('menus-pagination-controls');
       if (!tbody) return;
 
       const data = dataList || this.menusCache || [];
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data menu ditemukan.</td></tr>';
         if (infoElem) infoElem.innerText = 'Showing 0 of 0 entries';
+        if (controlsElem) controlsElem.innerHTML = '';
         return;
       }
 
-      // Group into parents and children
+      // Group into top-level parents and child map
       const parents = data.filter(m => !m.parent_id);
       const childrenMap = {};
       data.forEach(m => {
@@ -695,177 +739,322 @@
         }
       });
 
-      let html = '';
-      let totalCount = 0;
+      // Build hierarchical row structures
+      const flatTreeRows = [];
 
       parents.forEach(p => {
-        totalCount++;
         const pId = p.menu_id || p.id;
         const pChildren = childrenMap[pId] || [];
-        const hasChildren = pChildren.length > 0;
-        const toggleIcon = hasChildren ? '<i class="bi bi-chevron-down text-primary me-2 fs-7"></i>' : '<i class="bi bi-chevron-right text-muted me-2 fs-7"></i>';
-        const typeBadge = p.type === 'Internal Link' ? 'bg-info bg-opacity-10 text-info' : 'bg-primary bg-opacity-10 text-primary';
-        const statusBadge = p.status === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+        const isCollapsed = !!this.menuTreeState.collapsed[pId];
 
-        html += `
-          <tr class="align-middle fw-semibold" style="background-color: #ffffff;">
-            <td>
-              <span class="cursor-pointer me-1">${toggleIcon}</span>
-              <i class="bi ${p.icon || 'bi-folder'} me-2 text-dark"></i>
-              <span class="text-dark cursor-pointer" onclick="AEF.loadSideMenuForEdit('${pId}')">${p.menu_name || p.name}</span>
-            </td>
-            <td><i class="bi ${p.icon || 'bi-circle'} me-1"></i></td>
-            <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${p.type || 'Module'}</span></td>
-            <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${p.status || 'ACTIVE'}</span></td>
-            <td>
-              <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="AEF.loadSideMenuForEdit('${pId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
-              <button class="btn btn-sm btn-link text-danger p-0 me-2 text-decoration-none" onclick="AEF.deleteMenu('${pId}')"><i class="bi bi-trash me-1"></i>Delete</button>
-              <button class="btn btn-sm btn-link text-primary p-0 text-decoration-none" onclick="AEF.openAddSubMenu('${pId}')"><i class="bi bi-plus-circle me-1"></i>Add Sub-Menu</button>
-            </td>
-          </tr>
-        `;
+        flatTreeRows.push({
+          item: p,
+          isParent: true,
+          parentId: null,
+          hasChildren: pChildren.length > 0,
+          isCollapsed: isCollapsed
+        });
 
-        pChildren.forEach(c => {
-          totalCount++;
-          const cId = c.menu_id || c.id;
-          const cTypeBadge = c.type === 'Internal Link' ? 'bg-info bg-opacity-10 text-info' : 'bg-secondary bg-opacity-10 text-secondary';
-          const cStatusBadge = c.status === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+        if (!isCollapsed) {
+          pChildren.forEach(c => {
+            flatTreeRows.push({
+              item: c,
+              isParent: false,
+              parentId: pId,
+              hasChildren: false,
+              isCollapsed: false
+            });
+          });
+        }
+      });
 
+      // Apply Pagination
+      const totalItems = flatTreeRows.length;
+      const pageSize = this.menuPagination.pageSize || 8;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+      
+      if (this.menuPagination.page > totalPages) this.menuPagination.page = totalPages;
+      if (this.menuPagination.page < 1) this.menuPagination.page = 1;
+
+      const currentPage = this.menuPagination.page;
+      const startIndex = (currentPage - 1) * pageSize;
+      const pageItems = flatTreeRows.slice(startIndex, startIndex + pageSize);
+
+      let html = '';
+      pageItems.forEach(row => {
+        const m = row.item;
+        const mId = m.menu_id || m.id;
+        const typeBadge = m.type === 'Internal Link' ? 'bg-info bg-opacity-10 text-info' : (m.type === 'Sub Menu' ? 'bg-secondary bg-opacity-10 text-secondary' : 'bg-primary bg-opacity-10 text-primary');
+        const statusBadge = (m.status || 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+
+        if (row.isParent) {
+          const toggleIconClass = row.hasChildren ? (row.isCollapsed ? 'bi-chevron-right text-muted' : 'bi-chevron-down text-primary') : 'bi-dot text-muted';
           html += `
-            <tr class="align-middle" style="background-color: #f8fafc;">
-              <td class="ps-4">
-                <span class="text-muted me-2" style="font-family: monospace;">├─</span>
-                <i class="bi ${c.icon || 'bi-file-earmark'} me-2 text-muted"></i>
-                <span class="text-dark cursor-pointer fw-medium" onclick="AEF.loadSideMenuForEdit('${cId}')">${c.menu_name || c.name}</span>
-              </td>
-              <td><i class="bi ${c.icon || 'bi-circle'} me-1"></i></td>
-              <td><span class="badge ${cTypeBadge} border-0 px-2.5 py-1.5 fs-8">${c.type || 'Sub Menu'}</span></td>
-              <td><span class="badge ${cStatusBadge} px-2.5 py-1.5 fs-8">${c.status || 'ACTIVE'}</span></td>
+            <tr class="align-middle fw-semibold cursor-pointer" onclick="AEF.showMenuDetail('${mId}')" style="background-color: #ffffff;">
               <td>
-                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="AEF.loadSideMenuForEdit('${cId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
-                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" onclick="AEF.deleteMenu('${cId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+                <span class="tree-toggle-btn me-2" onclick="AEF.toggleSubTree(event, '${mId}')">
+                  <i class="bi ${toggleIconClass} fs-7"></i>
+                </span>
+                <i class="bi ${m.icon || 'bi-folder'} me-2 text-primary"></i>
+                <span class="text-dark fw-bold">${m.menu_name || m.name}</span>
+                <span class="text-muted ms-2 fs-8 fw-normal">(${m.menu_code || m.code})</span>
+              </td>
+              <td><i class="bi ${m.icon || 'bi-circle'} me-1 text-muted"></i></td>
+              <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${m.type || 'Module'}</span></td>
+              <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${m.status || 'ACTIVE'}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                <button class="btn btn-sm btn-link text-danger p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+                <button class="btn btn-sm btn-link text-success p-0 text-decoration-none" onclick="event.stopPropagation(); AEF.openAddSubMenuModal('${mId}')"><i class="bi bi-plus-circle me-1"></i>Sub-Menu</button>
               </td>
             </tr>
           `;
-        });
+        } else {
+          html += `
+            <tr class="align-middle cursor-pointer" onclick="AEF.showMenuDetail('${mId}')" style="background-color: #f8fafc;">
+              <td class="ps-4">
+                <span class="text-muted me-2" style="font-family: monospace;">├─</span>
+                <i class="bi ${m.icon || 'bi-file-earmark'} me-2 text-muted"></i>
+                <span class="text-dark fw-medium">${m.menu_name || m.name}</span>
+                <span class="text-muted ms-2 fs-8">(${m.menu_code || m.code})</span>
+              </td>
+              <td><i class="bi ${m.icon || 'bi-circle'} me-1 text-muted"></i></td>
+              <td><span class="badge ${typeBadge} border-0 px-2.5 py-1.5 fs-8">${m.type || 'Sub Menu'}</span></td>
+              <td><span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${m.status || 'ACTIVE'}</span></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-link text-primary p-0 me-2 text-decoration-none" onclick="event.stopPropagation(); AEF.openEditMenuModal('${mId}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                <button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" onclick="event.stopPropagation(); AEF.deleteMenu('${mId}')"><i class="bi bi-trash me-1"></i>Delete</button>
+              </td>
+            </tr>
+          `;
+        }
       });
 
       tbody.innerHTML = html;
-      if (infoElem) infoElem.innerText = `Showing ${totalCount} entries in hierarchy`;
+
+      // Update Pagination UI Info & Controls
+      if (infoElem) {
+        const fromCount = startIndex + 1;
+        const toCount = Math.min(startIndex + pageSize, totalItems);
+        infoElem.innerText = `Showing ${fromCount} to ${toCount} of ${totalItems} entries`;
+      }
+
+      if (controlsElem) {
+        let pagHtml = '';
+        pagHtml += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); AEF.changeMenuPage(${currentPage - 1});">Prev</a></li>`;
+        
+        for (let p = 1; p <= totalPages; p++) {
+          pagHtml += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); AEF.changeMenuPage(${p});">${p}</a></li>`;
+        }
+
+        pagHtml += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault(); AEF.changeMenuPage(${currentPage + 1});">Next</a></li>`;
+        controlsElem.innerHTML = pagHtml;
+      }
     },
 
-    loadSideMenuForEdit: function (menuId) {
+    changeMenuPage: function (page) {
+      this.menuPagination.page = page;
+      this.renderMenusTreeTable(this.menusCache);
+    },
+
+    showMenuDetail: function (menuId) {
       const menu = (this.menusCache || []).find(m => (m.menu_id === menuId || m.id === menuId));
       if (!menu) return;
 
-      document.getElementById('side-menu-id').value = menu.menu_id || menu.id;
-      document.getElementById('side-menu-name').value = menu.menu_name || menu.name || '';
-      document.getElementById('side-menu-slug').value = menu.slug || String(menu.menu_name || menu.name).toLowerCase().replace(/\s+/g, '-');
-      document.getElementById('side-menu-desc').value = menu.description || '';
-      document.getElementById('side-menu-icon').value = menu.icon || 'bi-circle';
-      document.getElementById('side-menu-type').value = menu.type || 'Module';
-      document.getElementById('side-menu-parent').value = menu.parent_id || '';
-      document.getElementById('side-menu-route').value = menu.route || '';
-      document.getElementById('side-menu-perm').value = menu.permission_code || 'MENU_VIEW';
+      this.selectedMenuDetailId = menu.menu_id || menu.id;
 
-      const modeBadge = document.getElementById('side-form-mode');
-      if (modeBadge) {
-        modeBadge.className = 'badge badge-light-warning';
-        modeBadge.innerText = 'Edit Menu';
+      const parentMenu = (this.menusCache || []).find(m => (m.menu_id === menu.parent_id || m.id === menu.parent_id));
+      const parentName = parentMenu ? (parentMenu.menu_name || parentMenu.name) : 'Top Level Module';
+
+      document.getElementById('detail-empty-state').classList.add('d-none');
+      document.getElementById('detail-content-state').classList.remove('d-none');
+
+      document.getElementById('detail-menu-name').innerText = menu.menu_name || menu.name || '-';
+      document.getElementById('detail-menu-code').innerText = menu.menu_code || menu.code || '-';
+      document.getElementById('detail-menu-id').innerText = menu.menu_id || menu.id || '-';
+      document.getElementById('detail-menu-parent-name').innerText = parentName;
+      document.getElementById('detail-menu-route').innerText = menu.route || '-';
+      document.getElementById('detail-menu-slug').innerText = menu.slug || '-';
+      document.getElementById('detail-menu-icon-class').innerText = menu.icon || 'bi-circle';
+      document.getElementById('detail-menu-sort').innerText = menu.sort_order !== undefined ? menu.sort_order : '1';
+      document.getElementById('detail-menu-perm').innerText = menu.permission_code || 'DASHBOARD_VIEW';
+      document.getElementById('detail-menu-desc').innerText = menu.description || 'Tidak ada deskripsi.';
+
+      document.getElementById('detail-icon-preview').innerHTML = `<i class="bi ${menu.icon || 'bi-grid'}"></i>`;
+      document.getElementById('detail-menu-type-badge').innerText = menu.type || 'Module';
+
+      const statusBadge = document.getElementById('detail-menu-status-badge');
+      if (statusBadge) {
+        const isInactive = (menu.status || 'ACTIVE').toUpperCase() === 'INACTIVE';
+        statusBadge.className = isInactive ? 'badge bg-danger-subtle text-danger border border-danger-subtle' : 'badge bg-success-subtle text-success border border-success-subtle';
+        statusBadge.innerText = isInactive ? 'INACTIVE' : 'ACTIVE';
       }
-
-      this.updateIconPreview();
     },
 
-    openAddSubMenu: function (parentId) {
-      this.resetSideMenuForm();
-      const parentSelect = document.getElementById('side-menu-parent');
-      if (parentSelect) parentSelect.value = parentId;
-
-      const typeSelect = document.getElementById('side-menu-type');
-      if (typeSelect) typeSelect.value = 'Sub Menu';
-
-      const modeBadge = document.getElementById('side-form-mode');
-      if (modeBadge) {
-        modeBadge.className = 'badge badge-light-primary';
-        modeBadge.innerText = 'Add Sub-Menu';
+    openEditFromDetail: function () {
+      if (this.selectedMenuDetailId) {
+        this.openEditMenuModal(this.selectedMenuDetailId);
       }
-
-      const nameInput = document.getElementById('side-menu-name');
-      if (nameInput) nameInput.focus();
     },
 
-    resetSideMenuForm: function () {
-      const form = document.getElementById('form-side-menu');
+    openAddSubFromDetail: function () {
+      if (this.selectedMenuDetailId) {
+        this.openAddMenuModal(this.selectedMenuDetailId);
+      }
+    },
+
+    openAddMenuModal: function (parentId) {
+      const form = document.getElementById('form-add-menu');
       if (form) form.reset();
-      document.getElementById('side-menu-id').value = '';
 
-      const modeBadge = document.getElementById('side-form-mode');
-      if (modeBadge) {
-        modeBadge.className = 'badge badge-light-primary';
-        modeBadge.innerText = 'New Menu';
+      this.populatePermissionDropdowns('', ['new-menu-perm']);
+      this.populateParentMenuDropdowns('', ['new-menu-parent']);
+
+      if (parentId) {
+        const parentSelect = document.getElementById('new-menu-parent');
+        if (parentSelect) parentSelect.value = parentId;
+
+        const typeSelect = document.getElementById('new-menu-type');
+        if (typeSelect) typeSelect.value = 'Sub Menu';
       }
 
-      this.updateIconPreview();
+      this.updateIconPreviewForModal('new');
+      this.showModal('addMenuModal');
     },
 
-    autoGenerateSlug: function () {
-      const name = document.getElementById('side-menu-name').value;
-      const slugInput = document.getElementById('side-menu-slug');
+    openAddSubMenuModal: function (parentId) {
+      this.openAddMenuModal(parentId);
+    },
+
+    openEditMenuModal: function (menuId) {
+      const menu = (this.menusCache || []).find(m => (m.menu_id === menuId || m.id === menuId));
+      if (!menu) return;
+
+      this.populatePermissionDropdowns(menu.permission_code || '', ['edit-menu-perm']);
+      this.populateParentMenuDropdowns(menu.parent_id || '', ['edit-menu-parent']);
+
+      document.getElementById('edit-menu-id').value = menu.menu_id || menu.id;
+      document.getElementById('edit-menu-code').value = menu.menu_code || menu.code || '';
+      document.getElementById('edit-menu-name').value = menu.menu_name || menu.name || '';
+      document.getElementById('edit-menu-slug').value = menu.slug || '';
+      document.getElementById('edit-menu-type').value = menu.type || 'Module';
+      document.getElementById('edit-menu-route').value = menu.route || '';
+      document.getElementById('edit-menu-icon').value = menu.icon || 'bi-circle';
+      document.getElementById('edit-menu-sort').value = menu.sort_order !== undefined ? menu.sort_order : 1;
+      document.getElementById('edit-menu-perm').value = menu.permission_code || 'DASHBOARD_VIEW';
+      document.getElementById('edit-menu-status').value = (menu.status || 'ACTIVE').toUpperCase();
+      document.getElementById('edit-menu-desc').value = menu.description || '';
+
+      this.updateIconPreviewForModal('edit');
+      this.showModal('editMenuModal');
+    },
+
+    autoGenerateNewMenuSlug: function () {
+      const name = document.getElementById('new-menu-name').value;
+      const slugInput = document.getElementById('new-menu-slug');
       if (slugInput && name) {
         slugInput.value = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
       }
     },
 
-    updateIconPreview: function () {
-      const iconVal = document.getElementById('side-menu-icon').value || 'bi-circle';
-      const preview = document.getElementById('side-menu-icon-preview');
-      if (preview) preview.innerHTML = `<i class="bi ${iconVal}"></i>`;
+    autoGenerateEditMenuSlug: function () {
+      const name = document.getElementById('edit-menu-name').value;
+      const slugInput = document.getElementById('edit-menu-slug');
+      if (slugInput && name) {
+        slugInput.value = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+      }
     },
 
-    saveSideMenu: function () {
-      const menuId = document.getElementById('side-menu-id').value;
-      const name = document.getElementById('side-menu-name').value;
-      const slug = document.getElementById('side-menu-slug').value;
-      const desc = document.getElementById('side-menu-desc').value;
-      const icon = document.getElementById('side-menu-icon').value;
-      const type = document.getElementById('side-menu-type').value;
-      const parentId = document.getElementById('side-menu-parent').value;
-      const route = document.getElementById('side-menu-route').value;
-      const perm = document.getElementById('side-menu-perm').value;
+    updateIconPreviewForModal: function (prefix) {
+      const input = document.getElementById(prefix + '-menu-icon');
+      const preview = document.getElementById(prefix + '-menu-icon-preview');
+      if (input && preview) {
+        const iconVal = input.value || 'bi-circle';
+        preview.innerHTML = `<i class="bi ${iconVal}"></i>`;
+      }
+    },
 
-      if (!name || !route) return alert('Nama Menu dan Route wajib diisi!');
+    createMenu: function () {
+      const parentId = document.getElementById('new-menu-parent').value;
+      const menuCode = document.getElementById('new-menu-code').value;
+      const name = document.getElementById('new-menu-name').value;
+      const slug = document.getElementById('new-menu-slug').value;
+      const type = document.getElementById('new-menu-type').value;
+      const route = document.getElementById('new-menu-route').value;
+      const icon = document.getElementById('new-menu-icon').value;
+      const sortOrder = document.getElementById('new-menu-sort').value;
+      const permCode = document.getElementById('new-menu-perm').value;
+      const status = document.getElementById('new-menu-status').value;
+      const desc = document.getElementById('new-menu-desc').value;
+
+      if (!name || !route || !menuCode) return alert('Kode Menu, Nama Menu, dan Route wajib diisi!');
 
       const payload = {
-        menu_id: menuId,
+        parent_id: parentId,
+        menu_code: menuCode,
         menu_name: name,
         slug: slug,
-        description: desc,
-        icon: icon,
         type: type,
-        parent_id: parentId,
         route: route,
-        permission_code: perm,
+        icon: icon,
+        sort_order: Number(sortOrder) || 1,
+        permission_code: permCode,
+        status: status,
+        description: desc,
         actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
       };
 
-      if (menuId) {
-        google.script.run.withSuccessHandler((res) => {
-          if (res.success) {
-            this.resetSideMenuForm();
-            this.loadMenusTable();
-            this.loadSidebarMenu();
-          } else alert('Gagal memperbarui menu: ' + res.message);
-        }).apiUpdateMenu(payload);
-      } else {
-        google.script.run.withSuccessHandler((res) => {
-          if (res.success) {
-            this.resetSideMenuForm();
-            this.loadMenusTable();
-            this.loadSidebarMenu();
-          } else alert('Gagal membuat menu: ' + res.message);
-        }).apiCreateMenu(payload);
-      }
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.hideModal('addMenuModal');
+          this.loadMenusTable();
+          this.loadSidebarMenu();
+        } else alert('Gagal membuat menu: ' + res.message);
+      }).apiCreateMenu(payload);
+    },
+
+    submitUpdateMenu: function () {
+      const menuId = document.getElementById('edit-menu-id').value;
+      const parentId = document.getElementById('edit-menu-parent').value;
+      const menuCode = document.getElementById('edit-menu-code').value;
+      const name = document.getElementById('edit-menu-name').value;
+      const slug = document.getElementById('edit-menu-slug').value;
+      const type = document.getElementById('edit-menu-type').value;
+      const route = document.getElementById('edit-menu-route').value;
+      const icon = document.getElementById('edit-menu-icon').value;
+      const sortOrder = document.getElementById('edit-menu-sort').value;
+      const permCode = document.getElementById('edit-menu-perm').value;
+      const status = document.getElementById('edit-menu-status').value;
+      const desc = document.getElementById('edit-menu-desc').value;
+
+      if (!menuId || !name || !route || !menuCode) return alert('Menu ID, Kode Menu, Nama Menu, dan Route wajib diisi!');
+
+      const payload = {
+        menu_id: menuId,
+        parent_id: parentId,
+        menu_code: menuCode,
+        menu_name: name,
+        slug: slug,
+        type: type,
+        route: route,
+        icon: icon,
+        sort_order: Number(sortOrder) || 1,
+        permission_code: permCode,
+        status: status,
+        description: desc,
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      };
+
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success) {
+          this.hideModal('editMenuModal');
+          this.loadMenusTable();
+          this.loadSidebarMenu();
+          if (this.selectedMenuDetailId === menuId) {
+            this.showMenuDetail(menuId);
+          }
+        } else alert('Gagal memperbarui menu: ' + res.message);
+      }).apiUpdateMenu(payload);
     },
 
     filterMenuTree: function () {
@@ -877,12 +1066,14 @@
         (m.menu_code || m.code || '').toLowerCase().includes(query) ||
         (m.route || '').toLowerCase().includes(query)
       );
+      this.menuPagination.page = 1;
       this.renderMenusTreeTable(filtered);
     },
 
     filterMenuStatus: function (statusVal) {
       if (statusVal === 'ALL') return this.renderMenusTreeTable(this.menusCache);
       const filtered = (this.menusCache || []).filter(m => String(m.status || 'ACTIVE').toUpperCase() === statusVal);
+      this.menuPagination.page = 1;
       this.renderMenusTreeTable(filtered);
     },
 
@@ -891,20 +1082,9 @@
       if (filterVal === 'ALL') return this.renderMenusTreeTable(this.menusCache);
       if (filterVal === 'TOP') {
         const filtered = (this.menusCache || []).filter(m => !m.parent_id);
+        this.menuPagination.page = 1;
         return this.renderMenusTreeTable(filtered);
       }
-    },
-
-    createMenu: function () {
-      this.saveSideMenu();
-    },
-
-    openEditMenuModal: function (menuId) {
-      this.loadSideMenuForEdit(menuId);
-    },
-
-    submitUpdateMenu: function () {
-      this.saveSideMenu();
     },
 
     deleteMenu: function (menuId) {
