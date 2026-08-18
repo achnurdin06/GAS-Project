@@ -763,3 +763,52 @@
     </div>
   </div>
 </div>
+
+<!-- 8. User Profile Modal -->
+<div class="modal fade" id="userProfileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-person-badge text-primary me-2"></i>Profile Pengguna</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('userProfileModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <div class="d-flex flex-column align-items-center mb-4">
+          <!-- Profile Pic Container -->
+          <div class="position-relative mb-3">
+            <div id="profile-modal-avatar" class="d-flex align-items-center justify-content-center text-white fw-bold rounded-circle shadow" style="width: 90px; height: 90px; font-size: 2.2rem; background-color: #2563eb;">
+              <span id="profile-modal-avatar-initials"></span>
+              <img id="profile-modal-avatar-img" class="w-100 h-100 object-fit-cover rounded-circle d-none" src="" alt="Avatar">
+            </div>
+          </div>
+          <h4 id="profile-modal-name" class="fw-bold mb-1" style="color: #181c32;">Nama Lengkap</h4>
+          <span id="profile-modal-role" class="badge badge-light-primary px-3 py-2 fs-7 mb-3">ROLE</span>
+        </div>
+
+        <div class="card bg-light border-0 p-3 text-start mb-3" style="border-radius: 0.5rem;">
+          <div class="row g-3">
+            <div class="col-12 border-bottom border-light pb-2">
+              <span class="text-muted small d-block">Alamat Email</span>
+              <span id="profile-modal-email" class="fw-semibold text-dark">email@domain.com</span>
+            </div>
+            <div class="col-6 border-bottom border-light pb-2">
+              <span class="text-muted small d-block">Status Akun</span>
+              <span id="profile-modal-status" class="badge badge-light-success py-1 px-2">AKTIF</span>
+            </div>
+            <div class="col-6 border-bottom border-light pb-2">
+              <span class="text-muted small d-block">Masa Berlaku</span>
+              <span id="profile-modal-expired" class="fw-semibold text-dark">-</span>
+            </div>
+            <div class="col-12 pb-1">
+              <span class="text-muted small d-block">Tanggal Dibuat</span>
+              <span id="profile-modal-created" class="fw-semibold text-dark">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-light py-3 px-4 bg-light-subtle d-flex justify-content-end">
+        <button type="button" class="btn btn-light text-muted border btn-sm" onclick="AEF.hideModal('userProfileModal')">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>

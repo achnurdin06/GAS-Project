@@ -34,15 +34,38 @@
         </button>
         <button class="aef-icon-btn" title="More Options"><i class="bi bi-three-dots-vertical"></i></button>
 
-        <div class="aef-user-profile" onclick="AEF.navigateTo('/profile')">
-          <div class="aef-avatar overflow-hidden d-flex align-items-center justify-content-center" id="user-avatar-char">
-            <span id="header-avatar-initials">A</span>
-            <img id="header-avatar-img" class="w-100 h-100 object-fit-cover d-none" src="" alt="Profile">
+        <div class="dropdown">
+          <div class="aef-user-profile d-flex align-items-center" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+            <div class="aef-avatar overflow-hidden d-flex align-items-center justify-content-center" id="user-avatar-char">
+              <span id="header-avatar-initials">A</span>
+              <img id="header-avatar-img" class="w-100 h-100 object-fit-cover d-none" src="" alt="Profile">
+            </div>
+            <div class="d-none d-sm-block text-start" style="line-height: 1.2; margin-right: 0.25rem;">
+              <div id="user-display-name" class="fw-bold text-dark fs-7">Administrator</div>
+              <div id="user-display-email" class="text-muted small" style="font-size: 0.72rem;">admin@example.com</div>
+            </div>
           </div>
-          <div class="d-none d-sm-block text-start" style="line-height: 1.2;">
-            <div id="user-display-name" class="fw-bold text-dark fs-7">Administrator</div>
-            <div id="user-display-email" class="text-muted small" style="font-size: 0.72rem;">admin@example.com</div>
-          </div>
+          <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 p-2" aria-labelledby="profileDropdown" style="border-radius: 0.5rem; min-width: 220px; z-index: 1060;">
+            <li>
+              <div class="px-3 py-2 border-bottom pb-2 mb-2">
+                <span class="d-block fw-bold text-dark text-truncate" id="dropdown-user-name">User</span>
+                <span class="d-block text-muted small text-truncate" id="dropdown-user-email" style="font-size: 0.75rem;">user@email.com</span>
+              </div>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-dark rounded" href="#" onclick="event.preventDefault(); AEF.showProfileDetails();">
+                <i class="bi bi-person-circle text-primary fs-5"></i>
+                <span class="fw-medium" style="font-size: 0.9rem;">Detail Profile User</span>
+              </a>
+            </li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger rounded" href="#" onclick="event.preventDefault(); AEF.handleLogout();">
+                <i class="bi bi-box-arrow-right fs-5"></i>
+                <span class="fw-bold" style="font-size: 0.9rem;">Keluar (Logout)</span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </header>

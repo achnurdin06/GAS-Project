@@ -76,6 +76,11 @@
         const displayEmail = document.getElementById('user-display-email');
         if (displayEmail) displayEmail.innerText = this.state.user.email;
 
+        const dropdownName = document.getElementById('dropdown-user-name');
+        const dropdownEmail = document.getElementById('dropdown-user-email');
+        if (dropdownName) dropdownName.innerText = this.state.user.name;
+        if (dropdownEmail) dropdownEmail.innerText = this.state.user.email;
+
         // Render header profile avatar/image
         const headerInitials = document.getElementById('header-avatar-initials');
         const headerImg = document.getElementById('header-avatar-img');
@@ -205,16 +210,111 @@
     },
 
     logout: function () {
-      google.script.run.apiLogout({
-        session_id: this.state.session ? this.state.session.session_id : '',
-        user_id: this.state.user ? this.state.user.id : ''
-      });
+      this.handleLogout();
+    },
 
+    handleLogout: function () {
+      // 1. Create and show full screen loading overlay
+      const loader = document.createElement('div');
+      loader.className = 'logout-loader-overlay';
+      loader.id = 'logout-loader';
+      loader.innerHTML = `
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+        <h5 class="fw-bold text-dark mb-1">Logging Out...</h5>
+        <p class="text-muted small">Menghapus sesi Anda secara aman...</p>
+      `;
+      document.body.appendChild(loader);
+
+      // 2. Call server-side logout
+      google.script.run
+        .withSuccessHandler(() => {
+          this.completeClientLogout();
+        })
+        .withFailureHandler(() => {
+          this.completeClientLogout();
+        })
+        .apiLogout({
+          session_id: this.state.session ? this.state.session.session_id : '',
+          user_id: this.state.user ? this.state.user.id : ''
+        });
+    },
+
+    completeClientLogout: function () {
+      // Clear client state
       this.state.user = null;
       this.state.session = null;
       this.state.permissions = [];
       localStorage.removeItem('AEF_AUTH_DATA');
-      this.showLoginShell();
+
+      setTimeout(() => {
+        // Remove loader overlay
+        const loader = document.getElementById('logout-loader');
+        if (loader) loader.remove();
+        // Redirect to login shell
+        this.showLoginShell();
+      }, 1000); // 1-second delay for smooth animation
+    },
+
+    showProfileDetails: function () {
+      const u = this.state.user;
+      if (!u) return;
+
+      const formatDateString = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+          const d = new Date(dateStr);
+          if (isNaN(d.getTime())) return dateStr;
+          return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+          return dateStr;
+        }
+      };
+
+      document.getElementById('profile-modal-name').textContent = u.name || '-';
+      document.getElementById('profile-modal-role').textContent = u.role_code || 'GUEST';
+      document.getElementById('profile-modal-email').textContent = u.email || '-';
+      
+      const statusBadge = document.getElementById('profile-modal-status');
+      if (statusBadge) {
+        const statusVal = (u.status || 'ACTIVE').toUpperCase();
+        statusBadge.textContent = statusVal;
+        if (statusVal === 'ACTIVE') {
+          statusBadge.className = 'badge bg-success py-1 px-2 text-white';
+        } else {
+          statusBadge.className = 'badge bg-danger py-1 px-2 text-white';
+        }
+      }
+
+      const expEl = document.getElementById('profile-modal-expired');
+      if (expEl) {
+        if (u.expired_at) {
+          expEl.textContent = formatDateString(u.expired_at);
+        } else {
+          expEl.textContent = 'Selamanya (Permanent)';
+        }
+      }
+
+      const createdEl = document.getElementById('profile-modal-created');
+      if (createdEl) {
+        createdEl.textContent = u.created_at ? formatDateString(u.created_at) : '-';
+      }
+
+      const modalInitials = document.getElementById('profile-modal-avatar-initials');
+      const modalImg = document.getElementById('profile-modal-avatar-img');
+      if (modalInitials && modalImg) {
+        if (u.profile_pic_url) {
+          modalImg.src = u.profile_pic_url;
+          modalImg.classList.remove('d-none');
+          modalInitials.classList.add('d-none');
+        } else {
+          modalImg.src = '';
+          modalImg.classList.add('d-none');
+          modalInitials.classList.remove('d-none');
+          modalInitials.textContent = u.name ? u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'US';
+        }
+      }
+
+      this.showModal('userProfileModal');
     },
 
     loadSidebarMenu: function () {
