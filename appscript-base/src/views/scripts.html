@@ -514,7 +514,7 @@
     paginationState: {
       users: { page: 1, pageSize: 20, data: [] },
       roles: { page: 1, pageSize: 20, data: [] },
-      perms: { page: 1, pageSize: 5, data: [] },
+      perms: { page: 1, pageSize: 20, data: [] },
       configs: { page: 1, pageSize: 5, data: [] },
       audit: { page: 1, pageSize: 5, data: [] },
       menus: { page: 1, pageSize: 5, data: [] }
@@ -2434,6 +2434,12 @@
           const deleteCode = `${prefix}_DELETE`;
           const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
 
+          // Find description and status from permissionsCache
+          const matchedPerm = (this.permissionsCache || []).find(p => p.permission_code === viewCode);
+          const cleanName = matchedPerm ? String(matchedPerm.permission_name).replace(/\s*-\s*VIEW$/i, '') : `${prefix} Permission`;
+          const statusVal = matchedPerm ? String(matchedPerm.status).toUpperCase() : 'ACTIVE';
+          const statusBadge = statusVal === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
+
           // Get active permissions for this specific role from permissionsCache
           const rolePerms = (this.permissionsCache || [])
             .filter(p => p.role_id === roleCode && String(p.status).toUpperCase() === 'ACTIVE')
@@ -2449,6 +2455,12 @@
             <tr id="matrix-row-${roleCode}-${prefix}">
               <td class="fw-semibold text-dark">
                 ${labelCellHtml}
+              </td>
+              <td>
+                <span class="text-dark fw-medium fs-7">${cleanName}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge ${statusBadge} px-2.5 py-1.5 fs-8">${statusVal}</span>
               </td>
               <td class="text-center">
                 <input class="form-check-input matrix-select-all" type="checkbox" ${isDisabledAttr} onchange="AEF.toggleMatrixRow('${roleCode}', '${prefix}', this.checked)">
@@ -2479,7 +2491,7 @@
           // Parent node (Role) with no prefix has blank cells in matrix columns
           html += `
             <tr id="matrix-row-${row.id}" style="background-color: #ffffff;">
-              <td class="fw-semibold text-dark" colspan="7">
+              <td class="fw-semibold text-dark" colspan="9">
                 ${labelCellHtml}
               </td>
               <td class="text-center"></td>
@@ -2612,7 +2624,40 @@
         }
       });
 
+      const tbody = document.getElementById('perms-table-body');
+      const pagePrefixes = [];
+      if (tbody) {
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const idAttr = tr.getAttribute('id');
+          if (idAttr && idAttr.startsWith('matrix-row-')) {
+            const parts = idAttr.split('-');
+            if (parts.length >= 4) {
+              const prefix = parts.slice(3).join('-');
+              if (prefix && !pagePrefixes.includes(prefix)) {
+                pagePrefixes.push(prefix);
+              }
+            }
+          }
+        });
+      }
+
+      // Show loader
+      const saveBtn = document.getElementById('btn-save-perm-matrix');
+      const cancelBtn = document.getElementById('btn-cancel-perm-matrix');
+      const origText = saveBtn ? saveBtn.innerHTML : '';
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+      }
+      if (cancelBtn) cancelBtn.disabled = true;
+
       google.script.run.withSuccessHandler((res) => {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = origText;
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+
         if (res.success) {
           alert('Berhasil: Matrix hak akses sistem berhasil diperbarui.');
           AEF.state.permMatrixEditMode = false;
@@ -2626,8 +2671,16 @@
         } else {
           alert('Gagal menyimpan matrix: ' + res.message);
         }
+      }).withFailureHandler((err) => {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = origText;
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+        alert('Gagal menyimpan matrix: Kesalahan server.');
       }).apiBatchUpdateRolePermissions({
         matrix: matrix,
+        prefixes: pagePrefixes,
         actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
       });
     },
@@ -2652,7 +2705,21 @@
       if (!prefix) return alert('Gagal menambahkan: Prefix Code wajib diisi!');
       if (!roleId) return alert('Gagal menambahkan: Target Role wajib dipilih!');
 
+      // Show loader
+      const form = document.getElementById('form-add-perm');
+      const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+      const origText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
+      }
+
       google.script.run.withSuccessHandler((res) => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+        }
+
         if (res.success) {
           alert(`Berhasil: Permission code dengan prefix "${prefix}" berhasil ditambahkan.`);
           this.hideModal('addPermModal');
@@ -2660,6 +2727,12 @@
         } else {
           alert('Gagal menambahkan: ' + res.message);
         }
+      }).withFailureHandler((err) => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origText;
+        }
+        alert('Gagal menambahkan: Kesalahan server.');
       }).apiCreatePermissionsForPrefix({
         prefix: prefix,
         role_id: roleId,

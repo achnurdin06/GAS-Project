@@ -152,8 +152,15 @@ function apiBatchUpdateRolePermissions(payload) {
     checkApiPermission(payload, 'PERMISSION_CREATE');
     const roleService = new RoleService();
     const actorId = payload ? payload.actor_id : 'SYSTEM';
+    const prefixes = payload.prefixes || [];
     for (const rCode in payload.matrix) {
-      roleService.saveRolePermissions(rCode, payload.matrix[rCode] || [], actorId);
+      const allCodesForRole = payload.matrix[rCode] || [];
+      prefixes.forEach(prefix => {
+        const filteredCodes = allCodesForRole.filter(code => 
+          code.toUpperCase().startsWith(prefix.toUpperCase() + '_')
+        );
+        roleService.saveRolePermissionsForPrefixes(rCode, prefix, filteredCodes, actorId);
+      });
     }
     return Response.success('Matrix hak akses berhasil diperbarui', null, 'PERMISSION_MATRIX_BATCH_UPDATE_SUCCESS');
   } catch (err) {

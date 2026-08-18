@@ -230,6 +230,31 @@ class RoleService {
     }
   }
 
+  saveRolePermissionsForPrefixes(roleCode, prefix, permissionCodes, actorId = 'SYSTEM') {
+    const permRepo = new PermissionRepository();
+    const existing = permRepo.find(row => 
+      String(row.role_id).trim().toUpperCase() === String(roleCode).trim().toUpperCase() &&
+      String(row.permission_code).toUpperCase().startsWith(prefix.toUpperCase() + '_')
+    );
+    
+    existing.forEach(p => {
+      permRepo.updateById(p.id, { status: 'DELETED' }, actorId);
+    });
+
+    if (Array.isArray(permissionCodes)) {
+      permissionCodes.forEach(code => {
+        const newPerm = {
+          id: Utils.generateUuid(),
+          role_id: roleCode.toUpperCase(),
+          permission_code: code.toUpperCase(),
+          permission_name: code,
+          status: 'ACTIVE'
+        };
+        permRepo.insert(newPerm, actorId);
+      });
+    }
+  }
+
   // User Assignment Helpers
   saveRoleUserAssignments(roleCode, assignedUserIds, actorId = 'SYSTEM') {
     const userRepo = new UserRepository();
