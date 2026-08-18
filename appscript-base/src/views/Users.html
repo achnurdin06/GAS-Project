@@ -6,30 +6,21 @@
         <h3 class="fw-bold mb-1" style="color: #181c32;">User Management</h3>
         <p class="text-muted small mb-0">Kelola pengguna sistem dan pendelegasian role hak akses.</p>
       </div>
-      <button class="btn btn-aef-primary" onclick="AEF.showModal('addUserModal')">
-        <i class="bi bi-person-plus me-1"></i> Tambah User
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <div class="input-group input-group-sm" style="max-width: 240px;">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" id="users-search" class="form-control border-start-0 ps-0" placeholder="Cari by nama, email..." oninput="AEF.handleUsersSearch(this.value)">
+        </div>
+        <button class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1" onclick="AEF.toggleUsersFilterRow()" style="background-color: #6c757d; border: none; padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-funnel"></i> View Filter
+        </button>
+        <button class="btn btn-sm btn-aef-primary d-flex align-items-center gap-1" onclick="AEF.showModal('addUserModal')" style="padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-person-plus"></i> Tambah User
+        </button>
+      </div>
     </div>
 
     <div class="aef-card">
-      <!-- Search & Page Limit Header Controls -->
-      <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded" style="border: 1px solid #f1f1f4; margin: 1rem;">
-        <div class="d-flex align-items-center gap-2">
-          <span class="text-muted small text-nowrap">Tampilkan</span>
-          <select id="users-page-size" class="form-select form-select-sm w-auto" onchange="AEF.handleUsersPageSizeChange(this.value)">
-            <option value="5" selected>5</option>
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-          <span class="text-muted small">entri</span>
-        </div>
-        <div class="input-group input-group-sm w-auto" style="max-width: 320px; width: 100%;">
-          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-          <input type="text" id="users-search" class="form-control border-start-0 ps-0" placeholder="Cari nama, email, phone, role, status..." oninput="AEF.handleUsersSearch(this.value)">
-        </div>
-      </div>
-
       <div class="table-responsive">
         <table class="table table-aef align-middle mb-0">
           <thead>
@@ -41,6 +32,14 @@
               <th onclick="AEF.handleUsersSort('status')" style="cursor: pointer; user-select: none;">Status <i id="users-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
               <th>Aksi</th>
             </tr>
+            <tr id="users-filter-row" class="d-none bg-light">
+              <th><input type="text" id="users-filter-name" class="form-control form-control-sm" placeholder="Cari nama..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th><input type="text" id="users-filter-email" class="form-control form-control-sm" placeholder="Cari email..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th><input type="text" id="users-filter-phone" class="form-control form-control-sm" placeholder="Cari telp..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th><input type="text" id="users-filter-role_id" class="form-control form-control-sm" placeholder="Cari role..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th><input type="text" id="users-filter-status" class="form-control form-control-sm" placeholder="Cari status..." oninput="AEF.handleUsersColumnFilter()"></th>
+              <th></th>
+            </tr>
           </thead>
           <tbody id="users-table-body">
             <!-- Dynamically populated via AEF.loadUsersTable() -->
@@ -49,8 +48,17 @@
       </div>
 
       <!-- Pagination Controls -->
-      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-        <div class="text-muted small" id="users-pagination-info">Memuat entri...</div>
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 1rem;">
+        <div class="d-flex align-items-center gap-2">
+          <select id="users-page-size" class="form-select form-select-sm w-auto" onchange="AEF.handleUsersPageSizeChange(this.value)" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+            <option value="5" selected>5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <div class="text-muted small" id="users-pagination-info">Memuat entri...</div>
+        </div>
         <ul class="pagination pagination-sm mb-0" id="users-pagination-controls"></ul>
       </div>
     </div>

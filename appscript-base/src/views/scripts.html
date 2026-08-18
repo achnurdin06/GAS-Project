@@ -422,6 +422,26 @@
       this.applyUsersFiltersAndSort();
     },
 
+    handleUsersColumnFilter: function () {
+      this.applyUsersFiltersAndSort();
+    },
+
+    toggleUsersFilterRow: function () {
+      const row = document.getElementById('users-filter-row');
+      if (row) {
+        row.classList.toggle('d-none');
+        // Clear columns filters if hidden
+        if (row.classList.contains('d-none')) {
+          const filterInputs = ['name', 'email', 'phone', 'role_id', 'status'];
+          filterInputs.forEach(f => {
+            const el = document.getElementById('users-filter-' + f);
+            if (el) el.value = '';
+          });
+          this.applyUsersFiltersAndSort();
+        }
+      }
+    },
+
     handleUsersPageSizeChange: function (val) {
       this.paginationState.users.pageSize = Number(val);
       this.paginationState.users.page = 1;
@@ -444,7 +464,7 @@
     applyUsersFiltersAndSort: function () {
       let filtered = [...(this.usersCache || [])];
 
-      // 1. Search Filter (All columns except action)
+      // 1. Global Search Filter
       const query = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
       if (query) {
         filtered = filtered.filter(u => {
@@ -459,7 +479,23 @@
         });
       }
 
-      // 2. Sorting
+      // 2. Column-specific filters (only active if row is visible)
+      const filterRow = document.getElementById('users-filter-row');
+      if (filterRow && !filterRow.classList.contains('d-none')) {
+        const filterName = (document.getElementById('users-filter-name')?.value || '').trim().toLowerCase();
+        const filterEmail = (document.getElementById('users-filter-email')?.value || '').trim().toLowerCase();
+        const filterPhone = (document.getElementById('users-filter-phone')?.value || '').trim().toLowerCase();
+        const filterRole = (document.getElementById('users-filter-role_id')?.value || '').trim().toLowerCase();
+        const filterStatus = (document.getElementById('users-filter-status')?.value || '').trim().toLowerCase();
+
+        if (filterName) filtered = filtered.filter(u => String(u.name || '').toLowerCase().includes(filterName));
+        if (filterEmail) filtered = filtered.filter(u => String(u.email || '').toLowerCase().includes(filterEmail));
+        if (filterPhone) filtered = filtered.filter(u => String(u.phone || '').toLowerCase().includes(filterPhone));
+        if (filterRole) filtered = filtered.filter(u => String(u.role_id || '').toLowerCase().includes(filterRole));
+        if (filterStatus) filtered = filtered.filter(u => String(u.status || '').toLowerCase().includes(filterStatus));
+      }
+
+      // 3. Sorting
       if (this.state.usersSort) {
         const col = this.state.usersSort.column;
         const asc = this.state.usersSort.asc;
