@@ -410,11 +410,12 @@
 
       google.script.run
         .withSuccessHandler((res) => {
-          if (res.success && Array.isArray(res.data)) {
+          if (res && res.success && Array.isArray(res.data)) {
             this.usersCache = res.data;
             this.applyUsersFiltersAndSort();
           } else {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Gagal memuat data: ${res.message || 'Error tidak diketahui'}</td></tr>`;
+            const msg = res ? res.message : 'Respons kosong dari server';
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Gagal memuat data: ${msg}</td></tr>`;
           }
         })
         .withFailureHandler((err) => {
