@@ -1,36 +1,64 @@
 <template id="tpl-roles">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h3 class="fw-bold mb-1" style="color: #181c32;">Role Management</h3>
-      <p class="text-muted small mb-0">Kelola daftar role dan deskripsi otorisasi sistem.</p>
-    </div>
-    <button class="btn btn-aef-primary" onclick="AEF.showModal('addRoleModal')">
-      <i class="bi bi-shield-plus me-1"></i> Tambah Role
-    </button>
-  </div>
-
-  <div class="aef-card">
-    <div class="table-responsive">
-      <table class="table table-aef align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Role Code</th>
-            <th>Nama Role</th>
-            <th>Deskripsi</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="roles-table-body">
-          <!-- Dynamically populated -->
-        </tbody>
-      </table>
+  <!-- 1. MAIN ROLES LIST VIEW -->
+  <div id="roles-list-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="fw-bold mb-1" style="color: #181c32;">Role Management</h3>
+        <p class="text-muted small mb-0">Kelola daftar role dan deskripsi otorisasi sistem.</p>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-shrink-1">
+        <div class="input-group input-group-sm" style="max-width: 240px; flex-shrink: 1;">
+          <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+          <input type="text" id="roles-search" class="form-control border-start-0 ps-0" placeholder="Cari by kode, nama..." oninput="AEF.handleRolesSearch(this.value)">
+        </div>
+        <button class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 text-nowrap" onclick="AEF.toggleRolesFilterRow()" style="background-color: #6c757d; border: none; padding: 0.4rem 0.8rem; font-weight: 500; flex-shrink: 1;">
+          <i class="bi bi-funnel"></i> View Filter
+        </button>
+        <button class="btn btn-sm btn-aef-primary d-flex align-items-center gap-1 text-nowrap" onclick="AEF.openAddRoleModal()" style="padding: 0.4rem 0.8rem; font-weight: 500; flex-shrink: 1;">
+          <i class="bi bi-shield-plus"></i> Tambah Role
+        </button>
+      </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="roles-pagination-info">Memuat entri...</div>
-      <ul class="pagination pagination-sm mb-0" id="roles-pagination-controls"></ul>
+    <div class="aef-card">
+      <div class="table-responsive">
+        <table class="table table-aef align-middle mb-0">
+          <thead>
+            <tr>
+              <th onclick="AEF.handleRolesSort('role_code')" style="cursor: pointer; user-select: none;">Role Code <i id="roles-sort-icon-role_code" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleRolesSort('role_name')" style="cursor: pointer; user-select: none;">Nama Role <i id="roles-sort-icon-role_name" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleRolesSort('description')" style="cursor: pointer; user-select: none;">Deskripsi <i id="roles-sort-icon-description" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleRolesSort('user_count')" style="cursor: pointer; user-select: none;">Jumlah User <i id="roles-sort-icon-user_count" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th onclick="AEF.handleRolesSort('status')" style="cursor: pointer; user-select: none;">Status <i id="roles-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+              <th>Aksi</th>
+            </tr>
+            <tr id="roles-filter-row" class="d-none bg-light">
+              <th><input type="text" id="roles-filter-role_code" class="form-control form-control-sm" placeholder="Cari kode..." oninput="AEF.handleRolesColumnFilter()"></th>
+              <th><input type="text" id="roles-filter-role_name" class="form-control form-control-sm" placeholder="Cari nama..." oninput="AEF.handleRolesColumnFilter()"></th>
+              <th><input type="text" id="roles-filter-description" class="form-control form-control-sm" placeholder="Cari deskripsi..." oninput="AEF.handleRolesColumnFilter()"></th>
+              <th><input type="text" id="roles-filter-user_count" class="form-control form-control-sm" placeholder="Cari jumlah..." oninput="AEF.handleRolesColumnFilter()"></th>
+              <th><input type="text" id="roles-filter-status" class="form-control form-control-sm" placeholder="Cari status..." oninput="AEF.handleRolesColumnFilter()"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="roles-table-body">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 1rem;">
+        <div class="d-flex align-items-center gap-2">
+          <select id="roles-page-size" class="form-select form-select-sm" onchange="AEF.handleRolesPageSizeChange(this.value)" style="padding: 0.25rem 1.25rem 0.25rem 0.5rem; font-size: 0.875rem; width: 70px; text-align: left;">
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <div class="text-muted small text-nowrap" id="roles-pagination-info">Memuat entri...</div>
+        </div>
+        <ul class="pagination pagination-sm mb-0" id="roles-pagination-controls"></ul>
+      </div>
     </div>
   </div>
 </template>

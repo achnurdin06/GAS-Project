@@ -239,34 +239,301 @@
   </div>
 </div>
 
-<!-- 3. Add Role Modal -->
+<!-- 3. Add Role Modal (Lampiran 1) -->
 <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-shield-plus text-primary me-2"></i>Tambah Role Baru</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('addRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+      </div>
+      
+      <!-- Nav Tabs -->
+      <div class="px-4 pt-2 border-bottom">
+        <ul class="nav nav-tabs border-0" id="addRoleTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold border-0" id="add-role-detail-tab" data-bs-toggle="tab" data-bs-target="#add-role-detail" type="button" role="tab" style="padding: 0.75rem 1rem;">Detail Role</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold border-0" id="add-role-menus-tab" data-bs-toggle="tab" data-bs-target="#add-role-menus" type="button" role="tab" style="padding: 0.75rem 1rem;">Konfigurasi Akses Menu</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold border-0" id="add-role-granular-tab" data-bs-toggle="tab" data-bs-target="#add-role-granular" type="button" role="tab" style="padding: 0.75rem 1rem;">Hak Akses Granular</button>
+          </li>
+        </ul>
+      </div>
+
+      <form id="form-add-role" onsubmit="event.preventDefault(); AEF.submitCreateRole();">
+        <div class="modal-body p-4" style="background-color: #f8f9fa;">
+          <div class="tab-content" id="addRoleTabContent">
+            
+            <!-- TAB 1: DETAIL ROLE -->
+            <div class="tab-pane fade show active" id="add-role-detail" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Nama Role <span class="text-danger">*</span></label>
+                  <input type="text" id="new-role-name" class="form-control" placeholder="Masukkan nama role" required oninput="AEF.generateRoleCodeFromInput('add', this.value)">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Role Code (Otomatis)</label>
+                  <input type="text" id="new-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Deskripsi Role</label>
+                  <textarea id="new-role-desc" class="form-control" rows="3" placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
+                </div>
+                <div class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
+                  <div>
+                    <label class="form-check-label fw-bold mb-0" style="color: #3f4254;">Status Role</label>
+                    <p class="text-muted small mb-0">Role aktif dapat di-assign ke user.</p>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <input class="form-check-input ms-0" type="checkbox" id="new-role-status" checked style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                    <span class="fw-bold small text-primary">Aktif</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- User Assignment -->
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i> User Assignment</h6>
+                <div class="position-relative">
+                  <label class="form-label text-muted small fw-semibold">Tambahkan User ke Role Ini</label>
+                  <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="add-role-user-search" class="form-control border-start-0 ps-0" placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('add', this.value)">
+                  </div>
+                  <!-- Autocomplete dropdown -->
+                  <div id="add-role-user-results" class="position-absolute bg-white border rounded shadow-sm w-100 d-none" style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
+                </div>
+                <!-- Selected user chips -->
+                <div id="add-role-user-chips" class="d-flex flex-wrap gap-2 mt-2"></div>
+              </div>
+            </div>
+
+            <!-- TAB 2: MENU ACCESS -->
+            <div class="tab-pane fade" id="add-role-menus" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
+                <p class="text-muted small mb-3">Pilih menu apa saja yang dapat diakses oleh role ini:</p>
+                <div id="add-role-menu-list" class="row">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: GRANULAR PERMISSIONS -->
+            <div class="tab-pane fade" id="add-role-granular" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i> Otorisasi Granular Sistem</h6>
+                
+                <!-- Check All toggle box -->
+                <div class="form-check p-3 bg-light rounded mb-3 d-flex align-items-center gap-2" style="cursor: pointer;">
+                  <input class="form-check-input" type="checkbox" id="add-role-select-all-perms" onchange="AEF.toggleAllGranularPerms('add', this.checked)">
+                  <label class="form-check-label fw-bold mb-0 text-primary" for="add-role-select-all-perms" style="cursor: pointer;">Pilih Semua Hak Akses (Check All)</label>
+                </div>
+
+                <div id="add-role-perms-list" class="row">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer border-light py-3 px-4 bg-white d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('addRoleModal')">Batal</button>
+          <button type="submit" class="btn btn-aef-primary">Simpan Role</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3b. Edit Role Modal (Lampiran 2) -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: #181c32;" id="edit-role-title-text"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Role</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('editRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
+      </div>
+      
+      <!-- Nav Tabs -->
+      <div class="px-4 pt-2 border-bottom">
+        <ul class="nav nav-tabs border-0" id="editRoleTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold border-0" id="edit-role-detail-tab" data-bs-toggle="tab" data-bs-target="#edit-role-detail" type="button" role="tab" style="padding: 0.75rem 1rem;">Detail Role</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold border-0" id="edit-role-menus-tab" data-bs-toggle="tab" data-bs-target="#edit-role-menus" type="button" role="tab" style="padding: 0.75rem 1rem;">Konfigurasi Akses Menu</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold border-0" id="edit-role-granular-tab" data-bs-toggle="tab" data-bs-target="#edit-role-granular" type="button" role="tab" style="padding: 0.75rem 1rem;">Hak Akses Granular</button>
+          </li>
+        </ul>
+      </div>
+
+      <form id="form-edit-role" onsubmit="event.preventDefault(); AEF.submitUpdateRole();">
+        <input type="hidden" id="edit-role-id">
+        <div class="modal-body p-4" style="background-color: #f8f9fa;">
+          <div class="tab-content" id="editRoleTabContent">
+            
+            <!-- TAB 1: DETAIL ROLE -->
+            <div class="tab-pane fade show active" id="edit-role-detail" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4 mb-3" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-info-circle me-1"></i> Informasi Dasar</h6>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Nama Role <span class="text-danger">*</span></label>
+                  <input type="text" id="edit-role-name" class="form-control" placeholder="Masukkan nama role" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Role Code</label>
+                  <input type="text" id="edit-role-code" class="form-control bg-light" placeholder="ROLE_CODE" readonly required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label text-muted small fw-semibold">Deskripsi Role</label>
+                  <textarea id="edit-role-desc" class="form-control" rows="3" placeholder="Jelaskan tujuan dan cakupan role ini..."></textarea>
+                </div>
+                <div class="form-check form-switch p-3 bg-light rounded d-flex justify-content-between align-items-center">
+                  <div>
+                    <label class="form-check-label fw-bold mb-0" style="color: #3f4254;">Status Role</label>
+                    <p class="text-muted small mb-0">Role aktif dapat di-assign ke user.</p>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <input class="form-check-input ms-0" type="checkbox" id="edit-role-status" style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                    <span id="edit-role-status-text" class="fw-bold small text-primary">Aktif</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- User Assignment -->
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-people me-1"></i> User Assignment</h6>
+                <div class="position-relative">
+                  <label class="form-label text-muted small fw-semibold">Tambahkan User ke Role Ini</label>
+                  <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="edit-role-user-search" class="form-control border-start-0 ps-0" placeholder="Cari nama atau email user..." oninput="AEF.searchUsersForRole('edit', this.value)">
+                  </div>
+                  <!-- Autocomplete dropdown -->
+                  <div id="edit-role-user-results" class="position-absolute bg-white border rounded shadow-sm w-100 d-none" style="max-height: 180px; overflow-y: auto; z-index: 1050;"></div>
+                </div>
+                <!-- Selected user chips -->
+                <div id="edit-role-user-chips" class="d-flex flex-wrap gap-2 mt-2"></div>
+              </div>
+            </div>
+
+            <!-- TAB 2: MENU ACCESS -->
+            <div class="tab-pane fade" id="edit-role-menus" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-menu-button-wide me-1"></i> Hak Akses Menu Navigasi</h6>
+                <p class="text-muted small mb-3">Pilih menu apa saja yang dapat diakses oleh role ini:</p>
+                <div id="edit-role-menu-list" class="row">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: GRANULAR PERMISSIONS -->
+            <div class="tab-pane fade" id="edit-role-granular" role="tabpanel">
+              <div class="card border-0 shadow-sm p-4" style="border-radius: 0.5rem; background-color: #ffffff;">
+                <h6 class="fw-bold mb-3 border-bottom pb-2" style="color: #3f4254;"><i class="bi bi-key me-1"></i> Otorisasi Granular Sistem</h6>
+
+                <!-- Check All toggle box -->
+                <div class="form-check p-3 bg-light rounded mb-3 d-flex align-items-center gap-2" style="cursor: pointer;">
+                  <input class="form-check-input" type="checkbox" id="edit-role-select-all-perms" onchange="AEF.toggleAllGranularPerms('edit', this.checked)">
+                  <label class="form-check-label fw-bold mb-0 text-primary" for="edit-role-select-all-perms" style="cursor: pointer;">Pilih Semua Hak Akses (Check All)</label>
+                </div>
+
+                <div id="edit-role-perms-list" class="row">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer border-light py-3 px-4 bg-white d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('editRoleModal')">Batal</button>
+          <button type="submit" class="btn btn-aef-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3c. Duplicate Role Modal (Lampiran 3) -->
+<div class="modal fade" id="duplicateRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
-      <div class="modal-header border-light py-3 px-4">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-shield-plus text-primary me-2"></i>Tambah Role Baru</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('addRoleModal')" aria-label="Close"></button>
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-files text-primary me-2"></i>Duplikat Role</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('duplicateRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
       </div>
-      <div class="modal-body p-4">
-        <form id="form-add-role" onsubmit="event.preventDefault(); AEF.createRole();">
+      <form id="form-duplicate-role" onsubmit="event.preventDefault(); AEF.submitDuplicateRole();">
+        <input type="hidden" id="duplicate-role-id">
+        <div class="modal-body p-4">
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Role Code (e.g. ROLE_MANAGER)</label>
-            <input type="text" id="new-role-code" class="form-control" placeholder="ROLE_MANAGER" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Nama Role</label>
-            <input type="text" id="new-role-name" class="form-control" placeholder="Manager Operasional" required>
+            <label class="form-label text-muted small fw-semibold" id="duplicate-role-source-text">Role Sumber: -</label>
           </div>
           <div class="mb-3">
-            <label class="form-label text-muted small fw-semibold">Deskripsi</label>
-            <textarea id="new-role-desc" class="form-control" rows="2"></textarea>
+            <label class="form-label text-muted small fw-semibold">Role Baru <span class="text-danger">*</span></label>
+            <input type="text" id="duplicate-role-code" class="form-control" placeholder="ROLE_BARU" required>
+            <div class="form-text small text-muted">Masukkan kode role baru dalam huruf kapital (contoh: ROLE_ASISTEN).</div>
           </div>
-          <div class="d-flex justify-content-end gap-2 mt-4 pt-2">
-            <button type="button" class="btn btn-light text-muted" onclick="AEF.hideModal('addRoleModal')">Batal</button>
-            <button type="submit" class="btn btn-aef-primary">Simpan Role</button>
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-semibold">Nama Role Baru</label>
+            <input type="text" id="duplicate-role-name" class="form-control" placeholder="Nama Role Baru">
           </div>
-        </form>
+          <div class="form-check p-3 bg-light rounded d-flex align-items-center gap-2 mb-2" style="cursor: pointer;">
+            <input class="form-check-input" type="checkbox" id="duplicate-role-copy-perms" checked style="cursor: pointer;">
+            <label class="form-check-label fw-semibold mb-0" for="duplicate-role-copy-perms" style="cursor: pointer; font-size: 0.9rem;">Salin juga semua pengaturan Menu dan Permission.</label>
+          </div>
+        </div>
+        <div class="modal-footer border-light py-3 px-4 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('duplicateRoleModal')">Batal</button>
+          <button type="submit" class="btn btn-primary" style="background-color: #0b2545; border-color: #0b2545;"><i class="bi bi-file-earmark-plus me-1"></i>Salin</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 3d. Delete Role Modal (Lampiran 4) -->
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Hapus Role</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('deleteRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
       </div>
+      <form id="form-delete-role" onsubmit="event.preventDefault(); AEF.submitDeleteRole();">
+        <input type="hidden" id="delete-role-id">
+        <div class="modal-body p-4 text-center">
+          <div class="mx-auto bg-light-danger rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+          </div>
+          <h5 class="fw-bold mb-2">Hapus Role</h5>
+          <p id="delete-role-confirm-text" class="text-muted mb-3">Anda akan menghapus role. Tindakan ini tidak dapat dibatalkan.</p>
+          
+          <!-- Warning banner -->
+          <div class="alert alert-danger border-0 p-3 mb-4 text-start" style="background-color: #ffeef0; color: #f1416c; border-radius: 0.5rem;">
+            <strong class="text-uppercase" style="font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">PENTING:</strong>
+            <span style="font-size: 0.9rem;">Role yang dihapus akan mencabut semua hak akses dari user yang terkait.</span>
+          </div>
+
+          <div class="form-check d-flex justify-content-start align-items-center gap-2 mb-2" style="cursor: pointer;">
+            <input class="form-check-input" type="checkbox" id="delete-role-understand" onchange="AEF.verifyDeleteRoleConsent(this.checked)" style="cursor: pointer;">
+            <label class="form-check-label text-muted text-start" for="delete-role-understand" style="cursor: pointer; font-size: 0.9rem;">Saya mengerti risikonya dan ingin melanjutkan.</label>
+          </div>
+        </div>
+        <div class="modal-footer border-light py-3 px-4 bg-light-subtle d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-light text-muted border" onclick="AEF.hideModal('deleteRoleModal')">Batal</button>
+          <button type="submit" id="delete-role-submit-btn" class="btn btn-danger" disabled style="background-color: #f1416c; border-color: #f1416c; opacity: 0.5;">Hapus</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

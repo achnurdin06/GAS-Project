@@ -103,6 +103,33 @@ function apiDeleteRole(payload) {
   }
 }
 
+function apiGetRoleDetails(payload) {
+  try {
+    return new RoleService().getRoleDetails(payload.role_id || payload.id);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetRoleDetails failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiUpdateRole(payload) {
+  try {
+    return new RoleService().updateRole(payload.role_id || payload.id, payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateRole failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDuplicateRole(payload) {
+  try {
+    return new RoleService().duplicateRole(payload.role_id || payload.id, payload, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDuplicateRole failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 // PERMISSIONS CRUD
 function apiGetPermissions(payload) {
   try {

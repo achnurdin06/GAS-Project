@@ -330,7 +330,7 @@
     // PAGINATION ENGINE
     paginationState: {
       users: { page: 1, pageSize: 20, data: [] },
-      roles: { page: 1, pageSize: 5, data: [] },
+      roles: { page: 1, pageSize: 20, data: [] },
       perms: { page: 1, pageSize: 5, data: [] },
       configs: { page: 1, pageSize: 5, data: [] },
       audit: { page: 1, pageSize: 5, data: [] },
@@ -1069,50 +1069,557 @@
     loadRolesTable: function () {
       const tbody = document.getElementById('roles-table-body');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          this.paginationState.roles.data = res.data;
-          this.paginationState.roles.page = 1;
-          this.renderRolesPage();
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
+      
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.data)) {
+            this.rolesCache = res.data;
+            this.applyRolesFiltersAndSort();
+          } else {
+            const msg = res ? res.message : 'Respons kosong dari server';
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Gagal memuat data: ${msg}</td></tr>`;
+          }
+        })
+        .withFailureHandler((err) => {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error: ${err.message || 'Koneksi terputus'}</td></tr>`;
+        })
+        .apiGetRoles();
+    },
+
+    handleRolesSearch: function (val) {
+      this.applyRolesFiltersAndSort();
+    },
+
+    handleRolesColumnFilter: function () {
+      this.applyRolesFiltersAndSort();
+    },
+
+    toggleRolesFilterRow: function () {
+      const row = document.getElementById('roles-filter-row');
+      if (row) {
+        row.classList.toggle('d-none');
+        if (row.classList.contains('d-none')) {
+          const filterInputs = ['role_code', 'role_name', 'description', 'user_count', 'status'];
+          filterInputs.forEach(f => {
+            const el = document.getElementById('roles-filter-' + f);
+            if (el) el.value = '';
+          });
+          this.applyRolesFiltersAndSort();
         }
-      }).apiGetRoles();
+      }
+    },
+
+    handleRolesPageSizeChange: function (val) {
+      this.paginationState.roles.pageSize = Number(val);
+      this.paginationState.roles.page = 1;
+      this.renderRolesPage();
+    },
+
+    handleRolesSort: function (colName) {
+      if (!this.state.rolesSort) {
+        this.state.rolesSort = { column: 'role_code', asc: true };
+      }
+      if (this.state.rolesSort.column === colName) {
+        this.state.rolesSort.asc = !this.state.rolesSort.asc;
+      } else {
+        this.state.rolesSort.column = colName;
+        this.state.rolesSort.asc = true;
+      }
+      this.applyRolesFiltersAndSort();
+    },
+
+    applyRolesFiltersAndSort: function () {
+      let filtered = [...(this.rolesCache || [])];
+
+      // 1. Global Search Filter
+      const query = (document.getElementById('roles-search')?.value || '').trim().toLowerCase();
+      if (query) {
+        filtered = filtered.filter(r => {
+          return (
+            String(r.role_code || '').toLowerCase().includes(query) ||
+            String(r.role_name || '').toLowerCase().includes(query) ||
+            String(r.description || '').toLowerCase().includes(query) ||
+            String(r.user_count || '0').includes(query) ||
+            String(r.status || '').toLowerCase().includes(query)
+          );
+        });
+      }
+
+      // 2. Column-specific filters (only active if row is visible)
+      const filterRow = document.getElementById('roles-filter-row');
+      if (filterRow && !filterRow.classList.contains('d-none')) {
+        const filterCode = (document.getElementById('roles-filter-role_code')?.value || '').trim().toLowerCase();
+        const filterName = (document.getElementById('roles-filter-role_name')?.value || '').trim().toLowerCase();
+        const filterDesc = (document.getElementById('roles-filter-description')?.value || '').trim().toLowerCase();
+        const filterCount = (document.getElementById('roles-filter-user_count')?.value || '').trim().toLowerCase();
+        const filterStatus = (document.getElementById('roles-filter-status')?.value || '').trim().toLowerCase();
+
+        if (filterCode) filtered = filtered.filter(r => String(r.role_code || '').toLowerCase().includes(filterCode));
+        if (filterName) filtered = filtered.filter(r => String(r.role_name || '').toLowerCase().includes(filterName));
+        if (filterDesc) filtered = filtered.filter(r => String(r.description || '').toLowerCase().includes(filterDesc));
+        if (filterCount) filtered = filtered.filter(r => String(r.user_count || '0').includes(filterCount));
+        if (filterStatus) filtered = filtered.filter(r => String(r.status || '').toLowerCase().includes(filterStatus));
+      }
+
+      // 3. Sorting
+      if (this.state.rolesSort) {
+        const col = this.state.rolesSort.column;
+        const asc = this.state.rolesSort.asc;
+        filtered.sort((a, b) => {
+          let valA = String(a[col] || '').toLowerCase();
+          let valB = String(b[col] || '').toLowerCase();
+
+          if (!isNaN(valA) && !isNaN(valB)) {
+            valA = Number(valA);
+            valB = Number(valB);
+          }
+
+          if (valA < valB) return asc ? -1 : 1;
+          if (valA > valB) return asc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      this.paginationState.roles.data = filtered;
+      this.paginationState.roles.page = 1;
+      this.renderRolesPage();
+
+      // Update header sorting icons
+      const cols = ['role_code', 'role_name', 'description', 'user_count', 'status'];
+      cols.forEach(c => {
+        const icon = document.getElementById(`roles-sort-icon-${c}`);
+        if (icon) {
+          if (this.state.rolesSort && this.state.rolesSort.column === c) {
+            icon.className = this.state.rolesSort.asc ? 'bi bi-sort-up ms-1' : 'bi bi-sort-down ms-1';
+            icon.style.color = '#2563eb';
+            icon.classList.remove('opacity-50', 'text-muted');
+          } else {
+            icon.className = 'bi bi-arrow-down-up ms-1 text-muted opacity-50';
+            icon.style.color = '';
+          }
+        }
+      });
     },
 
     renderRolesPage: function () {
-      this.renderTablePagination('roles', (r) => `
-        <tr>
-          <td><code>${r.role_code}</code></td>
-          <td class="fw-semibold" style="color: #181c32;">${r.role_name}</td>
-          <td>${r.description || '-'}</td>
-          <td><span class="badge badge-light-success px-3 py-2 fs-7">${r.status}</span></td>
-          <td>
-            <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.deleteRole('${r.id}')"><i class="bi bi-trash"></i></button>
-          </td>
-        </tr>
-      `, 'roles-table-body', 'roles-pagination-info', 'roles-pagination-controls');
+      this.renderTablePagination('roles', (r) => {
+        const statusBadge = String(r.status).trim().toUpperCase() === 'ACTIVE' ? 
+          `<span class="badge badge-light-success px-3 py-2 fs-7">ACTIVE</span>` :
+          `<span class="badge badge-light-danger px-3 py-2 fs-7">INACTIVE</span>`;
+
+        return `
+          <tr>
+            <td><code>${r.role_code}</code></td>
+            <td class="fw-semibold" style="color: #181c32;">${r.role_name}</td>
+            <td>${r.description || '-'}</td>
+            <td><span class="badge bg-light-primary text-primary fw-bold px-3 py-2 rounded-circle fs-7" style="display:inline-flex; width:30px; height:30px; align-items:center; justify-content:center;">${r.user_count || 0}</span></td>
+            <td>${statusBadge}</td>
+            <td>
+              <button class="btn btn-sm btn-light border text-muted me-1" onclick="AEF.openEditRoleModal('${r.id}')" title="Edit Role">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-light-primary text-primary border border-primary-subtle me-1" onclick="AEF.openDuplicateRoleModal('${r.id}')" title="Duplikat Role">
+                <i class="bi bi-files"></i>
+              </button>
+              <button class="btn btn-sm btn-light-danger text-danger border border-danger-subtle" onclick="AEF.openDeleteRoleModal('${r.id}')" title="Hapus Role">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }, 'roles-table-body', 'roles-pagination-info', 'roles-pagination-controls');
     },
 
-    createRole: function () {
-      const code = document.getElementById('new-role-code').value;
+    // Dynamic Form Builders for Roles Modal Checkboxes
+    renderRoleFormCheckboxes: function (mode) {
+      const menuListDiv = document.getElementById(mode + '-role-menu-list');
+      const permListDiv = document.getElementById(mode + '-role-perms-list');
+
+      if (menuListDiv) {
+        menuListDiv.innerHTML = '<div class="col-12 text-center py-2"><span class="spinner-border spinner-border-sm"></span> Memuat menu...</div>';
+        google.script.run.withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.data)) {
+            menuListDiv.innerHTML = '';
+            res.data.forEach(m => {
+              const col = document.createElement('div');
+              col.className = 'col-md-6 mb-2';
+              col.innerHTML = `
+                <div class="form-check">
+                  <input class="form-check-input role-menu-checkbox" type="checkbox" value="${m.permission_code}" id="${mode}-role-menu-${m.menu_code}">
+                  <label class="form-check-label fw-medium text-dark" for="${mode}-role-menu-${m.menu_code}">
+                    ${m.parent_id ? '— ' : ''}${m.menu_name} <span class="text-muted small">(${m.permission_code})</span>
+                  </label>
+                </div>
+              `;
+              menuListDiv.appendChild(col);
+            });
+            // Recheck menu list if editing
+            if (mode === 'edit' && this.state.activeEditRolePermissions) {
+              this.state.activeEditRolePermissions.forEach(code => {
+                const cb = menuListDiv.querySelector(`input[value="${code}"]`);
+                if (cb) cb.checked = true;
+              });
+            }
+          }
+        }).apiGetAllMenus();
+      }
+
+      if (permListDiv) {
+        const permCodes = [
+          { code: 'DASHBOARD_VIEW', name: 'Lihat Dashboard' },
+          { code: 'USER_VIEW', name: 'Lihat Users' },
+          { code: 'USER_CREATE', name: 'Tambah User' },
+          { code: 'USER_UPDATE', name: 'Edit User' },
+          { code: 'USER_DELETE', name: 'Hapus User' },
+          { code: 'ROLE_VIEW', name: 'Lihat Roles' },
+          { code: 'ROLE_CREATE', name: 'Tambah Role' },
+          { code: 'ROLE_DELETE', name: 'Hapus Role' },
+          { code: 'PERMISSION_VIEW', name: 'Lihat Permissions' },
+          { code: 'PERMISSION_CREATE', name: 'Tambah Permission' },
+          { code: 'PERMISSION_DELETE', name: 'Hapus Permission' },
+          { code: 'CONFIG_VIEW', name: 'Lihat System Config' },
+          { code: 'CONFIG_UPDATE', name: 'Update System Config' },
+          { code: 'AUDIT_VIEW', name: 'Lihat Audit Logs' },
+          { code: 'MENU_VIEW', name: 'Lihat Menu Management' },
+          { code: 'MENU_CREATE', name: 'Tambah Menu' },
+          { code: 'MENU_UPDATE', name: 'Edit Menu' },
+          { code: 'MENU_DELETE', name: 'Hapus Menu' }
+        ];
+
+        permListDiv.innerHTML = '';
+        permCodes.forEach(p => {
+          const col = document.createElement('div');
+          col.className = 'col-md-6 mb-2';
+          col.innerHTML = `
+            <div class="form-check">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${p.code}" id="${mode}-role-perm-${p.code}">
+              <label class="form-check-label text-dark" for="${mode}-role-perm-${p.code}">${p.name}</label>
+            </div>
+          `;
+          permListDiv.appendChild(col);
+        });
+
+        // Recheck granular perms list if editing
+        if (mode === 'edit' && this.state.activeEditRolePermissions) {
+          this.state.activeEditRolePermissions.forEach(code => {
+            const cb = permListDiv.querySelector(`input[value="${code}"]`);
+            if (cb) cb.checked = true;
+          });
+          
+          // Verify if all granular permissions are checked to tick the Select All checkbox
+          const checkboxes = permListDiv.querySelectorAll('.role-perm-checkbox');
+          const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+          const selectAllCb = document.getElementById('edit-role-select-all-perms');
+          if (selectAllCb) selectAllCb.checked = allChecked;
+        }
+      }
+    },
+
+    toggleAllGranularPerms: function (mode, checked) {
+      const container = document.getElementById(mode + '-role-perms-list');
+      if (container) {
+        const checkboxes = container.querySelectorAll('.role-perm-checkbox');
+        checkboxes.forEach(cb => {
+          cb.checked = checked;
+        });
+      }
+    },
+
+    // User Assignment Autocomplete Logic
+    searchUsersForRole: function (mode, query) {
+      const resultsDiv = document.getElementById(mode + '-role-user-results');
+      if (!resultsDiv) return;
+      const clean = query.trim().toLowerCase();
+      if (!clean) {
+        resultsDiv.innerHTML = '';
+        resultsDiv.classList.add('d-none');
+        return;
+      }
+      
+      const matches = (this.usersCache || []).filter(u => {
+        return (
+          String(u.name || '').toLowerCase().includes(clean) || 
+          String(u.email || '').toLowerCase().includes(clean)
+        );
+      });
+      
+      if (matches.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-2 text-muted small">User tidak ditemukan</div>';
+        resultsDiv.classList.remove('d-none');
+        return;
+      }
+      
+      resultsDiv.innerHTML = '';
+      resultsDiv.classList.remove('d-none');
+      
+      matches.forEach(u => {
+        const item = document.createElement('div');
+        item.className = 'p-2 border-bottom autocomplete-item text-dark';
+        item.style.cursor = 'pointer';
+        item.innerHTML = `<div class="fw-semibold" style="font-size: 0.9rem;">${u.name}</div><div class="text-muted small">${u.email}</div>`;
+        item.onclick = () => {
+          this.addUserToRole(mode, u);
+          resultsDiv.innerHTML = '';
+          resultsDiv.classList.add('d-none');
+          const searchInput = document.getElementById(mode + '-role-user-search');
+          if (searchInput) searchInput.value = '';
+        };
+        resultsDiv.appendChild(item);
+      });
+    },
+
+    addUserToRole: function (mode, user) {
+      const stateList = mode === 'add' ? 'addRoleAssignedUsers' : 'editRoleAssignedUsers';
+      if (!this.state[stateList]) this.state[stateList] = [];
+      if (!this.state[stateList].some(u => u.id === user.id)) {
+        this.state[stateList].push(user);
+      }
+      this.renderRoleUserChips(mode);
+    },
+
+    removeUserFromRole: function (mode, userId) {
+      const stateList = mode === 'add' ? 'addRoleAssignedUsers' : 'editRoleAssignedUsers';
+      if (this.state[stateList]) {
+        this.state[stateList] = this.state[stateList].filter(u => u.id !== userId);
+      }
+      this.renderRoleUserChips(mode);
+    },
+
+    renderRoleUserChips: function (mode) {
+      const container = document.getElementById(mode + '-role-user-chips');
+      if (!container) return;
+      const list = mode === 'add' ? this.state.addRoleAssignedUsers : this.state.editRoleAssignedUsers;
+      container.innerHTML = '';
+      if (!list || list.length === 0) return;
+      
+      list.forEach(u => {
+        const initials = (u.name || 'US').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const chip = document.createElement('div');
+        chip.className = 'badge bg-light text-dark border d-flex align-items-center gap-2 py-2 px-3 rounded-pill';
+        chip.style.fontSize = '0.85rem';
+        chip.innerHTML = `
+          <span class="badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 20px; height: 20px; font-size: 0.7rem; padding: 0;">${initials}</span>
+          <span class="fw-semibold text-dark">${u.name}</span>
+          <span class="text-muted" style="cursor: pointer;" onclick="AEF.removeUserFromRole('${mode}', '${u.id}')"><i class="bi bi-x-lg" style="font-size: 0.75rem;"></i></span>
+        `;
+        container.appendChild(chip);
+      });
+    },
+
+    generateRoleCodeFromInput: function (mode, val) {
+      let code = String(val).trim().toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
+      if (code && !code.startsWith('ROLE_')) {
+        code = 'ROLE_' + code;
+      }
+      const el = document.getElementById(mode === 'add' ? 'new-role-code' : 'edit-role-code');
+      if (el) el.value = code;
+    },
+
+    // Role Actions Triggers
+    openAddRoleModal: function () {
+      this.showModal('addRoleModal');
+      document.getElementById('form-add-role').reset();
+      
+      // Reset Select All Perms
+      const selectAllCb = document.getElementById('add-role-select-all-perms');
+      if (selectAllCb) selectAllCb.checked = false;
+
+      // Select Tab 1 by default
+      const trigger = document.getElementById('add-role-detail-tab');
+      if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+
+      this.state.addRoleAssignedUsers = [];
+      this.renderRoleUserChips('add');
+      this.renderRoleFormCheckboxes('add');
+    },
+
+    submitCreateRole: function () {
       const name = document.getElementById('new-role-name').value;
+      const code = document.getElementById('new-role-code').value;
       const desc = document.getElementById('new-role-desc').value;
-      if (!code || !name) return alert('Role Code dan Nama Role wajib diisi!');
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success) {
-          this.hideModal('addRoleModal');
-          document.getElementById('form-add-role').reset();
-          this.loadRolesTable();
-        } else alert('Gagal: ' + res.message);
-      }).apiCreateRole({ role_code: code, role_name: name, description: desc });
+      const status = document.getElementById('new-role-status').checked ? 'ACTIVE' : 'INACTIVE';
+
+      // Gather Checked Permissions (Menu + Granular)
+      const permissions = [];
+      document.querySelectorAll('#addRoleModal .role-menu-checkbox:checked, #addRoleModal .role-perm-checkbox:checked').forEach(cb => {
+        permissions.push(cb.value);
+      });
+
+      // Gather assigned user IDs
+      const assignedUsers = (this.state.addRoleAssignedUsers || []).map(u => u.id);
+
+      if (!name || !code) return alert('Nama Role dan Role Code wajib diisi!');
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            this.hideModal('addRoleModal');
+            this.loadRolesTable();
+          } else {
+            alert('Gagal membuat role: ' + res.message);
+          }
+        })
+        .apiCreateRole({
+          role_code: code,
+          role_name: name,
+          description: desc,
+          status: status,
+          permissions: permissions,
+          assigned_users: assignedUsers,
+          actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+        });
     },
 
-    deleteRole: function (roleId) {
-      if (!confirm('Hapus role ini?')) return;
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success) this.loadRolesTable();
-        else alert('Gagal: ' + res.message);
-      }).apiDeleteRole({ role_id: roleId });
+    openEditRoleModal: function (roleId) {
+      this.showModal('editRoleModal');
+      
+      // Reset Select All Perms
+      const selectAllCb = document.getElementById('edit-role-select-all-perms');
+      if (selectAllCb) selectAllCb.checked = false;
+
+      // Select Tab 1 by default
+      const trigger = document.getElementById('edit-role-detail-tab');
+      if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success && res.data) {
+            const role = res.data;
+            document.getElementById('edit-role-id').value = role.id;
+            document.getElementById('edit-role-name').value = role.role_name;
+            document.getElementById('edit-role-code').value = role.role_code;
+            document.getElementById('edit-role-desc').value = role.description;
+            document.getElementById('edit-role-status').checked = (role.status === 'ACTIVE');
+            
+            // Set text label
+            document.getElementById('edit-role-status-text').textContent = (role.status === 'ACTIVE' ? 'Aktif' : 'Inaktif');
+            
+            // Set title text
+            document.getElementById('edit-role-title-text').innerHTML = `<i class="bi bi-pencil-square text-primary me-2"></i>Edit Role: ${role.role_code}`;
+
+            this.state.editRoleAssignedUsers = role.assigned_users || [];
+            this.state.activeEditRolePermissions = role.permissions || [];
+
+            this.renderRoleUserChips('edit');
+            this.renderRoleFormCheckboxes('edit');
+          } else {
+            alert('Gagal memuat detail role: ' + res.message);
+          }
+        })
+        .apiGetRoleDetails({ id: roleId });
+    },
+
+    submitUpdateRole: function () {
+      const id = document.getElementById('edit-role-id').value;
+      const name = document.getElementById('edit-role-name').value;
+      const code = document.getElementById('edit-role-code').value;
+      const desc = document.getElementById('edit-role-desc').value;
+      const status = document.getElementById('edit-role-status').checked ? 'ACTIVE' : 'INACTIVE';
+
+      // Gather Checked Permissions (Menu + Granular)
+      const permissions = [];
+      document.querySelectorAll('#editRoleModal .role-menu-checkbox:checked, #editRoleModal .role-perm-checkbox:checked').forEach(cb => {
+        permissions.push(cb.value);
+      });
+
+      // Gather assigned user IDs
+      const assignedUsers = (this.state.editRoleAssignedUsers || []).map(u => u.id);
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            this.hideModal('editRoleModal');
+            this.loadRolesTable();
+          } else {
+            alert('Gagal menyimpan perubahan: ' + res.message);
+          }
+        })
+        .apiUpdateRole({
+          role_id: id,
+          role_name: name,
+          description: desc,
+          status: status,
+          permissions: permissions,
+          assigned_users: assignedUsers,
+          actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+        });
+    },
+
+    openDuplicateRoleModal: function (roleId) {
+      const role = (this.rolesCache || []).find(r => r.id === roleId);
+      if (!role) return;
+
+      this.showModal('duplicateRoleModal');
+      document.getElementById('duplicate-role-id').value = role.id;
+      document.getElementById('duplicate-role-source-text').textContent = `Role Sumber: ${role.role_code} (${role.role_name})`;
+      document.getElementById('duplicate-role-code').value = 'COPY_OF_' + role.role_code;
+      document.getElementById('duplicate-role-name').value = 'Copy of ' + role.role_name;
+      document.getElementById('duplicate-role-copy-perms').checked = true;
+    },
+
+    submitDuplicateRole: function () {
+      const id = document.getElementById('duplicate-role-id').value;
+      const code = document.getElementById('duplicate-role-code').value;
+      const name = document.getElementById('duplicate-role-name').value;
+      const copyPerms = document.getElementById('duplicate-role-copy-perms').checked;
+
+      if (!code) return alert('Kode role baru wajib diisi!');
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            this.hideModal('duplicateRoleModal');
+            this.loadRolesTable();
+          } else {
+            alert('Gagal menduplikasi: ' + res.message);
+          }
+        })
+        .apiDuplicateRole({
+          role_id: id,
+          role_code: code,
+          role_name: name,
+          copy_permissions: copyPerms,
+          actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+        });
+    },
+
+    openDeleteRoleModal: function (roleId) {
+      const role = (this.rolesCache || []).find(r => r.id === roleId);
+      if (!role) return;
+
+      this.showModal('deleteRoleModal');
+      document.getElementById('delete-role-id').value = role.id;
+      document.getElementById('delete-role-confirm-text').innerHTML = `Anda akan menghapus role <strong>${role.role_code}</strong>. Tindakan ini tidak dapat dibatalkan.`;
+      
+      const check = document.getElementById('delete-role-understand');
+      check.checked = false;
+      this.verifyDeleteRoleConsent(false);
+    },
+
+    verifyDeleteRoleConsent: function (checked) {
+      const btn = document.getElementById('delete-role-submit-btn');
+      if (btn) {
+        btn.disabled = !checked;
+        btn.style.opacity = checked ? '1' : '0.5';
+      }
+    },
+
+    submitDeleteRole: function () {
+      const id = document.getElementById('delete-role-id').value;
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res.success) {
+            this.hideModal('deleteRoleModal');
+            this.loadRolesTable();
+          } else {
+            alert('Gagal menghapus role: ' + res.message);
+          }
+        })
+        .apiDeleteRole({
+          role_id: id,
+          actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+        });
     },
 
     // PERMISSIONS CRUD
