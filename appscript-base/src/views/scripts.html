@@ -1511,8 +1511,6 @@
         google.script.run
           .withSuccessHandler((res) => {
             if (res && res.success && Array.isArray(res.data)) {
-              permListDiv.innerHTML = '';
-
               // Group existing permissions to extract unique prefixes, seeded with default cores
               const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
               res.data.forEach(p => {
@@ -1527,95 +1525,13 @@
                 }
               });
 
-              // Build table header
-              let tableHtml = `
-                <div class="table-responsive w-100">
-                  <table class="table table-aef align-middle mb-0">
-                    <thead>
-                      <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
-                        <th style="min-width: 180px;">Permission Code</th>
-                        <th class="text-center" style="width: 90px;">Select All</th>
-                        <th class="text-center" style="width: 90px;">Create (C)</th>
-                        <th class="text-center" style="width: 90px;">Read (R)</th>
-                        <th class="text-center" style="width: 90px;">Update (U)</th>
-                        <th class="text-center" style="width: 90px;">Delete (D)</th>
-                        <th class="text-center" style="width: 110px;">Export/Import (E)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-              `;
+              AEF.state.granularPrefixes = Array.from(prefixes).sort();
+              
+              // Reset granular pagination page
+              if (!AEF.state.granularCurrentPage) AEF.state.granularCurrentPage = { add: 1, edit: 1 };
+              AEF.state.granularCurrentPage[mode] = 1;
 
-              const iconMap = {
-                'USER': 'bi-people-fill',
-                'ROLE': 'bi-shield-check',
-                'PERMISSION': 'bi-key-fill',
-                'CONFIG': 'bi-sliders',
-                'AUDIT': 'bi-journal-text',
-                'MENU': 'bi-menu-button-wide-fill',
-                'DASHBOARD': 'bi-grid-1x2-fill'
-              };
-
-              Array.from(prefixes).sort().forEach(prefix => {
-                const viewCode = `${prefix}_VIEW`;
-                const createCode = `${prefix}_CREATE`;
-                const updateCode = `${prefix}_UPDATE`;
-                const deleteCode = `${prefix}_DELETE`;
-                const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
-                const icon = iconMap[prefix] || 'bi-shield-lock-fill';
-
-                tableHtml += `
-                  <tr id="${mode}-row-${prefix}">
-                    <td class="fw-semibold text-dark">
-                      <div class="d-flex align-items-center justify-content-between">
-                        <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
-                        <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="AEF.deletePermissionPrefix('${mode}', '${prefix}')" title="Hapus Permission Code">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${createCode}" id="${mode}-cb-${createCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${viewCode}" id="${mode}-cb-${viewCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${updateCode}" id="${mode}-cb-${updateCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${deleteCode}" id="${mode}-cb-${deleteCode}" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                    </td>
-                    <td class="text-center">
-                      <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.updateRowSelectAll('${mode}', '${prefix}')">
-                    </td>
-                  </tr>
-                `;
-              });
-
-              tableHtml += `
-                    </tbody>
-                  </table>
-                </div>
-              `;
-
-              permListDiv.innerHTML = tableHtml;
-
-              // Recheck granular perms list if editing
-              if (mode === 'edit' && AEF.state.activeEditRolePermissions) {
-                AEF.state.activeEditRolePermissions.forEach(code => {
-                  const cb = permListDiv.querySelector(`input[value*="${code}"]`);
-                  if (cb) {
-                    cb.checked = true;
-                  }
-                });
-                // Update Select All state for each row
-                Array.from(prefixes).forEach(prefix => {
-                  AEF.updateRowSelectAll('edit', prefix);
-                });
-              }
+              AEF.renderGranularTable(mode);
             } else {
               permListDiv.innerHTML = `<div class="text-danger p-3 text-center">Gagal: ${res ? res.message : 'Respon kosong'}</div>`;
             }
@@ -1625,6 +1541,190 @@
           })
           .apiGetPermissions();
       }
+    },
+
+    renderGranularTable: function (mode) {
+      const permListDiv = document.getElementById(mode + '-role-perms-list');
+      const pagContainer = document.getElementById(mode + '-role-granular-pagination');
+      if (!permListDiv) return;
+
+      if (!AEF.state.granularCurrentPage) AEF.state.granularCurrentPage = { add: 1, edit: 1 };
+      if (!AEF.state.granularPageSize) AEF.state.granularPageSize = { add: 20, edit: 20 };
+
+      const prefixes = AEF.state.granularPrefixes || [];
+      const page = AEF.state.granularCurrentPage[mode] || 1;
+      const pageSize = AEF.state.granularPageSize[mode] || 20;
+      const totalItems = prefixes.length;
+      const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+      const startIdx = (page - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, totalItems);
+      const pageSlice = prefixes.slice(startIdx, endIdx);
+
+      let tableHtml = `
+        <div class="table-responsive w-100">
+          <table class="table table-aef align-middle mb-0">
+            <thead>
+              <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
+                <th style="min-width: 180px;">Permission Code</th>
+                <th class="text-center" style="width: 90px;">Select All</th>
+                <th class="text-center" style="width: 90px;">Create (C)</th>
+                <th class="text-center" style="width: 90px;">Read (R)</th>
+                <th class="text-center" style="width: 90px;">Update (U)</th>
+                <th class="text-center" style="width: 90px;">Delete (D)</th>
+                <th class="text-center" style="width: 110px;">Export/Import (E)</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      const iconMap = {
+        'USER': 'bi-people-fill',
+        'ROLE': 'bi-shield-check',
+        'PERMISSION': 'bi-key-fill',
+        'CONFIG': 'bi-sliders',
+        'AUDIT': 'bi-journal-text',
+        'MENU': 'bi-menu-button-wide-fill',
+        'DASHBOARD': 'bi-grid-1x2-fill'
+      };
+
+      const activePerms = (mode === 'add' ? AEF.state.activeAddRolePermissions : AEF.state.activeEditRolePermissions) || [];
+
+      pageSlice.forEach(prefix => {
+        const viewCode = `${prefix}_VIEW`;
+        const createCode = `${prefix}_CREATE`;
+        const updateCode = `${prefix}_UPDATE`;
+        const deleteCode = `${prefix}_DELETE`;
+        const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
+        const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+
+        tableHtml += `
+          <tr id="${mode}-row-${prefix}">
+            <td class="fw-semibold text-dark">
+              <div class="d-flex align-items-center justify-content-between">
+                <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
+                <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="AEF.deletePermissionPrefix('${mode}', '${prefix}')" title="Hapus Permission Code">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+            <td class="text-center">
+              <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${createCode}" id="${mode}-cb-${createCode}" onchange="AEF.handleGranularCheckboxChange('${mode}', '${createCode}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${viewCode}" id="${mode}-cb-${viewCode}" onchange="AEF.handleGranularCheckboxChange('${mode}', '${viewCode}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${updateCode}" id="${mode}-cb-${updateCode}" onchange="AEF.handleGranularCheckboxChange('${mode}', '${updateCode}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${deleteCode}" id="${mode}-cb-${deleteCode}" onchange="AEF.handleGranularCheckboxChange('${mode}', '${deleteCode}', this.checked)">
+            </td>
+            <td class="text-center">
+              <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.handleGranularCheckboxChange('${mode}', '${exportImportCode}', this.checked)">
+            </td>
+          </tr>
+        `;
+      });
+
+      tableHtml += `
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      permListDiv.innerHTML = tableHtml;
+
+      // Recheck checkboxes and update Select All state for rendered page rows
+      pageSlice.forEach(prefix => {
+        const viewCode = `${prefix}_VIEW`;
+        const createCode = `${prefix}_CREATE`;
+        const updateCode = `${prefix}_UPDATE`;
+        const deleteCode = `${prefix}_DELETE`;
+        const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
+
+        const viewCb = document.getElementById(`${mode}-cb-${viewCode}`);
+        const createCb = document.getElementById(`${mode}-cb-${createCode}`);
+        const updateCb = document.getElementById(`${mode}-cb-${updateCode}`);
+        const deleteCb = document.getElementById(`${mode}-cb-${deleteCode}`);
+        const expImpCb = document.getElementById(`${mode}-cb-${prefix}-exportimport`);
+
+        if (viewCb) viewCb.checked = activePerms.includes(viewCode);
+        if (createCb) createCb.checked = activePerms.includes(createCode);
+        if (updateCb) updateCb.checked = activePerms.includes(updateCode);
+        if (deleteCb) deleteCb.checked = activePerms.includes(deleteCode);
+        if (expImpCb) {
+          expImpCb.checked = activePerms.includes(`${prefix}_EXPORT`) && activePerms.includes(`${prefix}_IMPORT`);
+        }
+
+        AEF.updateRowSelectAll(mode, prefix);
+      });
+
+      // Render Pagination controls
+      if (pagContainer) {
+        if (totalItems === 0) {
+          pagContainer.innerHTML = '';
+          return;
+        }
+
+        const sizeOptions = [20, 50, 100].map(s => {
+          const sel = s === pageSize ? 'selected' : '';
+          return `<option value="${s}" ${sel}>${s}</option>`;
+        }).join('');
+
+        pagContainer.innerHTML = `
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm" onchange="AEF.handleGranularPageSizeChange('${mode}', this.value)" style="width: 70px;">
+              ${sizeOptions}
+            </select>
+            <div class="text-muted small">Showing ${startIdx + 1} to ${endIdx} of ${totalItems} entries</div>
+          </div>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item ${page === 1 ? 'disabled' : ''}">
+              <a class="page-link py-1" href="javascript:void(0)" onclick="AEF.handleGranularPageChange('${mode}', ${page - 1})"><i class="bi bi-chevron-left"></i></a>
+            </li>
+            <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+              <a class="page-link py-1" href="javascript:void(0)" onclick="AEF.handleGranularPageChange('${mode}', ${page + 1})"><i class="bi bi-chevron-right"></i></a>
+            </li>
+          </ul>
+        `;
+      }
+    },
+
+    handleGranularPageChange: function (mode, newPage) {
+      if (!AEF.state.granularCurrentPage) AEF.state.granularCurrentPage = { add: 1, edit: 1 };
+      AEF.state.granularCurrentPage[mode] = newPage;
+      AEF.renderGranularTable(mode);
+    },
+
+    handleGranularPageSizeChange: function (mode, newSize) {
+      if (!AEF.state.granularCurrentPage) AEF.state.granularCurrentPage = { add: 1, edit: 1 };
+      if (!AEF.state.granularPageSize) AEF.state.granularPageSize = { add: 20, edit: 20 };
+      AEF.state.granularPageSize[mode] = parseInt(newSize, 10);
+      AEF.state.granularCurrentPage[mode] = 1;
+      AEF.renderGranularTable(mode);
+    },
+
+    handleGranularCheckboxChange: function (mode, permCode, checked) {
+      const stateKey = mode === 'add' ? 'activeAddRolePermissions' : 'activeEditRolePermissions';
+      if (!AEF.state[stateKey]) AEF.state[stateKey] = [];
+
+      const codes = permCode.split(',');
+      codes.forEach(code => {
+        if (checked) {
+          if (!AEF.state[stateKey].includes(code)) {
+            AEF.state[stateKey].push(code);
+          }
+        } else {
+          AEF.state[stateKey] = AEF.state[stateKey].filter(c => c !== code);
+        }
+      });
+
+      const prefix = codes[0].split('_')[0];
+      AEF.updateRowSelectAll(mode, prefix);
     },
 
     addNewPermissionPrefix: function (mode) {
@@ -1689,8 +1789,20 @@
     toggleRowCheckboxes: function (mode, prefix, checked) {
       const row = document.getElementById(`${mode}-row-${prefix}`);
       if (!row) return;
+
+      const stateKey = mode === 'add' ? 'activeAddRolePermissions' : 'activeEditRolePermissions';
+      if (!AEF.state[stateKey]) AEF.state[stateKey] = [];
+
       row.querySelectorAll('.role-perm-checkbox').forEach(cb => {
         cb.checked = checked;
+        const codes = cb.value.split(',');
+        codes.forEach(code => {
+          if (checked) {
+            if (!AEF.state[stateKey].includes(code)) AEF.state[stateKey].push(code);
+          } else {
+            AEF.state[stateKey] = AEF.state[stateKey].filter(c => c !== code);
+          }
+        });
       });
     },
 
@@ -1818,9 +1930,8 @@
       this.showModal('addRoleModal');
       document.getElementById('form-add-role').reset();
       
-      // Reset Select All Perms
-      const selectAllCb = document.getElementById('add-role-select-all-perms');
-      if (selectAllCb) selectAllCb.checked = false;
+      // Initialize activeAddRolePermissions
+      AEF.state.activeAddRolePermissions = [];
 
       // Select Tab 1 by default
       AEF.switchTab('add-role-detail-tab');
@@ -1837,11 +1948,9 @@
       const status = document.getElementById('new-role-status').checked ? 'ACTIVE' : 'INACTIVE';
 
       // Gather Checked Permissions (Menu + Granular)
-      const permissions = [];
-      document.querySelectorAll('#addRoleModal .role-menu-checkbox:checked, #addRoleModal .role-perm-checkbox:checked').forEach(cb => {
-        if (cb.value.indexOf(',') !== -1) {
-          cb.value.split(',').forEach(v => permissions.push(v));
-        } else {
+      const permissions = [...(AEF.state.activeAddRolePermissions || [])];
+      document.querySelectorAll('#addRoleModal .role-menu-checkbox:checked').forEach(cb => {
+        if (cb.value) {
           permissions.push(cb.value);
         }
       });
@@ -1891,7 +2000,8 @@
           document.getElementById('edit-role-desc').value = cachedRole.description || '';
           document.getElementById('edit-role-status').checked = (cachedRole.status === 'ACTIVE');
           document.getElementById('edit-role-status-text').textContent = (cachedRole.status === 'ACTIVE' ? 'Aktif' : 'Inaktif');
-          document.getElementById('edit-role-title-text').innerHTML = `<i class="bi bi-pencil-square text-primary me-2"></i>Edit Role: ${cachedRole.role_code}`;
+          document.getElementById('edit-role-title-text').textContent = `Edit Role: ${cachedRole.role_name}`;
+          document.getElementById('edit-role-subtitle-text').textContent = `ID: ${cachedRole.role_code}`;
         }
       }
 
@@ -1908,8 +2018,9 @@
             // Set text label
             document.getElementById('edit-role-status-text').textContent = (role.status === 'ACTIVE' ? 'Aktif' : 'Inaktif');
             
-            // Set title text
-            document.getElementById('edit-role-title-text').innerHTML = `<i class="bi bi-pencil-square text-primary me-2"></i>Edit Role: ${role.role_code}`;
+            // Set title and subtitle
+            document.getElementById('edit-role-title-text').textContent = `Edit Role: ${role.role_name}`;
+            document.getElementById('edit-role-subtitle-text').textContent = `ID: ${role.role_code}`;
 
             AEF.state.editRoleAssignedUsers = role.assigned_users || [];
             AEF.state.activeEditRolePermissions = role.permissions || [];
@@ -1931,11 +2042,9 @@
       const status = document.getElementById('edit-role-status').checked ? 'ACTIVE' : 'INACTIVE';
 
       // Gather Checked Permissions (Menu + Granular)
-      const permissions = [];
-      document.querySelectorAll('#editRoleModal .role-menu-checkbox:checked, #editRoleModal .role-perm-checkbox:checked').forEach(cb => {
-        if (cb.value.indexOf(',') !== -1) {
-          cb.value.split(',').forEach(v => permissions.push(v));
-        } else {
+      const permissions = [...(AEF.state.activeEditRolePermissions || [])];
+      document.querySelectorAll('#editRoleModal .role-menu-checkbox:checked').forEach(cb => {
+        if (cb.value) {
           permissions.push(cb.value);
         }
       });

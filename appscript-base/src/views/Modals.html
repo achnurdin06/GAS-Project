@@ -243,22 +243,30 @@
 <div class="modal fade" id="addRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-role-custom-wide modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
-      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
-        <h5 class="modal-title fw-bold" style="color: #181c32;"><i class="bi bi-shield-plus text-primary me-2"></i>Tambah Role Baru</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('addRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
-      </div>
-      
-      <!-- Nav Tabs -->
-      <div class="px-4 pt-2 border-bottom">
-        <ul class="nav nav-tabs border-0" id="addRoleTabs" role="tablist">
+      <div class="modal-header border-light py-3 px-4 flex-column align-items-start">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
+              <i class="bi bi-shield-plus text-primary"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" style="color: #181c32;">Tambah Role Baru</h5>
+              <div class="text-muted small" style="font-size: 0.75rem;">Buat role baru dan definisikan izin hak akses</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" onclick="AEF.hideModal('addRoleModal')" aria-label="Close"></button>
+        </div>
+        
+        <!-- Tabs Nav -->
+        <ul class="nav nav-tabs nav-line-tabs mt-3 border-0 w-100" id="addRoleTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold border-0" id="add-role-detail-tab" data-bs-toggle="tab" data-bs-target="#add-role-detail" type="button" role="tab" style="padding: 0.75rem 1rem;">Detail Role</button>
+            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="add-role-detail-tab" data-bs-toggle="tab" data-bs-target="#add-role-detail" type="button" role="tab">Detail Role</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold border-0" id="add-role-menus-tab" data-bs-toggle="tab" data-bs-target="#add-role-menus" type="button" role="tab" style="padding: 0.75rem 1rem;">Konfigurasi Akses Menu</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-menus-tab" data-bs-toggle="tab" data-bs-target="#add-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold border-0" id="add-role-granular-tab" data-bs-toggle="tab" data-bs-target="#add-role-granular" type="button" role="tab" style="padding: 0.75rem 1rem;">Hak Akses Granular</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="add-role-granular-tab" data-bs-toggle="tab" data-bs-target="#add-role-granular" type="button" role="tab">Hak Akses Granular</button>
           </li>
         </ul>
       </div>
@@ -337,6 +345,11 @@
                 <div id="add-role-perms-list" class="row">
                   <!-- Dynamically populated -->
                 </div>
+                
+                <!-- Granular Pagination -->
+                <div id="add-role-granular-pagination" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 0.5rem;">
+                  <!-- Populated dynamically -->
+                </div>
               </div>
             </div>
 
@@ -355,22 +368,30 @@
 <div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-role-custom-wide modal-dialog-centered">
     <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
-      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
-        <h5 class="modal-title fw-bold" style="color: #181c32;" id="edit-role-title-text"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Role</h5>
-        <button type="button" class="btn-close" onclick="AEF.hideModal('editRoleModal')" aria-label="Close" style="border:none; background:none; font-size:1.2rem;"><i class="bi bi-x"></i></button>
-      </div>
-      
-      <!-- Nav Tabs -->
-      <div class="px-4 pt-2 border-bottom">
-        <ul class="nav nav-tabs border-0" id="editRoleTabs" role="tablist">
+      <div class="modal-header border-light py-3 px-4 flex-column align-items-start">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-light-primary text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; font-size: 1.1rem;">
+              <i class="bi bi-shield-fill text-primary"></i>
+            </div>
+            <div>
+              <h5 class="modal-title fw-bold" id="edit-role-title-text" style="color: #181c32;">Edit Role</h5>
+              <div class="text-muted small" style="font-size: 0.75rem;" id="edit-role-subtitle-text">ID: -</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close" onclick="AEF.hideModal('editRoleModal')" aria-label="Close"></button>
+        </div>
+        
+        <!-- Tabs Nav -->
+        <ul class="nav nav-tabs nav-line-tabs mt-3 border-0 w-100" id="editRoleTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active fw-semibold border-0" id="edit-role-detail-tab" data-bs-toggle="tab" data-bs-target="#edit-role-detail" type="button" role="tab" style="padding: 0.75rem 1rem;">Detail Role</button>
+            <button class="nav-link active fw-semibold text-muted px-3 pb-2" id="edit-role-detail-tab" data-bs-toggle="tab" data-bs-target="#edit-role-detail" type="button" role="tab">Detail Role</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold border-0" id="edit-role-menus-tab" data-bs-toggle="tab" data-bs-target="#edit-role-menus" type="button" role="tab" style="padding: 0.75rem 1rem;">Konfigurasi Akses Menu</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-menus-tab" data-bs-toggle="tab" data-bs-target="#edit-role-menus" type="button" role="tab">Konfigurasi Akses Menu</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link fw-semibold border-0" id="edit-role-granular-tab" data-bs-toggle="tab" data-bs-target="#edit-role-granular" type="button" role="tab" style="padding: 0.75rem 1rem;">Hak Akses Granular</button>
+            <button class="nav-link fw-semibold text-muted px-3 pb-2" id="edit-role-granular-tab" data-bs-toggle="tab" data-bs-target="#edit-role-granular" type="button" role="tab">Hak Akses Granular</button>
           </li>
         </ul>
       </div>
@@ -449,6 +470,11 @@
 
                 <div id="edit-role-perms-list" class="row">
                   <!-- Dynamically populated -->
+                </div>
+                
+                <!-- Granular Pagination -->
+                <div id="edit-role-granular-pagination" class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 0.5rem;">
+                  <!-- Populated dynamically -->
                 </div>
               </div>
             </div>
