@@ -400,6 +400,43 @@
       return Array.isArray(this.state.permissions) && this.state.permissions.includes(requiredPermission);
     },
 
+    switchTab: function (triggerElementOrId) {
+      let trigger = typeof triggerElementOrId === 'string' ? document.getElementById(triggerElementOrId) : triggerElementOrId;
+      if (!trigger) return;
+
+      try {
+        if (typeof bootstrap !== 'undefined' && bootstrap && bootstrap.Tab) {
+          const tab = bootstrap.Tab.getOrCreateInstance(trigger);
+          tab.show();
+          return;
+        }
+      } catch (e) {
+        console.warn('Bootstrap Tab trigger failed, using manual fallback', e);
+      }
+
+      // Manual Fallback
+      const targetId = trigger.getAttribute('data-bs-target');
+      if (!targetId) return;
+      const targetPane = document.querySelector(targetId);
+      if (!targetPane) return;
+
+      // Deactivate all sibling triggers in the same tab list
+      const nav = trigger.closest('.nav-tabs');
+      if (nav) {
+        nav.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      }
+      trigger.classList.add('active');
+
+      // Deactivate all sibling panes in the same tab content
+      const tabContent = targetPane.closest('.tab-content');
+      if (tabContent) {
+        tabContent.querySelectorAll('.tab-pane').forEach(el => {
+          el.classList.remove('show', 'active');
+        });
+      }
+      targetPane.classList.add('show', 'active');
+    },
+
     navigateTo: function (route) {
       this.state.currentRoute = route;
 
@@ -1690,8 +1727,7 @@
       if (selectAllCb) selectAllCb.checked = false;
 
       // Select Tab 1 by default
-      const trigger = document.getElementById('add-role-detail-tab');
-      if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+      AEF.switchTab('add-role-detail-tab');
 
       this.state.addRoleAssignedUsers = [];
       this.renderRoleUserChips('add');
@@ -1747,8 +1783,7 @@
       if (selectAllCb) selectAllCb.checked = false;
 
       // Select Tab 1 by default
-      const trigger = document.getElementById('edit-role-detail-tab');
-      if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+      AEF.switchTab('edit-role-detail-tab');
 
       google.script.run
         .withSuccessHandler((res) => {
