@@ -147,13 +147,17 @@ function apiGetPermissions(payload) {
   }
 }
 
-function apiUpdateRolePermissions(payload) {
+function apiBatchUpdateRolePermissions(payload) {
   try {
     checkApiPermission(payload, 'PERMISSION_CREATE');
-    new RoleService().saveRolePermissions(payload.role_code, payload.permissions || [], payload ? payload.actor_id : 'SYSTEM');
-    return Response.success('Permission matrix berhasil diperbarui', null, 'PERMISSION_MATRIX_UPDATE_SUCCESS');
+    const roleService = new RoleService();
+    const actorId = payload ? payload.actor_id : 'SYSTEM';
+    for (const rCode in payload.matrix) {
+      roleService.saveRolePermissions(rCode, payload.matrix[rCode] || [], actorId);
+    }
+    return Response.success('Matrix hak akses berhasil diperbarui', null, 'PERMISSION_MATRIX_BATCH_UPDATE_SUCCESS');
   } catch (err) {
-    LoggerUtil.error('ApiController', 'apiUpdateRolePermissions failed', err);
+    LoggerUtil.error('ApiController', 'apiBatchUpdateRolePermissions failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');
   }
 }
