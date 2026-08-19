@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEF - System Configuration Wizard</title>
+  <!-- Load Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      --bg-gradient: radial-gradient(circle at top right, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .wizard-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      max-width: 680px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .wizard-header {
+      background: var(--primary-gradient);
+      padding: 3rem 2rem;
+      color: white;
+      text-align: center;
+      position: relative;
+    }
+
+    .wizard-header h2 {
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .step-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .step-dot.active {
+      background: #ffffff;
+      transform: scale(1.3);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .step-dot.completed {
+      background: #34d399;
+    }
+
+    .wizard-body {
+      padding: 2.5rem;
+    }
+
+    .form-control {
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid #cbd5e1;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      background: #ffffff;
+    }
+
+    .btn-primary-grad {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary-grad:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary-light {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary-light:hover {
+      background: #e2e8f0;
+    }
+
+    .status-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wizard-card">
+  <? if (typeof noGoogleLogin !== 'undefined' && noGoogleLogin) { ?>
+    <!-- 1. Google Account Login Screen -->
+    <div class="wizard-header">
+      <h2><i class="bi bi-shield-lock-fill me-2"></i>Google Session Required</h2>
+      <p class="mb-0 opacity-75">Sesi login Akun Google terdeteksi tidak aktif.</p>
+    </div>
+    <div class="wizard-body text-center py-5">
+      <div class="mb-4">
+        <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
+      </div>
+      <h4 class="fw-bold mb-3 text-dark">Wajib Login Akun Google</h4>
+      <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+        Aplikasi ini memerlukan akses ke Google Drive Anda untuk membuat folder database secara otomatis. Harap login atau segarkan halaman setelah masuk ke Akun Google Anda.
+      </p>
+      <a href="https://accounts.google.com/ServiceLogin" target="_blank" class="btn btn-primary-grad px-4">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login ke Google
+      </a>
+      <button onclick="window.location.reload();" class="btn btn-secondary-light ms-2 px-4">
+        <i class="bi bi-arrow-clockwise me-2"></i>Segarkan Halaman
+      </button>
+    </div>
+  <? } else { ?>
+    <!-- 2. Setup Wizard Screen -->
+    <div class="wizard-header">
+      <h2 id="wizard-title">System Setup Wizard</h2>
+      <p id="wizard-subtitle" class="mb-0 opacity-75">Konfigurasikan sistem AEF Anda dalam 3 langkah mudah.</p>
+      
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+    </div>
+
+    <div class="wizard-body">
+      <div id="alert-container"></div>
+
+      <!-- STEP 1: Database Link & Auto Creation -->
+      <div id="step-1" class="wizard-step">
+        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-database me-2 text-primary"></i>1. Database & Folder Link</h4>
+        <p class="text-muted small mb-4">Kami akan membuat folder khusus dan Google Spreadsheet database Anda di Google Drive secara otomatis.</p>
+        
+        <div class="status-card mb-4" id="drive-creation-box">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-medium text-dark"><i class="bi bi-folder-symlink me-2 text-warning"></i>Status Pembuatan Database</span>
+            <span class="badge bg-secondary" id="db-status-badge">Menyiapkan...</span>
+          </div>
+          <p class="text-muted small mb-3" id="db-status-desc">Menghubungi Google Drive API...</p>
+          <div class="progress mb-3" style="height: 6px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 10%" id="db-progress-bar"></div>
+          </div>
+          <div class="d-none" id="db-details">
+            <div class="small mb-1 text-dark"><strong>Folder Drive:</strong> <span id="folder-name-val"></span></div>
+            <div class="small text-dark"><strong>Spreadsheet ID:</strong> <code id="spreadsheet-id-val"></code></div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="spreadsheet-id-input" class="form-label fw-semibold text-dark">Spreadsheet ID Koneksi</label>
+          <input type="text" class="form-control" id="spreadsheet-id-input" placeholder="Membuat otomatis..." readonly>
+          <div class="form-text">ID Spreadsheet ini akan digunakan sebagai basis data relasional.</div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+          <button type="button" class="btn btn-primary-grad" id="btn-next-1" disabled onclick="nextStep(2)">
+            Lanjutkan Langkah <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Super Admin Credentials -->
+      <div id="step-2" class="wizard-step d-none">
+        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-badge me-2 text-primary"></i>2. Akun Super Admin</h4>
+        <p class="text-muted small mb-4">Tentukan informasi akun administrator utama sistem AEF Anda.</p>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="admin-name" class="form-label small fw-semibold">Nama Lengkap</label>
+            <input type="text" class="form-control" id="admin-name" value="Super Administrator">
+          </div>
+          <div class="col-md-6">
+            <label for="admin-username" class="form-label small fw-semibold">Username Admin</label>
+            <input type="text" class="form-control" id="admin-username" value="superadmin">
+          </div>
+          <div class="col-md-6">
+            <label for="admin-email" class="form-label small fw-semibold">Email Admin</label>
+            <input type="email" class="form-control" id="admin-email" value="superadmin@aef.com">
+          </div>
+          <div class="col-md-6">
+            <label for="admin-phone" class="form-label small fw-semibold">No. Telepon / WhatsApp</label>
+            <input type="text" class="form-control" id="admin-phone" value="+62 812-3456-7890">
+          </div>
+          <div class="col-12">
+            <label for="admin-password" class="form-label small fw-semibold">Password Akun</label>
+            <div class="input-group">
+              <input type="password" class="form-control" id="admin-password" value="admin123">
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()"><i class="bi bi-eye"></i></button>
+            </div>
+            <div class="form-text">Password default: <code>admin123</code>. Silakan ganti untuk keamanan ekstra.</div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-5">
+          <button type="button" class="btn btn-secondary-light" onclick="prevStep(1)">
+            <i class="bi bi-arrow-left me-2"></i> Kembali
+          </button>
+          <button type="button" class="btn btn-primary-grad" onclick="nextStep(3)">
+            Lanjutkan Langkah <i class="bi bi-arrow-right ms-2"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Customize Application settings -->
+      <div id="step-3" class="wizard-step d-none">
+        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-sliders me-2 text-primary"></i>3. Kustomisasi Aplikasi</h4>
+        <p class="text-muted small mb-4">Langkah terakhir, lakukan kustomisasi nama, logo, dan prefix kode aplikasi Anda.</p>
+
+        <div class="mb-3">
+          <label for="app-name-input" class="form-label fw-semibold text-dark">Nama Aplikasi (App Name)</label>
+          <input type="text" class="form-control" id="app-name-input" value="AppScript Enterprise Framework">
+          <div class="form-text">Nama ini akan dipajang pada header, halaman login, dan title bar aplikasi.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="app-code-input" class="form-label fw-semibold text-dark">Kode Aplikasi (Prefix Code)</label>
+          <input type="text" class="form-control" id="app-code-input" value="AEF">
+          <div class="form-text">Digunakan sebagai prefix untuk penamaan tabel, role, dan modul aplikasi.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="app-logo-input" class="form-label fw-semibold text-dark">URL Logo Aplikasi (Opsional)</label>
+          <input type="text" class="form-control" id="app-logo-input" value="" placeholder="https://example.com/logo.png">
+          <div class="form-text">URL logo berformat gambar/png/jpg atau data base64. Biarkan kosong untuk menggunakan logo default.</div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <button type="button" class="btn btn-secondary-light" onclick="prevStep(2)">
+            <i class="bi bi-arrow-left me-2"></i> Kembali
+          </button>
+          <button type="button" class="btn btn-primary-grad" id="btn-submit-setup" onclick="submitSetup()">
+            <i class="bi bi-check-circle-fill me-2"></i> Selesaikan Inisialisasi
+          </button>
+        </div>
+      </div>
+
+      <!-- IN-PROGRESS OVERLAY -->
+      <div id="progress-overlay" class="d-none text-center py-5">
+        <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="fw-bold text-dark mb-2">Memigrasikan Database</h4>
+        <p class="text-muted" id="progress-text">Membuat tabel, menu, role, default permission, dan akun admin...</p>
+      </div>
+
+    </div>
+  <? } ?>
+</div>
+
+<script>
+  let currentStep = 1;
+  let autoCreatedSpreadsheetId = "";
+
+  document.addEventListener("DOMContentLoaded", function() {
+    <? if (typeof noGoogleLogin === 'undefined' || !noGoogleLogin) { ?>
+      // Trigger Drive Auto Creation
+      autoCreateDatabase();
+    <? } ?>
+  });
+
+  function autoCreateDatabase() {
+    const statusBadge = document.getElementById("db-status-badge");
+    const statusDesc = document.getElementById("db-status-desc");
+    const progressBar = document.getElementById("db-progress-bar");
+    const dbDetails = document.getElementById("db-details");
+    const spreadsheetInput = document.getElementById("spreadsheet-id-input");
+    const adminEmailInput = document.getElementById("admin-email");
+
+    // Pre-fill default admin details if empty
+    if (!adminEmailInput.value) {
+      document.getElementById("admin-name").value = "System Admin";
+      document.getElementById("admin-username").value = "admin";
+      document.getElementById("admin-phone").value = "08123456789";
+      document.getElementById("admin-password").value = "admin123";
+    }
+
+    statusBadge.className = "badge bg-warning-light text-warning px-3 py-2";
+    statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menghubungkan Google Drive...`;
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          autoCreatedSpreadsheetId = response.spreadsheetId;
+          spreadsheetInput.value = response.spreadsheetId;
+          if (response.email) {
+            adminEmailInput.value = response.email;
+          }
+          statusBadge.className = "badge bg-success-light text-success px-3 py-2";
+          statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Terhubung`;
+          statusDesc.innerText = "Spreadsheet '" + response.name + "' berhasil dibuat atau ditemukan di Google Drive.";
+          progressBar.style.width = "100%";
+          progressBar.className = "progress-bar bg-success progress-bar-striped progress-bar-animated";
+          dbDetails.classList.remove("d-none");
+        } else {
+          statusBadge.className = "badge bg-danger-light text-danger px-3 py-2";
+          statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Gagal`;
+          statusDesc.innerText = "Error: " + response.message;
+        }
+      })
+      .withFailureHandler(function(err) {
+        statusBadge.className = "badge bg-danger-light text-danger px-3 py-2";
+        statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Backend Error`;
+        statusDesc.innerText = "Gagal memanggil backend: " + err.message;
+      })
+      .autoCreateDatabaseFolderAndSheet();
+  }
+
+  function nextStep(step) {
+    // Basic validation before going to next step
+    if (step === 2) {
+      if (!autoCreatedSpreadsheetId) {
+        alert("Harap tunggu hingga database terhubung.");
+        return;
+      }
+    } else if (step === 3) {
+      const name = document.getElementById("admin-name").value;
+      const username = document.getElementById("admin-username").value;
+      const email = document.getElementById("admin-email").value;
+      const password = document.getElementById("admin-password").value;
+
+      if (!name || !username || !email || !password) {
+        alert("Semua kolom isian admin wajib diisi.");
+        return;
+      }
+    }
+
+    document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
+    document.getElementById(`step-${step}`).classList.remove("d-none");
+    
+    // Update stepper visual state
+    document.querySelectorAll(".stepper-item").forEach((el, idx) => {
+      if (idx + 1 === step) {
+        el.classList.add("active");
+        el.classList.remove("completed");
+      } else if (idx + 1 < step) {
+        el.classList.add("completed");
+        el.classList.remove("active");
+      } else {
+        el.classList.remove("active", "completed");
+      }
+    });
+
+    currentStep = step;
+  }
+
+  function prevStep(step) {
+    document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
+    document.getElementById(`step-${step}`).classList.remove("d-none");
+
+    document.querySelectorAll(".stepper-item").forEach((el, idx) => {
+      if (idx + 1 === step) {
+        el.classList.add("active");
+        el.classList.remove("completed");
+      } else if (idx + 1 < step) {
+        el.classList.add("completed");
+        el.classList.remove("active");
+      } else {
+        el.classList.remove("active", "completed");
+      }
+    });
+
+    currentStep = step;
+  }
+
+  function togglePassword() {
+    const passwordInput = document.getElementById("admin-password");
+    if (passwordInput.type === "password") {
+      passwordInput.type = "text";
+    } else {
+      passwordInput.type = "password";
+    }
+  }
+
+  function showError(msg) {
+    const container = document.getElementById("alert-container");
+    container.innerHTML = `
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-octagon-fill me-2"></i> ${msg}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+  }
+
+  function submitSetup() {
+    // Hide all steps
+    document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
+    document.getElementById("progress-overlay").classList.remove("d-none");
+
+    const payload = {
+      spreadsheet_id: autoCreatedSpreadsheetId,
+      admin: {
+        name: document.getElementById("admin-name").value,
+        username: document.getElementById("admin-username").value,
+        email: document.getElementById("admin-email").value,
+        phone: document.getElementById("admin-phone").value,
+        password: document.getElementById("admin-password").value,
+        appName: document.getElementById("app-name-input").value,
+        appCode: document.getElementById("app-code-input").value,
+        appLogo: document.getElementById("app-logo-input").value
+      }
+    };
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (response.success) {
+          document.getElementById("progress-text").innerText = "Selesai! Menyegarkan aplikasi...";
+          setTimeout(function() {
+            window.location.reload();
+          }, 1500);
+        } else {
+          document.getElementById("progress-overlay").classList.add("d-none");
+          document.getElementById(`step-${currentStep}`).classList.remove("d-none");
+          showError("Gagal menginisialisasi database: " + response.message);
+        }
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById("progress-overlay").classList.add("d-none");
+        document.getElementById(`step-${currentStep}`).classList.remove("d-none");
+        showError("Backend error: " + err.message);
+      })
+      .apiExecuteSetup(payload);
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

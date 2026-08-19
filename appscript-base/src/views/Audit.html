@@ -3,10 +3,20 @@
     <div>
       <h3 class="fw-bold mb-1" style="color: #181c32;">Audit Trail Logs</h3>
       <p class="text-muted small mb-0">Jejak rekaman aktivitas penting & log keamanan sistem (PRD Section 16 & 17).</p>
+      <div class="aef-breadcrumb mt-1" style="font-size: 0.75rem; color: var(--aef-text-muted);"><span class="text-muted">Home</span> &gt; <span class="text-dark fw-medium">Audit Trail Logs</span></div>
     </div>
-    <button class="btn btn-sm btn-light border text-muted" onclick="AEF.loadAuditLogsTable()">
-      <i class="bi bi-arrow-clockwise me-1 text-primary"></i> Refresh Logs
-    </button>
+    <div class="d-flex align-items-center gap-2 flex-shrink-1">
+      <div class="input-group input-group-sm" style="max-width: 240px; flex-shrink: 1;">
+        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <input type="text" id="audit-search" class="form-control border-start-0 ps-0" placeholder="Cari log..." oninput="AEF.handleAuditSearch(this.value)">
+      </div>
+      <button class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 text-nowrap" onclick="AEF.toggleAuditFilterRow()" style="background-color: #6c757d; border: none; padding: 0.4rem 0.8rem; font-weight: 500; flex-shrink: 1;">
+        <i class="bi bi-funnel"></i> View Filter
+      </button>
+      <button class="btn btn-sm btn-light border text-muted" onclick="AEF.loadAuditLogsTable()">
+        <i class="bi bi-arrow-clockwise me-1 text-primary"></i> Refresh Logs
+      </button>
+    </div>
   </div>
 
   <div class="aef-card">
@@ -14,12 +24,20 @@
       <table class="table table-aef align-middle mb-0">
         <thead>
           <tr>
-            <th>Waktu</th>
-            <th>Module</th>
-            <th>Action / Status</th>
-            <th>User ID</th>
-            <th>Deskripsi</th>
-            <th>Ref ID</th>
+            <th onclick="AEF.handleAuditSort('timestamp')" style="cursor: pointer; user-select: none;">Waktu <i id="audit-sort-icon-timestamp" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+            <th onclick="AEF.handleAuditSort('module')" style="cursor: pointer; user-select: none;">Module <i id="audit-sort-icon-module" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+            <th onclick="AEF.handleAuditSort('action')" style="cursor: pointer; user-select: none;">Action / Status <i id="audit-sort-icon-action" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+            <th onclick="AEF.handleAuditSort('user_id')" style="cursor: pointer; user-select: none;">User ID <i id="audit-sort-icon-user_id" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+            <th onclick="AEF.handleAuditSort('description')" style="cursor: pointer; user-select: none;">Deskripsi <i id="audit-sort-icon-description" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+            <th onclick="AEF.handleAuditSort('reference_id')" style="cursor: pointer; user-select: none;">Ref ID <i id="audit-sort-icon-reference_id" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i></th>
+          </tr>
+          <tr id="audit-filter-row" class="d-none bg-light">
+            <th><input type="text" id="audit-filter-timestamp" class="form-control form-control-sm" placeholder="Cari waktu..." oninput="AEF.handleAuditColumnFilter()"></th>
+            <th><input type="text" id="audit-filter-module" class="form-control form-control-sm" placeholder="Cari module..." oninput="AEF.handleAuditColumnFilter()"></th>
+            <th><input type="text" id="audit-filter-action" class="form-control form-control-sm" placeholder="Cari action..." oninput="AEF.handleAuditColumnFilter()"></th>
+            <th><input type="text" id="audit-filter-user_id" class="form-control form-control-sm" placeholder="Cari user..." oninput="AEF.handleAuditColumnFilter()"></th>
+            <th><input type="text" id="audit-filter-description" class="form-control form-control-sm" placeholder="Cari deskripsi..." oninput="AEF.handleAuditColumnFilter()"></th>
+            <th><input type="text" id="audit-filter-reference_id" class="form-control form-control-sm" placeholder="Cari ref id..." oninput="AEF.handleAuditColumnFilter()"></th>
           </tr>
         </thead>
         <tbody id="audit-table-body">
@@ -29,8 +47,15 @@
     </div>
 
     <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="audit-pagination-info">Memuat log...</div>
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle" style="margin: 1rem;">
+      <div class="d-flex align-items-center gap-2">
+        <select id="audit-page-size" class="form-select form-select-sm" onchange="AEF.handleAuditPageSizeChange(this.value)" style="padding: 0.25rem 1.25rem 0.25rem 0.5rem; font-size: 0.875rem; width: 70px; text-align: left;">
+          <option value="20" selected>20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <div class="text-muted small" id="audit-pagination-info">Memuat log...</div>
+      </div>
       <ul class="pagination pagination-sm mb-0" id="audit-pagination-controls"></ul>
     </div>
   </div>

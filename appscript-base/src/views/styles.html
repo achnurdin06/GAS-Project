@@ -47,6 +47,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: all 0.3s ease;
   }
 
   .aef-sidebar-brand {
@@ -146,6 +147,7 @@
     justify-content: space-between;
     padding: 0 1.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s ease;
   }
 
   .aef-header-left {
@@ -238,6 +240,18 @@
     margin-left: 260px;
     padding: 1.75rem;
     min-height: calc(100vh - 65px);
+    transition: all 0.3s ease;
+  }
+
+  /* COLLAPSED SIDEBAR MODIFIERS */
+  body.sidebar-collapsed .aef-sidebar {
+    left: -260px;
+  }
+  body.sidebar-collapsed .aef-header {
+    left: 0;
+  }
+  body.sidebar-collapsed .aef-main-wrapper {
+    margin-left: 0;
   }
 
   /* CARDS & PANELS */

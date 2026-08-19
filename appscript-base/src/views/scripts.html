@@ -107,24 +107,51 @@
       }
     },
 
+    showLoginFormPanel: function (panelName) {
+      // Hide all panels
+      document.getElementById('login-form-container').classList.add('d-none');
+      document.getElementById('twofa-form-container').classList.add('d-none');
+      document.getElementById('forgot-form-container').classList.add('d-none');
+      document.getElementById('register-form-container').classList.add('d-none');
+      
+      // Clear alert messages
+      const errorAlert = document.getElementById('login-error-alert');
+      const successAlert = document.getElementById('login-success-alert');
+      errorAlert.classList.add('d-none');
+      successAlert.classList.add('d-none');
+
+      // Show targeted panel
+      if (panelName === 'login') {
+        document.getElementById('login-form-container').classList.remove('d-none');
+      } else if (panelName === 'twofa') {
+        document.getElementById('twofa-form-container').classList.remove('d-none');
+      } else if (panelName === 'forgot') {
+        document.getElementById('forgot-form-container').classList.remove('d-none');
+      } else if (panelName === 'register') {
+        document.getElementById('register-form-container').classList.remove('d-none');
+      }
+    },
+
     login: function (email, password) {
       const btn = document.getElementById('btn-login-submit');
       const errorAlert = document.getElementById('login-error-alert');
+      const loader = document.getElementById('login-loader-bar');
       errorAlert.classList.add('d-none');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in...';
+      if (loader) loader.classList.remove('d-none');
 
       google.script.run
         .withSuccessHandler((res) => {
           btn.disabled = false;
-          btn.innerHTML = 'Sign In Super Admin';
+          btn.innerHTML = 'Sign In';
+          if (loader) loader.classList.add('d-none');
           if (res.success) {
             if (res.data && res.data.require_2fa) {
               // Redirect to 2FA layout
               this.state.pending2FAEmail = email;
-              document.getElementById('login-form-container').classList.add('d-none');
+              this.showLoginFormPanel('twofa');
               document.getElementById('twofa-email-display').innerText = email;
-              document.getElementById('twofa-form-container').classList.remove('d-none');
               document.getElementById('twofa-code').value = '';
               document.getElementById('twofa-error-alert').classList.add('d-none');
             } else {
@@ -143,7 +170,8 @@
         })
         .withFailureHandler((err) => {
           btn.disabled = false;
-          btn.innerHTML = 'Sign In Super Admin';
+          btn.innerHTML = 'Sign In';
+          if (loader) loader.classList.add('d-none');
           errorAlert.innerText = 'Error: ' + err.message;
           errorAlert.classList.remove('d-none');
         })
@@ -153,9 +181,11 @@
     verify2FA: function (otpCode) {
       const btn = document.getElementById('btn-twofa-submit');
       const errorAlert = document.getElementById('twofa-error-alert');
+      const loader = document.getElementById('login-loader-bar');
       errorAlert.classList.add('d-none');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+      if (loader) loader.classList.remove('d-none');
 
       const email = this.state.pending2FAEmail;
 
@@ -163,6 +193,7 @@
         .withSuccessHandler((res) => {
           btn.disabled = false;
           btn.innerHTML = 'Verifikasi & Masuk';
+          if (loader) loader.classList.add('d-none');
           if (res.success) {
             this.state.user = res.data.user;
             this.state.session = res.data.session;
@@ -185,10 +216,92 @@
         .withFailureHandler((err) => {
           btn.disabled = false;
           btn.innerHTML = 'Verifikasi & Masuk';
+          if (loader) loader.classList.add('d-none');
           errorAlert.innerText = 'Error: ' + err.message;
           errorAlert.classList.remove('d-none');
         })
-        .apiVerify2FA({ email, otp_code: otpCode });
+        .apiVerify2FA({ email, otpCode });
+    },
+
+    submitForgotPassword: function (email) {
+      const btn = document.getElementById('btn-forgot-submit');
+      const errorAlert = document.getElementById('login-error-alert');
+      const successAlert = document.getElementById('login-success-alert');
+      const loader = document.getElementById('login-loader-bar');
+      errorAlert.classList.add('d-none');
+      successAlert.classList.add('d-none');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+      if (loader) loader.classList.remove('d-none');
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Kirim Password Baru';
+          if (loader) loader.classList.add('d-none');
+          if (res.success) {
+            successAlert.innerText = res.message;
+            successAlert.classList.remove('d-none');
+            document.getElementById('forgot-email').value = '';
+            setTimeout(() => {
+              this.showLoginFormPanel('login');
+            }, 5000);
+          } else {
+            errorAlert.innerText = res.message;
+            errorAlert.classList.remove('d-none');
+          }
+        })
+        .withFailureHandler((err) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Kirim Password Baru';
+          if (loader) loader.classList.add('d-none');
+          errorAlert.innerText = 'Error: ' + err.message;
+          errorAlert.classList.remove('d-none');
+        })
+        .apiForgotPassword({ email });
+    },
+
+    submitRegister: function (payload) {
+      const btn = document.getElementById('btn-register-submit');
+      const errorAlert = document.getElementById('login-error-alert');
+      const successAlert = document.getElementById('login-success-alert');
+      const loader = document.getElementById('login-loader-bar');
+      errorAlert.classList.add('d-none');
+      successAlert.classList.add('d-none');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registering...';
+      if (loader) loader.classList.remove('d-none');
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Daftarkan Akun';
+          if (loader) loader.classList.add('d-none');
+          if (res.success) {
+            successAlert.innerText = res.message;
+            successAlert.classList.remove('d-none');
+            // Clear inputs
+            document.getElementById('reg-name').value = '';
+            document.getElementById('reg-email').value = '';
+            document.getElementById('reg-username').value = '';
+            document.getElementById('reg-phone').value = '';
+            document.getElementById('reg-password').value = '';
+            setTimeout(() => {
+              this.showLoginFormPanel('login');
+            }, 5000);
+          } else {
+            errorAlert.innerText = res.message;
+            errorAlert.classList.remove('d-none');
+          }
+        })
+        .withFailureHandler((err) => {
+          btn.disabled = false;
+          btn.innerHTML = 'Daftarkan Akun';
+          if (loader) loader.classList.add('d-none');
+          errorAlert.innerText = 'Error: ' + err.message;
+          errorAlert.classList.remove('d-none');
+        })
+        .apiRegisterUser(payload);
     },
 
     cancel2FA: function () {
@@ -562,7 +675,9 @@
       perms: { page: 1, pageSize: 20, data: [] },
       configs: { page: 1, pageSize: 5, data: [] },
       audit: { page: 1, pageSize: 5, data: [] },
-      menus: { page: 1, pageSize: 5, data: [] }
+      menus: { page: 1, pageSize: 5, data: [] },
+      userDetailRecentLogs: { page: 1, pageSize: 20, data: [] },
+      userDetailFullLogs: { page: 1, pageSize: 20, data: [] }
     },
 
     renderTablePagination: function (key, renderRowFn, tbodyId, infoId, controlsId) {
@@ -628,6 +743,8 @@
       else if (key === 'configs') this.renderConfigsPage();
       else if (key === 'audit') this.renderAuditPage();
       else if (key === 'menus') this.renderMenusPage();
+      else if (key === 'userDetailRecentLogs') this.renderUserDetailRecentLogsPage();
+      else if (key === 'userDetailFullLogs') this.renderUserDetailFullLogsPage();
     },
 
     // USERS CRUD
@@ -1234,54 +1351,89 @@
     },
 
     loadUserAuditLogs: function (user) {
+      // Reset limits back to default 20
+      this.paginationState.userDetailRecentLogs.pageSize = 20;
+      this.paginationState.userDetailRecentLogs.page = 1;
+      this.paginationState.userDetailFullLogs.pageSize = 20;
+      this.paginationState.userDetailFullLogs.page = 1;
+
+      const rSelect = document.getElementById('recent-logs-limit-select');
+      const fSelect = document.getElementById('full-logs-limit-select');
+      if (rSelect) rSelect.value = "20";
+      if (fSelect) fSelect.value = "20";
+
+      const tbody = document.getElementById('detail-activity-tbody');
+      const fullTbody = document.getElementById('detail-full-activity-tbody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Memuat...</td></tr>';
+      if (fullTbody) fullTbody.innerHTML = '<tr><td colspan="4" class="text-center py-2 text-muted"><div class="spinner-border spinner-border-sm"></div> Memuat...</td></tr>';
+
       google.script.run.withSuccessHandler((res) => {
-        const tbody = document.getElementById('detail-activity-tbody');
-        const fullTbody = document.getElementById('detail-full-activity-tbody');
         if (!tbody || !fullTbody) return;
 
         if (res.success && Array.isArray(res.data)) {
-          const userLogs = res.data.filter(log => 
-            String(log.actor_id).toLowerCase() === String(user.email).toLowerCase() ||
-            String(log.actor_id).toLowerCase() === String(user.id).toLowerCase() ||
-            String(log.details).toLowerCase().includes(String(user.email).toLowerCase()) ||
-            String(log.details).toLowerCase().includes(String(user.id).toLowerCase())
-          );
+          const userLogs = res.data.filter(log => {
+            const userIdStr = String(log.user_id || '').toLowerCase();
+            const descStr = String(log.description || '').toLowerCase();
+            const emailStr = String(user.email || '').toLowerCase();
+            const idStr = String(user.id || '').toLowerCase();
+            const usernameStr = String(user.username || '').toLowerCase();
+
+            return (
+              (emailStr && userIdStr === emailStr) ||
+              (idStr && userIdStr === idStr) ||
+              (usernameStr && userIdStr === usernameStr) ||
+              (emailStr && descStr.includes(emailStr)) ||
+              (idStr && descStr.includes(idStr)) ||
+              (usernameStr && descStr.includes(usernameStr))
+            );
+          });
 
           this.currentUserDetailLogs = userLogs;
+          this.paginationState.userDetailRecentLogs.data = userLogs;
+          this.paginationState.userDetailFullLogs.data = userLogs;
 
-          if (userLogs.length === 0) {
-            const emptyRow = `<tr><td colspan="4" class="text-center py-2 text-muted">Belum ada aktivitas tercatat</td></tr>`;
-            tbody.innerHTML = emptyRow;
-            fullTbody.innerHTML = emptyRow;
-            return;
-          }
-
-          let recentHtml = '';
-          userLogs.slice(0, 5).forEach(log => {
-            recentHtml += `<tr>
-              <td>${log.timestamp || '-'}</td>
-              <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
-              <td>${log.module}</td>
-              <td>${log.ip_address || '192.168.1.1'}</td>
-            </tr>`;
-          });
-          tbody.innerHTML = recentHtml;
-
-          let fullHtml = '';
-          userLogs.forEach(log => {
-            fullHtml += `<tr>
-              <td>${log.timestamp || '-'}</td>
-              <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
-              <td>${log.module}</td>
-              <td>${log.details || '-'}</td>
-            </tr>`;
-          });
-          fullTbody.innerHTML = fullHtml;
+          this.renderUserDetailRecentLogsPage();
+          this.renderUserDetailFullLogsPage();
         } else {
           tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat log</td></tr>`;
           fullTbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Gagal memuat log</td></tr>`;
         }
       }).apiGetAuditLogs();
+    },
+
+    changeUserDetailLogsLimit: function (type, limit) {
+      const size = Number(limit);
+      if (type === 'recent') {
+        this.paginationState.userDetailRecentLogs.pageSize = size;
+        this.paginationState.userDetailRecentLogs.page = 1;
+        this.renderUserDetailRecentLogsPage();
+      } else {
+        this.paginationState.userDetailFullLogs.pageSize = size;
+        this.paginationState.userDetailFullLogs.page = 1;
+        this.renderUserDetailFullLogsPage();
+      }
+    },
+
+    renderUserDetailRecentLogsPage: function () {
+      this.renderTablePagination('userDetailRecentLogs', (log) => `
+        <tr>
+          <td>${log.timestamp || '-'}</td>
+          <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
+          <td>${log.module}</td>
+          <td>${log.description || '-'}</td>
+        </tr>
+      `, 'detail-activity-tbody', 'recent-logs-pagination-info', 'recent-logs-pagination-controls');
+    },
+
+    renderUserDetailFullLogsPage: function () {
+      this.renderTablePagination('userDetailFullLogs', (log) => `
+        <tr>
+          <td>${log.timestamp || '-'}</td>
+          <td><span class="badge badge-light-secondary px-2 py-1 fs-8">${log.action}</span></td>
+          <td>${log.module}</td>
+          <td>${log.description || '-'}</td>
+        </tr>
+      `, 'detail-full-activity-tbody', 'full-logs-pagination-info', 'full-logs-pagination-controls');
     },
 
     downloadUserDetailAuditCsv: function () {
@@ -1291,14 +1443,13 @@
         return;
       }
 
-      let csvContent = 'data:text/csv;charset=utf-8,Timestamp,Action,Module,IP Address,Details\n';
+      let csvContent = 'data:text/csv;charset=utf-8,Timestamp,Action,Module,Description\n';
       logs.forEach(log => {
         const row = [
           log.timestamp,
           log.action,
           log.module,
-          log.ip_address || '192.168.1.1',
-          `"${(log.details || '').replace(/"/g, '""')}"`
+          `"${(log.description || '').replace(/"/g, '""')}"`
         ].join(',');
         csvContent += row + '\n';
       });
@@ -1306,7 +1457,7 @@
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `audit_log_${this.currentUserDetailLogs[0].actor_id || 'user'}.csv`);
+      link.setAttribute('download', `audit_log_${this.currentUserDetailLogs[0].user_id || 'user'}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -2916,11 +3067,144 @@
       tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat log...</td></tr>';
       google.script.run.withSuccessHandler((res) => {
         if (res.success && Array.isArray(res.data)) {
-          this.paginationState.audit.data = res.data;
-          this.paginationState.audit.page = 1;
-          this.renderAuditPage();
+          this.auditCache = res.data;
+          this.applyAuditFiltersAndSort();
         }
       }).apiGetAuditLogs();
+    },
+
+    handleAuditSearch: function (val) {
+      this.applyAuditFiltersAndSort();
+    },
+
+    handleAuditColumnFilter: function () {
+      this.applyAuditFiltersAndSort();
+    },
+
+    toggleAuditFilterRow: function () {
+      const row = document.getElementById('audit-filter-row');
+      if (row) {
+        row.classList.toggle('d-none');
+        if (row.classList.contains('d-none')) {
+          const filterInputs = ['timestamp', 'module', 'action', 'user_id', 'description', 'reference_id'];
+          filterInputs.forEach(f => {
+            const el = document.getElementById('audit-filter-' + f);
+            if (el) el.value = '';
+          });
+          this.applyAuditFiltersAndSort();
+        }
+      }
+    },
+
+    handleAuditPageSizeChange: function (val) {
+      this.paginationState.audit.pageSize = Number(val);
+      this.paginationState.audit.page = 1;
+      this.renderAuditPage();
+    },
+
+    handleAuditSort: function (colName) {
+      if (!this.state.auditSort) {
+        this.state.auditSort = { column: 'timestamp', asc: false };
+      }
+      if (this.state.auditSort.column === colName) {
+        this.state.auditSort.asc = !this.state.auditSort.asc;
+      } else {
+        this.state.auditSort.column = colName;
+        this.state.auditSort.asc = true;
+      }
+      this.applyAuditFiltersAndSort();
+    },
+
+    applyAuditFiltersAndSort: function () {
+      let filtered = [...(this.auditCache || [])];
+
+      // Global Search Filter
+      const query = (document.getElementById('audit-search')?.value || '').trim().toLowerCase();
+      if (query) {
+        filtered = filtered.filter(a => {
+          return (
+            String(a.timestamp || '').toLowerCase().includes(query) ||
+            String(a.module || '').toLowerCase().includes(query) ||
+            String(a.action || '').toLowerCase().includes(query) ||
+            String(a.status || '').toLowerCase().includes(query) ||
+            String(a.user_id || '').toLowerCase().includes(query) ||
+            String(a.description || '').toLowerCase().includes(query) ||
+            String(a.reference_id || '').toLowerCase().includes(query)
+          );
+        });
+      }
+
+      // Column-specific filters
+      const filterRow = document.getElementById('audit-filter-row');
+      if (filterRow && !filterRow.classList.contains('d-none')) {
+        const filterTimestamp = (document.getElementById('audit-filter-timestamp')?.value || '').trim().toLowerCase();
+        const filterModule = (document.getElementById('audit-filter-module')?.value || '').trim().toLowerCase();
+        const filterAction = (document.getElementById('audit-filter-action')?.value || '').trim().toLowerCase();
+        const filterUserId = (document.getElementById('audit-filter-user_id')?.value || '').trim().toLowerCase();
+        const filterDescription = (document.getElementById('audit-filter-description')?.value || '').trim().toLowerCase();
+        const filterReferenceId = (document.getElementById('audit-filter-reference_id')?.value || '').trim().toLowerCase();
+
+        if (filterTimestamp) filtered = filtered.filter(a => String(a.timestamp || '').toLowerCase().includes(filterTimestamp));
+        if (filterModule) filtered = filtered.filter(a => String(a.module || '').toLowerCase().includes(filterModule));
+        if (filterAction) filtered = filtered.filter(a => String(a.action + '_' + a.status || '').toLowerCase().includes(filterAction));
+        if (filterUserId) filtered = filtered.filter(a => String(a.user_id || '').toLowerCase().includes(filterUserId));
+        if (filterDescription) filtered = filtered.filter(a => String(a.description || '').toLowerCase().includes(filterDescription));
+        if (filterReferenceId) filtered = filtered.filter(a => String(a.reference_id || '').toLowerCase().includes(filterReferenceId));
+      }
+
+      // Sorting
+      if (this.state.auditSort) {
+        const col = this.state.auditSort.column;
+        const asc = this.state.auditSort.asc;
+        filtered.sort((a, b) => {
+          let valA = String(a[col] || '').toLowerCase();
+          let valB = String(b[col] || '').toLowerCase();
+
+          if (col === 'action') {
+            valA = String(a.action + '_' + a.status).toLowerCase();
+            valB = String(b.action + '_' + b.status).toLowerCase();
+          }
+
+          if (!isNaN(valA) && !isNaN(valB)) {
+            valA = Number(valA);
+            valB = Number(valB);
+          }
+
+          if (valA < valB) return asc ? -1 : 1;
+          if (valA > valB) return asc ? 1 : -1;
+          return 0;
+        });
+      } else {
+        // Default sort by timestamp desc
+        filtered.sort((a, b) => String(b.timestamp || '').localeCompare(String(a.timestamp || '')));
+      }
+
+      this.paginationState.audit.data = filtered;
+      this.paginationState.audit.page = 1;
+      
+      // Ensure pageSize is set correctly based on the dropdown
+      const pageSizeEl = document.getElementById('audit-page-size');
+      if (pageSizeEl) {
+        this.paginationState.audit.pageSize = Number(pageSizeEl.value) || 20;
+      }
+
+      this.renderAuditPage();
+
+      // Update header sorting icons
+      const cols = ['timestamp', 'module', 'action', 'user_id', 'description', 'reference_id'];
+      cols.forEach(c => {
+        const icon = document.getElementById(`audit-sort-icon-${c}`);
+        if (icon) {
+          if (this.state.auditSort && this.state.auditSort.column === c) {
+            icon.className = this.state.auditSort.asc ? 'bi bi-sort-up ms-1' : 'bi bi-sort-down ms-1';
+            icon.style.color = '#2563eb';
+            icon.classList.remove('opacity-50', 'text-muted');
+          } else {
+            icon.className = 'bi bi-arrow-down-up ms-1 text-muted opacity-50';
+            icon.style.color = '';
+          }
+        }
+      });
     },
 
     renderAuditPage: function () {

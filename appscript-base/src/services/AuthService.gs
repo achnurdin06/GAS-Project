@@ -9,10 +9,21 @@ class AuthService {
       return Response.error('Email and password are required', 'VALIDATION_ERROR');
     }
 
-    const user = this.userRepo.findByEmail(email);
-    if (!user) {
+    const cleanEmail = String(email).trim().toLowerCase();
+    const userList = this.userRepo.find(row => String(row.email).trim().toLowerCase() === cleanEmail);
+    if (userList.length === 0) {
       this.auditService.log('AUTH', 'LOGIN', 'FAILED', 'ANONYMOUS', `Login failed: Email ${email} not found`);
       return Response.error('Email atau password tidak valid', 'AUTH_LOGIN_FAILED');
+    }
+
+    const user = userList[0];
+    const status = String(user.status).trim().toUpperCase();
+    if (status === 'PENDING_APPROVAL') {
+      this.auditService.log('AUTH', 'LOGIN', 'FAILED', user.id, `Login failed: Account ${email} pending approval`);
+      return Response.error('Akun Anda belum disetujui oleh administrator. Silakan hubungi admin.', 'AUTH_PENDING_APPROVAL');
+    } else if (status !== 'ACTIVE') {
+      this.auditService.log('AUTH', 'LOGIN', 'FAILED', user.id, `Login failed: Account ${email} is inactive or deleted (${status})`);
+      return Response.error('Akun Anda dinonaktifkan atau telah dihapus.', 'AUTH_ACCOUNT_INACTIVE');
     }
 
     // 1. Expiration check
@@ -201,5 +212,96 @@ class AuthService {
       LoggerUtil.error('AuthService', 'Failed checking permission ' + requiredPermission + ' for actor: ' + actorId, e);
       return false;
     }
+  }
+
+  registerUser(payload) {
+    if (!payload.name || !payload.email || !payload.username || !payload.password) {
+      return Response.error('Nama, Email, Username, dan Password wajib diisi', 'VALIDATION_ERROR');
+    }
+    
+    // Check if email already exists
+    const cleanEmail = String(payload.email).trim().toLowerCase();
+    const emailExists = this.userRepo.find(row => String(row.email).trim().toLowerCase() === cleanEmail);
+    if (emailExists.length > 0) {
+      return Response.error('Email sudah terdaftar', 'EMAIL_ALREADY_EXISTS');
+    }
+
+    // Check if username already exists
+    const cleanUsername = String(payload.username).trim().toLowerCase();
+    const usernameExists = this.userRepo.find(row => String(row.username).trim().toLowerCase() === cleanUsername);
+    if (usernameExists.length > 0) {
+      return Response.error('Username sudah terdaftar', 'USERNAME_ALREADY_EXISTS');
+    }
+
+    // Default registration code/role
+    const newRecord = {
+      id: Utils.generateUuid(),
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone || '',
+      username: payload.username,
+      force_password_change: 'FALSE',
+      password_hash: Utils.hashSha256(payload.password),
+      role_id: 'ROLE_USER', // Default standard user
+      created_at: Utils.formatIsoDate(),
+      created_by: 'REGISTRATION',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'REGISTRATION',
+      status: 'PENDING_APPROVAL', // Needs administrator approval
+      expired_at: '2029-12-31',
+      profile_pic_url: '',
+      two_fa_enabled: 'FALSE',
+      two_fa_secret: ''
+    };
+
+    const success = this.userRepo.insert(newRecord, 'SYSTEM');
+    if (!success) {
+      return Response.error('Gagal mendaftarkan akun baru', 'SYSTEM_ERROR');
+    }
+
+    this.auditService.log('AUTH', 'REGISTER', 'SUCCESS', newRecord.id, `User ${newRecord.email} pre-registered successfully`);
+    return Response.success('Pendaftaran berhasil. Akun Anda saat ini sedang menunggu persetujuan administrator.', null, 'REGISTRATION_SUCCESS');
+  }
+
+  forgotPassword(email) {
+    if (!email) {
+      return Response.error('Email wajib diisi', 'VALIDATION_ERROR');
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const userList = this.userRepo.find(row => String(row.email).trim().toLowerCase() === cleanEmail);
+    if (userList.length === 0) {
+      return Response.error('Email tidak terdaftar', 'EMAIL_NOT_FOUND');
+    }
+
+    const user = userList[0];
+    if (String(user.status).trim().toUpperCase() !== 'ACTIVE') {
+      return Response.error('Akun Anda tidak aktif atau sedang menunggu persetujuan', 'ACCOUNT_INACTIVE');
+    }
+
+    const tempPassword = 'reset' + Math.floor(100000 + Math.random() * 900000);
+    const newHash = Utils.hashSha256(tempPassword);
+
+    const success = this.userRepo.updateById(user.id, {
+      password_hash: newHash,
+      force_password_change: 'TRUE'
+    }, 'SYSTEM');
+
+    if (!success) {
+      return Response.error('Gagal mengatur ulang kata sandi', 'SYSTEM_ERROR');
+    }
+
+    try {
+      const appName = PropertiesService.getScriptProperties().getProperty('APP_NAME') || 'AEF Enterprise';
+      const subject = `[${appName}] Pemulihan Kata Sandi Akun`;
+      const body = `Halo ${user.name},\n\nKata sandi akun Anda telah berhasil diatur ulang.\n\nKata sandi sementara Anda adalah: ${tempPassword}\n\nAnda diharuskan mengubah kata sandi ini setelah login.\n\nSalam,\nSistem ${appName}`;
+      MailApp.sendEmail(user.email, subject, body);
+    } catch (e) {
+      LoggerUtil.error('AuthService', 'Failed to send reset password email', e);
+      return Response.success(`Pemulihan berhasil (Gagal mengirim email, kata sandi sementara Anda: ${tempPassword})`, { tempPassword: tempPassword }, 'RESET_PASSWORD_SUCCESS');
+    }
+
+    this.auditService.log('AUTH', 'FORGOT_PASSWORD', 'SUCCESS', user.id, `Password reset for user ${user.email}`);
+    return Response.success('Kata sandi baru telah dikirim ke email Anda. Silakan periksa inbox.', null, 'RESET_PASSWORD_SUCCESS');
   }
 }

@@ -295,6 +295,25 @@ function apiGetDashboardData(payload) {
   }
 }
 
+// PUBLIC AUTH EXTENSIONS
+function apiRegisterUser(payload) {
+  try {
+    return new AuthService().registerUser(payload);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiRegisterUser failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiForgotPassword(payload) {
+  try {
+    return new AuthService().forgotPassword(payload.email);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiForgotPassword failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 function checkApiPermission(payload, requiredPermission) {
   const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
   if (!new AuthService().verifyPermission(actorId, requiredPermission)) {
