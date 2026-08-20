@@ -126,6 +126,28 @@ class DashboardService {
       }
     }
 
+    // 6. Activity Distribution for Donut Chart
+    const totalDist = actionCounts.LOGIN + actionCounts.LOGOUT + actionCounts.VIEW + actionCounts.UPDATE + actionCounts.INSERT + actionCounts.DELETE;
+    const activityDistribution = {
+      labels: ['Login', 'Logout', 'View', 'Update', 'Lainnya'],
+      data: [
+        actionCounts.LOGIN,
+        actionCounts.LOGOUT,
+        actionCounts.VIEW,
+        actionCounts.UPDATE,
+        actionCounts.INSERT + actionCounts.DELETE
+      ]
+    };
+    if (totalDist === 0) {
+      activityDistribution.data = [37, 28, 15, 10, 10]; // Fallback dummy percentages if no data
+    }
+
+    // 7. Recent Activities
+    // Sort all audit logs by timestamp descending and take the top 5
+    const recentActivities = [...allAuditLogs]
+      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+      .slice(0, 5);
+
     const payload = {
       counts: counts,
       auditByAction: actionCounts,
@@ -134,6 +156,8 @@ class DashboardService {
         labels: dates,
         data: loginData
       },
+      activityDistribution: activityDistribution,
+      recentActivities: recentActivities,
       renewalWarning: renewalWarning
     };
 
