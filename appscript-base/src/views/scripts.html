@@ -3803,7 +3803,7 @@
       }).apiDeleteMenu({ menu_id: menuId, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
-    initDashboardChart: function () {
+    initDashboardChart: function (forceRefresh = false) {
       // Update Welcome Header (from localStorage state)
       if (this.state.user) {
         const u = this.state.user;
