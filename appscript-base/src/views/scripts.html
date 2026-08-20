@@ -651,7 +651,7 @@
         this.loadPermissionsTable();
       } else if (route === '/config') {
         contentCanvas.innerHTML = document.getElementById('tpl-config').innerHTML;
-        this.loadConfigsTable();
+        this.renderConfigsPage();
       } else if (route === '/audit') {
         contentCanvas.innerHTML = document.getElementById('tpl-audit').innerHTML;
         this.loadAuditLogsTable();
@@ -3011,19 +3011,6 @@
     },
 
     // CONFIG CRUD
-    loadConfigsTable: function () {
-      const tbody = document.getElementById('configs-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3"><div class="spinner-border spinner-border-sm"></div> Memuat data...</td></tr>';
-      google.script.run.withSuccessHandler((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          this.configsCache = res.data;
-          this.paginationState.configs.data = res.data;
-          this.paginationState.configs.page = 1;
-          this.renderConfigsPage();
-        }
-      }).apiGetConfigs();
-    },
 
     renderConfigsPage: function () {
       const loader = document.getElementById('configs-loader');
