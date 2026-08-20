@@ -3827,12 +3827,29 @@
         if (iLogin) iLogin.innerText = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' }) + ' WIB';
       }
 
+      // Show loaders
+      const spinnerHtml = '<span class="spinner-border spinner-border-sm text-muted" style="width:1.1rem; height:1.1rem;" role="status"></span>';
+      ['dash-count-menu', 'dash-count-role', 'dash-count-user', 'dash-count-perm', 'dash-count-audit'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = spinnerHtml;
+      });
+
+      document.querySelectorAll('.chart-loader').forEach(el => el.classList.remove('d-none'));
+
+      const recentLoader = document.getElementById('recent-activity-loader');
+      const recentList = document.getElementById('recent-activity-list');
+      const recentPag = document.getElementById('recent-activity-pagination');
+      if (recentLoader) recentLoader.classList.remove('d-none');
+      if (recentList) recentList.classList.add('d-none');
+      if (recentPag) recentPag.classList.add('d-none');
+
       google.script.run.withSuccessHandler((res) => {
         if (!res || !res.success || !res.data) return;
 
         const data = res.data;
         const counts = data.counts || {};
         const actions = data.auditByAction || {};
+        const hourlyTrend = data.hourlyActionTrend || {};
         const modules = data.auditByModule || {};
         const trend = data.loginTrend || {};
 
@@ -3866,7 +3883,7 @@
         const cAudit = document.getElementById('dash-count-audit');
         if (cAudit) cAudit.innerText = (counts.audit || 0).toLocaleString();
 
-        // 1. Chart Application Data Overview (Bar Chart)
+        // 1. Chart Application Data Overview (Bar Chart) - Real Database Counts
         const ctxOverview = document.getElementById('chartAppOverview');
         if (ctxOverview) {
           if (this.chartOverviewInstance) this.chartOverviewInstance.destroy();
@@ -3894,25 +3911,17 @@
           });
         }
 
-        // 2. Chart Audit Activity by Action (Line Chart with Area) & Metric Boxes
+        // 2. Chart Audit Activity by Action (Line Chart with Area) & Metric Boxes - Real Hourly Distribution
         const ctxAction = document.getElementById('chartAuditAction');
         if (ctxAction) {
           if (this.chartActionInstance) this.chartActionInstance.destroy();
           this.chartActionInstance = new Chart(ctxAction, {
             type: 'line',
             data: {
-              labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+              labels: hourlyTrend.labels || ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
               datasets: [{
                 label: 'Aktivitas Hari Ini',
-                data: [
-                  Math.floor((actions.LOGIN||0)/2), 
-                  Math.floor((actions.VIEW||0)/2), 
-                  (actions.INSERT||0), 
-                  (actions.UPDATE||0), 
-                  (actions.DELETE||0), 
-                  (actions.LOGOUT||0), 
-                  Math.floor((actions.LOGIN||0)/2)
-                ], // Simulated time distribution
+                data: hourlyTrend.data || [0, 0, 0, 0, 0, 0, 0],
                 borderColor: '#2563eb',
                 backgroundColor: 'rgba(37, 99, 235, 0.08)',
                 pointBackgroundColor: '#2563eb',
@@ -3927,7 +3936,7 @@
               plugins: { legend: { display: false } },
               scales: {
                 x: { grid: { display: false } },
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } }
               }
             }
           });
@@ -3937,16 +3946,16 @@
         const actionBoxesContainer = document.getElementById('action-metric-boxes');
         if (actionBoxesContainer) {
           actionBoxesContainer.innerHTML = `
-            <div class="aef-metric-box"><div class="icon" style="background:#eff6ff; color:#2563eb;"><i class="bi bi-box-arrow-in-right"></i></div><div class="info"><div class="val">${actions.LOGIN||0}</div><div class="lbl">LOGIN</div></div></div>
-            <div class="aef-metric-box"><div class="icon" style="background:#dcfce7; color:#10b981;"><i class="bi bi-eye-fill"></i></div><div class="info"><div class="val">${actions.VIEW||0}</div><div class="lbl">VIEW</div></div></div>
-            <div class="aef-metric-box"><div class="icon" style="background:#ede9fe; color:#8b5cf6;"><i class="bi bi-plus-circle-fill"></i></div><div class="info"><div class="val">${actions.INSERT||0}</div><div class="lbl">INSERT</div></div></div>
-            <div class="aef-metric-box"><div class="icon" style="background:#ffedd5; color:#f97316;"><i class="bi bi-pencil-fill"></i></div><div class="info"><div class="val">${actions.UPDATE||0}</div><div class="lbl">UPDATE</div></div></div>
-            <div class="aef-metric-box"><div class="icon" style="background:#fee2e2; color:#ef4444;"><i class="bi bi-trash-fill"></i></div><div class="info"><div class="val">${actions.DELETE||0}</div><div class="lbl">DELETE</div></div></div>
-            <div class="aef-metric-box"><div class="icon" style="background:#ccfbf1; color:#14b8a6;"><i class="bi bi-box-arrow-right"></i></div><div class="info"><div class="val">${actions.LOGOUT||0}</div><div class="lbl">LOGOUT</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#eff6ff; color:#2563eb;"><i class="bi bi-box-arrow-in-right"></i></div><div class="info"><div class="val">${actions.LOGIN || 0}</div><div class="lbl">LOGIN</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#dcfce7; color:#10b981;"><i class="bi bi-eye-fill"></i></div><div class="info"><div class="val">${actions.VIEW || 0}</div><div class="lbl">VIEW</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ede9fe; color:#8b5cf6;"><i class="bi bi-plus-circle-fill"></i></div><div class="info"><div class="val">${actions.INSERT || 0}</div><div class="lbl">INSERT</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ffedd5; color:#f97316;"><i class="bi bi-pencil-fill"></i></div><div class="info"><div class="val">${actions.UPDATE || 0}</div><div class="lbl">UPDATE</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#fee2e2; color:#ef4444;"><i class="bi bi-trash-fill"></i></div><div class="info"><div class="val">${actions.DELETE || 0}</div><div class="lbl">DELETE</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ccfbf1; color:#14b8a6;"><i class="bi bi-box-arrow-right"></i></div><div class="info"><div class="val">${actions.LOGOUT || 0}</div><div class="lbl">LOGOUT</div></div></div>
           `;
         }
 
-        // 3. Chart Audit Activity by Module (Horizontal Bar Chart)
+        // 3. Chart Audit Activity by Module (Horizontal Bar Chart) - Real Database Counts
         const ctxModule = document.getElementById('chartAuditModule');
         if (ctxModule) {
           if (this.chartModuleInstance) this.chartModuleInstance.destroy();
@@ -3968,24 +3977,24 @@
               maintainAspectRatio: false,
               plugins: { legend: { display: false } },
               scales: {
-                x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
                 y: { grid: { display: false } }
               }
             }
           });
         }
 
-        // 4. Chart Login Trend (Last 7 Days) (Line Chart)
+        // 4. Chart Login Trend (Last 7 Days) (Line Chart) - Real Logins from Google Sheets
         const ctxTrend = document.getElementById('chartLoginTrend');
         if (ctxTrend) {
           if (this.chartTrendInstance) this.chartTrendInstance.destroy();
           this.chartTrendInstance = new Chart(ctxTrend, {
             type: 'line',
             data: {
-              labels: trend.labels || ['14 Mei', '15 Mei', '16 Mei', '17 Mei', '18 Mei', '19 Mei', '20 Mei'],
+              labels: trend.labels || [],
               datasets: [{
                 label: 'Login User',
-                data: trend.data || [10, 8, 15, 12, 18, 14, 16],
+                data: trend.data || [],
                 borderColor: '#2563eb',
                 backgroundColor: 'rgba(37, 99, 235, 0.08)',
                 pointBackgroundColor: '#2563eb',
@@ -4000,13 +4009,13 @@
               plugins: { legend: { display: false } },
               scales: {
                 x: { grid: { display: false } },
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } }
               }
             }
           });
         }
         
-        // 5. Chart Distribusi Aktivitas (Donut Chart)
+        // 5. Chart Distribusi Aktivitas (Donut Chart) - Real Distribution
         const ctxDistribusi = document.getElementById('chartDistribusi');
         if (ctxDistribusi && data.activityDistribution) {
           if (this.chartDistribusiInstance) this.chartDistribusiInstance.destroy();
@@ -4047,7 +4056,7 @@
             new Chart(ctx, {
               type: 'line',
               data: {
-                labels: ['1','2','3','4','5'],
+                labels: ['1', '2', '3', '4', '5'],
                 datasets: [{
                   data: dataArr,
                   borderColor: color,
@@ -4065,42 +4074,18 @@
             });
           }
         };
-        renderSparkline('spark-menu', '#2563eb', [3,5,4,6,counts.menus||0]);
-        renderSparkline('spark-role', '#10b981', [2,3,2,4,counts.roles||0]);
-        renderSparkline('spark-user', '#8b5cf6', [5,8,6,10,counts.users||0]);
-        renderSparkline('spark-perm', '#f97316', [10,12,15,14,counts.permissions||0]);
-        renderSparkline('spark-audit', '#0ea5e9', [100,150,120,200,counts.audit>200?200:counts.audit||0]);
+        renderSparkline('spark-menu', '#2563eb', [Math.max(0, (counts.menus || 0) - 2), counts.menus || 0, counts.menus || 0, counts.menus || 0, counts.menus || 0]);
+        renderSparkline('spark-role', '#10b981', [counts.roles || 0, counts.roles || 0, counts.roles || 0, counts.roles || 0, counts.roles || 0]);
+        renderSparkline('spark-user', '#8b5cf6', [Math.max(0, (counts.users || 0) - 1), counts.users || 0, counts.users || 0, counts.users || 0, counts.users || 0]);
+        renderSparkline('spark-perm', '#f97316', [counts.permissions || 0, counts.permissions || 0, counts.permissions || 0, counts.permissions || 0, counts.permissions || 0]);
+        renderSparkline('spark-audit', '#0ea5e9', [Math.max(0, (counts.audit || 0) - 5), Math.max(0, (counts.audit || 0) - 2), counts.audit || 0, counts.audit || 0, counts.audit || 0]);
 
-        // Populate Recent Activities
-        const recentList = document.getElementById('recent-activity-list');
-        if (recentList && data.recentActivities) {
-          recentList.innerHTML = '';
-          const bgColors = {'LOGIN':'bg-primary','LOGOUT':'bg-warning','VIEW':'bg-success','INSERT':'bg-info','UPDATE':'bg-purple','DELETE':'bg-danger'};
-          const icons = {'LOGIN':'bi-person-check','LOGOUT':'bi-box-arrow-right','VIEW':'bi-eye','INSERT':'bi-plus-circle','UPDATE':'bi-pencil','DELETE':'bi-trash'};
-          
-          data.recentActivities.forEach(act => {
-            const actType = (act.action || 'VIEW').toUpperCase();
-            let matchedType = 'VIEW';
-            Object.keys(bgColors).forEach(k => { if(actType.includes(k)) matchedType = k; });
-            
-            const timeStr = act.timestamp ? new Date(act.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) + ' WIB' : '';
-            
-            recentList.innerHTML += `
-              <div class="aef-recent-activity-item">
-                <div class="aef-ra-icon ${bgColors[matchedType]}"><i class="bi ${icons[matchedType]}"></i></div>
-                <div class="aef-ra-content">
-                  <div class="aef-ra-title">${act.action || 'Aktivitas'} ${act.module ? act.module : ''}</div>
-                  <div class="aef-ra-desc">${act.actor_name || 'System'}</div>
-                </div>
-                <div class="aef-ra-time">${timeStr}</div>
-              </div>
-            `;
-          });
-          
-          if(data.recentActivities.length === 0) {
-            recentList.innerHTML = '<div class="text-muted small text-center p-3">Belum ada aktivitas.</div>';
-          }
-        }
+        // Populate Recent Activities with pagination support
+        this.state.dashboardRecentActivities = data.recentActivities || [];
+        this.state.dashboardRecentActivityPage = 1;
+        const limitEl = document.getElementById('recent-activity-limit');
+        this.state.dashboardRecentActivityLimit = limitEl ? parseInt(limitEl.value, 10) : 20;
+        this.renderRecentActivitiesPagination();
         
         // Update Date Pill
         const datePill = document.getElementById('dash-date-pill');
@@ -4110,6 +4095,91 @@
            datePill.innerText = now.toLocaleDateString('id-ID', options) + ' WIB';
         }
       }).apiGetDashboardData({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    renderRecentActivitiesPagination: function () {
+      const allActivities = this.state.dashboardRecentActivities || [];
+      const limit = this.state.dashboardRecentActivityLimit || 20;
+      let page = this.state.dashboardRecentActivityPage || 1;
+      const total = allActivities.length;
+      const totalPages = Math.ceil(total / limit) || 1;
+
+      if (page > totalPages) page = totalPages;
+      if (page < 1) page = 1;
+      this.state.dashboardRecentActivityPage = page;
+
+      const loader = document.getElementById('recent-activity-loader');
+      const list = document.getElementById('recent-activity-list');
+      const pag = document.getElementById('recent-activity-pagination');
+      const info = document.getElementById('recent-activity-info');
+      const pageContainer = document.getElementById('recent-activity-pages');
+
+      if (loader) loader.classList.add('d-none');
+      if (list) list.classList.remove('d-none');
+      if (pag) pag.classList.remove('d-none');
+
+      if (!list) return;
+
+      if (total === 0) {
+        list.innerHTML = '<div class="text-muted small text-center p-3">Belum ada aktivitas.</div>';
+        if (info) info.innerText = '0 dari 0 aktivitas';
+        if (pageContainer) pageContainer.innerHTML = '';
+        return;
+      }
+
+      const startIndex = (page - 1) * limit;
+      const endIndex = Math.min(startIndex + limit, total);
+      const pageItems = allActivities.slice(startIndex, endIndex);
+
+      if (info) {
+        info.innerText = `${startIndex + 1}-${endIndex} dari ${total} aktivitas`;
+      }
+
+      const bgColors = { 'LOGIN': 'bg-primary', 'LOGOUT': 'bg-warning', 'VIEW': 'bg-success', 'INSERT': 'bg-info', 'UPDATE': 'bg-purple', 'DELETE': 'bg-danger' };
+      const icons = { 'LOGIN': 'bi-person-check', 'LOGOUT': 'bi-box-arrow-right', 'VIEW': 'bi-eye', 'INSERT': 'bi-plus-circle', 'UPDATE': 'bi-pencil', 'DELETE': 'bi-trash' };
+
+      let html = '';
+      pageItems.forEach(act => {
+        const actType = (act.action || 'VIEW').toUpperCase();
+        let matchedType = 'VIEW';
+        Object.keys(bgColors).forEach(k => { if (actType.includes(k)) matchedType = k; });
+
+        const timeStr = act.timestamp ? new Date(act.timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '';
+
+        html += `
+          <div class="aef-recent-activity-item">
+            <div class="aef-ra-icon ${bgColors[matchedType]}"><i class="bi ${icons[matchedType]}"></i></div>
+            <div class="aef-ra-content">
+              <div class="aef-ra-title">${act.action || 'Aktivitas'} ${act.module ? act.module : ''}</div>
+              <div class="aef-ra-desc">${act.actor_name || 'System'}</div>
+            </div>
+            <div class="aef-ra-time">${timeStr}</div>
+          </div>
+        `;
+      });
+      list.innerHTML = html;
+
+      // Render pagination buttons
+      if (pageContainer) {
+        let btnHtml = '';
+        btnHtml += `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" ${page === 1 ? 'disabled' : ''} onclick="AEF.setRecentActivitiesPage(${page - 1})"><i class="bi bi-chevron-left"></i></button>`;
+        
+        btnHtml += `<span class="align-self-center px-1 text-muted fw-semibold" style="font-size:0.75rem;">Hal ${page} / ${totalPages}</span>`;
+
+        btnHtml += `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" ${page === totalPages ? 'disabled' : ''} onclick="AEF.setRecentActivitiesPage(${page + 1})"><i class="bi bi-chevron-right"></i></button>`;
+        pageContainer.innerHTML = btnHtml;
+      }
+    },
+
+    setRecentActivitiesPage: function (page) {
+      this.state.dashboardRecentActivityPage = page;
+      this.renderRecentActivitiesPagination();
+    },
+
+    changeRecentActivitiesLimit: function (limit) {
+      this.state.dashboardRecentActivityLimit = parseInt(limit, 10) || 20;
+      this.state.dashboardRecentActivityPage = 1;
+      this.renderRecentActivitiesPagination();
     }
   };
 

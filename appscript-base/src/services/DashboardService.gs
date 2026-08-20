@@ -27,9 +27,13 @@ class DashboardService {
       audit: allAuditLogs.length
     };
 
-    // 2. Audit Activity by Action Today
-    const todayIso = new Date().toISOString().substring(0, 10);
+    // 2. Audit Activity by Action (Today & All-Time)
+    const now = new Date();
+    const todayIso = now.toISOString().substring(0, 10);
     const todayLogs = allAuditLogs.filter(a => a.timestamp && String(a.timestamp).substring(0, 10) === todayIso);
+
+    // Target logs: use today logs if available, otherwise use all logs for action count
+    const logsForAction = todayLogs.length > 0 ? todayLogs : allAuditLogs;
 
     const actionCounts = {
       LOGIN: 0,
@@ -40,27 +44,37 @@ class DashboardService {
       LOGOUT: 0
     };
 
-    todayLogs.forEach(a => {
+    logsForAction.forEach(a => {
       const act = String(a.action || '').toUpperCase();
       if (act.includes('LOGIN')) actionCounts.LOGIN++;
       else if (act.includes('LOGOUT')) actionCounts.LOGOUT++;
       else if (act.includes('CREATE') || act.includes('INSERT')) actionCounts.INSERT++;
-      else if (act.includes('UPDATE')) actionCounts.UPDATE++;
-      else if (act.includes('DELETE')) actionCounts.DELETE++;
+      else if (act.includes('UPDATE') || act.includes('EDIT')) actionCounts.UPDATE++;
+      else if (act.includes('DELETE') || act.includes('REMOVE')) actionCounts.DELETE++;
       else actionCounts.VIEW++;
     });
 
-    // Fallback if today logs are light so chart renders beautifully
-    if (todayLogs.length === 0) {
-      actionCounts.LOGIN = Math.max(1, counts.users);
-      actionCounts.VIEW = Math.max(5, counts.menus * 2);
-      actionCounts.INSERT = Math.max(1, counts.roles);
-      actionCounts.UPDATE = Math.max(2, counts.permissions);
-      actionCounts.DELETE = 1;
-      actionCounts.LOGOUT = Math.max(1, Math.floor(counts.users / 2));
-    }
+    // Hourly buckets for Today's Activity Chart (00:00, 04:00, 08:00, 12:00, 16:00, 20:00, 24:00)
+    const hourlyLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'];
+    const hourlyData = [0, 0, 0, 0, 0, 0, 0];
 
-    // 3. Audit Activity by Module Today
+    todayLogs.forEach(a => {
+      if (a.timestamp) {
+        try {
+          const logDate = new Date(a.timestamp);
+          const hour = logDate.getHours();
+          if (hour >= 0 && hour < 4) hourlyData[0]++;
+          else if (hour >= 4 && hour < 8) hourlyData[1]++;
+          else if (hour >= 8 && hour < 12) hourlyData[2]++;
+          else if (hour >= 12 && hour < 16) hourlyData[3]++;
+          else if (hour >= 16 && hour < 20) hourlyData[4]++;
+          else if (hour >= 20 && hour < 24) hourlyData[5]++;
+          else hourlyData[6]++;
+        } catch (e) {}
+      }
+    });
+
+    // 3. Audit Activity by Module (from Google Sheets)
     const moduleCounts = {
       USER: 0,
       ROLE: 0,
@@ -69,7 +83,7 @@ class DashboardService {
       AUDIT: 0
     };
 
-    todayLogs.forEach(a => {
+    allAuditLogs.forEach(a => {
       const mod = String(a.module || '').toUpperCase();
       if (mod.includes('USER')) moduleCounts.USER++;
       else if (mod.includes('ROLE')) moduleCounts.ROLE++;
@@ -78,15 +92,7 @@ class DashboardService {
       else if (mod.includes('AUDIT')) moduleCounts.AUDIT++;
     });
 
-    if (todayLogs.length === 0) {
-      moduleCounts.USER = counts.users * 2;
-      moduleCounts.ROLE = counts.roles;
-      moduleCounts.MENU = counts.menus;
-      moduleCounts.PERMISSION = counts.permissions;
-      moduleCounts.AUDIT = Math.max(5, Math.floor(counts.audit / 2));
-    }
-
-    // 4. Login Trend (Last 7 Days)
+    // 4. Login Trend (Last 7 Days) calculated accurately from Google Sheets
     const dates = [];
     const loginData = [];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -100,8 +106,14 @@ class DashboardService {
       const label = `${dayNum} ${monthStr}`;
       dates.push(label);
 
-      const dayLogins = allAuditLogs.filter(a => a.timestamp && String(a.timestamp).substring(0, 10) === dateStr && String(a.action || '').toUpperCase().includes('LOGIN')).length;
-      loginData.push(dayLogins > 0 ? dayLogins : Math.floor(8 + Math.random() * 10));
+      const dayLogins = allAuditLogs.filter(a => {
+        if (!a.timestamp) return false;
+        const logDateStr = String(a.timestamp).substring(0, 10);
+        const act = String(a.action || '').toUpperCase();
+        return logDateStr === dateStr && act.includes('LOGIN');
+      }).length;
+
+      loginData.push(dayLogins);
     }
 
     // 5. User Expiration Renewal Warning Check
@@ -110,10 +122,9 @@ class DashboardService {
       const currentUser = this.userRepo.findById(actorId);
       if (currentUser && currentUser.expired_at) {
         const today = new Date();
-        // Zero out time
-        today.setHours(0,0,0,0);
+        today.setHours(0, 0, 0, 0);
         const expiry = new Date(currentUser.expired_at);
-        expiry.setHours(0,0,0,0);
+        expiry.setHours(0, 0, 0, 0);
         const diffTime = expiry.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays >= 0 && diffDays <= 30) {
@@ -126,10 +137,9 @@ class DashboardService {
       }
     }
 
-    // 6. Activity Distribution for Donut Chart
-    const totalDist = actionCounts.LOGIN + actionCounts.LOGOUT + actionCounts.VIEW + actionCounts.UPDATE + actionCounts.INSERT + actionCounts.DELETE;
+    // 6. Activity Distribution for Donut Chart (Real Calculation)
     const activityDistribution = {
-      labels: ['Login', 'Logout', 'View', 'Update', 'Lainnya'],
+      labels: ['Login', 'Logout', 'View', 'Update', 'Insert & Delete'],
       data: [
         actionCounts.LOGIN,
         actionCounts.LOGOUT,
@@ -138,19 +148,18 @@ class DashboardService {
         actionCounts.INSERT + actionCounts.DELETE
       ]
     };
-    if (totalDist === 0) {
-      activityDistribution.data = [37, 28, 15, 10, 10]; // Fallback dummy percentages if no data
-    }
 
-    // 7. Recent Activities
-    // Sort all audit logs by timestamp descending and take the top 5
+    // 7. Recent Activities - All sorted descending by timestamp for frontend pagination
     const recentActivities = [...allAuditLogs]
-      .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
-      .slice(0, 5);
+      .sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
 
     const payload = {
       counts: counts,
       auditByAction: actionCounts,
+      hourlyActionTrend: {
+        labels: hourlyLabels,
+        data: hourlyData
+      },
       auditByModule: moduleCounts,
       loginTrend: {
         labels: dates,
