@@ -3052,6 +3052,7 @@
         
         if (loader) loader.classList.add('d-none');
         if (form) form.classList.remove('d-none');
+        this.toggleConfigEditMode(false);
       }).withFailureHandler((err) => {
         if (loader) loader.classList.add('d-none');
         alert('Gagal memuat konfigurasi: ' + err.message);
@@ -3140,6 +3141,7 @@
           
           // Reload
           this.renderConfigsPage();
+          this.toggleConfigEditMode(false);
         } else {
           this.showToast('Gagal', res.message, 'danger');
         }
@@ -3150,6 +3152,31 @@
         }
         this.showToast('Error', err.message, 'danger');
       }).apiUpdateConfigsBatch({ updates: updates, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    toggleConfigEditMode: function(isEdit) {
+      const inputs = document.querySelectorAll('#form-general-settings .config-input:not([type="hidden"])');
+      const logoActions = document.getElementById('config-logo-actions');
+      const formActions = document.getElementById('config-form-actions');
+      const editBtn = document.getElementById('btn-edit-configs');
+
+      if (isEdit) {
+        inputs.forEach(input => input.removeAttribute('readonly'));
+        if (logoActions) logoActions.classList.remove('d-none');
+        if (formActions) formActions.classList.remove('d-none');
+        if (formActions) formActions.classList.add('d-flex');
+        if (editBtn) editBtn.classList.add('d-none');
+      } else {
+        inputs.forEach(input => input.setAttribute('readonly', 'true'));
+        if (logoActions) logoActions.classList.add('d-none');
+        if (formActions) formActions.classList.add('d-none');
+        if (formActions) formActions.classList.remove('d-flex');
+        if (editBtn) {
+           editBtn.classList.remove('d-none');
+           // hide edit button if user doesn't have permission
+           if (!this.hasPermission('CONFIG_UPDATE')) editBtn.classList.add('d-none');
+        }
+      }
     },
 
     // AUDIT LOGS VIEW

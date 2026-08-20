@@ -9,6 +9,11 @@
         <span class="text-muted">Home</span> &gt; <span class="text-dark fw-medium">General Settings</span>
       </div>
     </div>
+    <div>
+      <button class="btn btn-primary px-3 fw-medium" id="btn-edit-configs" onclick="AEF.toggleConfigEditMode(true)">
+        <i class="bi bi-pencil me-1"></i> Edit Konfigurasi
+      </button>
+    </div>
   </div>
 
   <div class="aef-card">
@@ -23,7 +28,7 @@
       <div class="row align-items-center mb-3">
         <label for="config-APP_NAME" class="col-md-3 col-form-label fw-semibold text-dark">APP_NAME</label>
         <div class="col-md-9">
-          <input type="text" class="form-control config-input" id="config-APP_NAME" data-config-key="APP_NAME">
+          <input type="text" class="form-control config-input" id="config-APP_NAME" data-config-key="APP_NAME" readonly>
         </div>
       </div>
 
@@ -31,7 +36,7 @@
       <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
         <label for="config-APP_VERSION" class="col-md-3 col-form-label fw-semibold text-dark">APP_VERSION</label>
         <div class="col-md-9">
-          <input type="text" class="form-control config-input" id="config-APP_VERSION" data-config-key="APP_VERSION">
+          <input type="text" class="form-control config-input" id="config-APP_VERSION" data-config-key="APP_VERSION" readonly>
         </div>
       </div>
 
@@ -40,8 +45,8 @@
         <label for="config-SESSION_TIMEOUT" class="col-md-3 col-form-label fw-semibold text-dark">SESSION_TIMEOUT</label>
         <div class="col-md-9">
           <div class="input-group">
-            <input type="number" class="form-control config-input" id="config-SESSION_TIMEOUT" data-config-key="SESSION_TIMEOUT">
-            <span class="input-group-text bg-white border-start-0 text-muted" style="border-radius: 0 0.375rem 0.375rem 0;">(Menit)</span>
+            <input type="number" class="form-control config-input" id="config-SESSION_TIMEOUT" data-config-key="SESSION_TIMEOUT" readonly>
+            <span class="input-group-text bg-light border-start-0 text-muted" style="border-radius: 0 0.375rem 0.375rem 0;">(Menit)</span>
           </div>
         </div>
       </div>
@@ -50,7 +55,7 @@
       <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
         <label for="config-APP_CODE" class="col-md-3 col-form-label fw-semibold text-dark">APP_CODE</label>
         <div class="col-md-9">
-          <input type="text" class="form-control config-input" id="config-APP_CODE" data-config-key="APP_CODE">
+          <input type="text" class="form-control config-input" id="config-APP_CODE" data-config-key="APP_CODE" readonly>
         </div>
       </div>
 
@@ -62,7 +67,7 @@
             <img id="preview-APP_LOGO" src="" alt="Logo" style="max-width: 100%; max-height: 100%; display: none;">
             <i id="icon-APP_LOGO" class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
           </div>
-          <div>
+          <div id="config-logo-actions" class="d-none">
             <input type="file" id="file-APP_LOGO" class="d-none" accept="image/png, image/jpeg" onchange="AEF.handleLogoUpload(event)">
             <input type="hidden" class="config-input" id="config-APP_LOGO" data-config-key="APP_LOGO">
             <button type="button" class="btn btn-outline-primary btn-sm mb-1 px-3 py-1 fw-medium" onclick="document.getElementById('file-APP_LOGO').click();">
@@ -77,7 +82,7 @@
       <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
         <label for="config-SPREADSHEET_ID" class="col-md-3 col-form-label fw-semibold text-dark">SPREADSHEET_ID</label>
         <div class="col-md-9">
-          <input type="text" class="form-control config-input" id="config-SPREADSHEET_ID" data-config-key="SPREADSHEET_ID">
+          <input type="text" class="form-control config-input" id="config-SPREADSHEET_ID" data-config-key="SPREADSHEET_ID" readonly>
         </div>
       </div>
 
@@ -85,15 +90,15 @@
       <div class="row align-items-center mb-4 border-top border-light-subtle pt-3">
         <label for="config-DEFAULT_DASHBOARD_ROUTE" class="col-md-3 col-form-label fw-semibold text-dark">DEFAULT_DASHBOARD_ROUTE</label>
         <div class="col-md-9">
-          <input type="text" class="form-control config-input" id="config-DEFAULT_DASHBOARD_ROUTE" data-config-key="DEFAULT_DASHBOARD_ROUTE">
+          <input type="text" class="form-control config-input" id="config-DEFAULT_DASHBOARD_ROUTE" data-config-key="DEFAULT_DASHBOARD_ROUTE" readonly>
           <div class="form-text mt-1" style="font-size: 0.75rem;">Route halaman dashboard setelah login</div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="d-flex justify-content-end gap-2 pt-3 border-top border-light-subtle mt-4">
-        <button type="button" class="btn btn-outline-secondary px-4 fw-medium" onclick="AEF.renderConfigsPage()">
-          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+      <div id="config-form-actions" class="d-none justify-content-end gap-2 pt-3 border-top border-light-subtle mt-4">
+        <button type="button" class="btn btn-outline-secondary px-4 fw-medium" onclick="AEF.toggleConfigEditMode(false); AEF.renderConfigsPage();">
+          <i class="bi bi-x-lg me-1"></i> Batal
         </button>
         <button type="button" class="btn btn-primary px-4 fw-medium" id="btn-save-configs" onclick="AEF.saveGeneralSettings()">
           <i class="bi bi-save me-1"></i> Simpan
