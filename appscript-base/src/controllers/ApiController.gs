@@ -298,7 +298,9 @@ function apiDeleteMenu(payload) {
 // DASHBOARD ANALYTICS
 function apiGetDashboardData(payload) {
   try {
-    return new DashboardService().getDashboardData(payload ? payload.actor_id : 'SYSTEM');
+    const actorId = payload ? payload.actor_id : 'SYSTEM';
+    const forceRefresh = payload ? !!payload.force_refresh : false;
+    return new DashboardService().getDashboardData(actorId, forceRefresh);
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiGetDashboardData failed', err);
     return Response.error(err.message, 'SYSTEM_ERROR');

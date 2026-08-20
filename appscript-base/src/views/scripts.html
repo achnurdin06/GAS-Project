@@ -4103,7 +4103,7 @@
            const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
            datePill.innerText = now.toLocaleDateString('id-ID', options) + ' WIB';
         }
-      }).apiGetDashboardData({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+      }).apiGetDashboardData({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM', force_refresh: forceRefresh });
     },
 
     renderRecentActivitiesTop5: function () {

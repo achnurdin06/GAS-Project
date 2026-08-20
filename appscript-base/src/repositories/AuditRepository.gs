@@ -1,6 +1,7 @@
 class AuditRepository extends BaseRepository {
   constructor() {
-    super('log_audit');
+    // Disable cache for audit logs as they grow rapidly
+    super('log_audit', false);
   }
 
   getRecentLogs(limit = 100) {

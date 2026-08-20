@@ -5,9 +5,20 @@
 class BaseRepository {
   /**
    * @param {string} tableName - Sheet name (e.g. mst_user, sys_configuration)
+   * @param {boolean} useCache - Whether to use CacheService for this table (default true)
    */
-  constructor(tableName) {
+  constructor(tableName, useCache = true) {
     this.tableName = tableName;
+    this.useCache = useCache;
+  }
+
+  /**
+   * Clears the CacheService cache for this table
+   */
+  clearCache() {
+    if (this.useCache) {
+      CacheService.getScriptCache().remove('CACHE_TABLE_' + this.tableName);
+    }
   }
 
   /**
@@ -46,9 +57,24 @@ class BaseRepository {
 
   /**
    * Memory-First Batch Reading: Gets all rows as Object array
+   * Uses CacheService to optimize retrieval
    * @returns {Array<Object>}
    */
   readAll() {
+    const cacheKey = 'CACHE_TABLE_' + this.tableName;
+    const cache = CacheService.getScriptCache();
+
+    if (this.useCache) {
+      const cachedData = cache.get(cacheKey);
+      if (cachedData) {
+        try {
+          return JSON.parse(cachedData);
+        } catch (e) {
+          // If parse fails, proceed to read from sheet
+        }
+      }
+    }
+
     const sheet = this.getSheet();
     const lastRow = sheet.getLastRow();
     const lastCol = sheet.getLastColumn();
@@ -58,13 +84,27 @@ class BaseRepository {
     const headers = values[0].map(h => String(h).trim());
     const dataRows = values.slice(1);
 
-    return dataRows.map((row, rowIdx) => {
+    const result = dataRows.map((row, rowIdx) => {
       const item = { _rowIndex: rowIdx + 2 };
       headers.forEach((h, colIdx) => {
         item[h] = row[colIdx] !== undefined ? row[colIdx] : '';
       });
       return item;
     });
+
+    if (this.useCache) {
+      try {
+        const jsonResult = JSON.stringify(result);
+        // Cache limit is 100KB per key. Only cache if length is under ~90000 chars.
+        if (jsonResult.length < 90000) {
+          cache.put(cacheKey, jsonResult, 300); // cache for 5 minutes
+        }
+      } catch (e) {
+        // Silently ignore cache write errors (e.g. size exceeded)
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -115,6 +155,7 @@ class BaseRepository {
 
     const rowData = headers.map(h => record[h] !== undefined ? record[h] : '');
     sheet.appendRow(rowData);
+    this.clearCache();
     return record;
   }
 
@@ -139,6 +180,7 @@ class BaseRepository {
     const rowValues = headers.map(h => merged[h] !== undefined ? merged[h] : '');
 
     sheet.getRange(item._rowIndex, 1, 1, headers.length).setValues([rowValues]);
+    this.clearCache();
     return true;
   }
 
