@@ -35,7 +35,7 @@ function doGet(e) {
     const template = HtmlService.createTemplateFromFile('views/Index');
     const props = PropertiesService.getScriptProperties();
     template.appName = props.getProperty('APP_NAME') || 'AppScript Enterprise Framework';
-    template.appLogo = props.getProperty('APP_LOGO') || '';
+    template.appLogo = getAppLogo();
     
     return template.evaluate()
       .setTitle(template.appName)
@@ -48,6 +48,25 @@ function doGet(e) {
 }
 
 /**
+ * Gets APP_LOGO with database fallback
+ */
+function getAppLogo() {
+  let logo = PropertiesService.getScriptProperties().getProperty('APP_LOGO');
+  if (!logo) {
+    try {
+      const configRepo = new ConfigRepository();
+      const existing = configRepo.find(c => String(c.config_key).trim().toUpperCase() === 'APP_LOGO');
+      if (existing && existing.length > 0 && existing[0].config_value) {
+        logo = existing[0].config_value;
+      }
+    } catch (e) {
+      // Ignore if database not ready yet
+    }
+  }
+  return logo || '';
+}
+
+/**
  * Helper to include partial HTML files into templates
  * @param {string} filename 
  * @returns {string} File content
@@ -56,7 +75,7 @@ function include(filename) {
   const props = PropertiesService.getScriptProperties();
   const template = HtmlService.createTemplateFromFile(filename);
   template.appName = props.getProperty('APP_NAME') || 'AppScript Enterprise Framework';
-  template.appLogo = props.getProperty('APP_LOGO') || '';
+  template.appLogo = getAppLogo();
   return template.evaluate().getContent();
 }
 
