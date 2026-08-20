@@ -47,3 +47,25 @@ function runDashboardMigration() {
 
   return "Migration successful";
 }
+
+function runConfigMigration() {
+  const configRepo = new ConfigRepository();
+  
+  // Check if it already exists to avoid duplicates
+  const existing = configRepo.find(c => c.config_key === 'DEFAULT_DASHBOARD_ROUTE');
+  if (existing && existing.length > 0) {
+    return "Config already exists";
+  }
+  
+  configRepo.insert({
+    id: Utils.generateUuid(),
+    config_key: 'DEFAULT_DASHBOARD_ROUTE',
+    config_value: '/dashboard',
+    description: 'Rute default setelah login (misal: /dashboard atau /dashboard-2)',
+    created_at: Utils.formatIsoDate(),
+    created_by: 'SYSTEM',
+    status: 'ACTIVE'
+  });
+  
+  return "Config Migration successful";
+}

@@ -62,7 +62,7 @@
           this.state.permissions = parsed.permissions;
           this.showAppShell();
           this.loadSidebarMenu();
-          const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+          const defaultRoute = parsed.default_dashboard_route || '/dashboard';
           this.navigateTo(defaultRoute);
           return;
         } catch (e) {
@@ -162,7 +162,7 @@
               localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
               this.showAppShell();
               this.loadSidebarMenu();
-              const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+              const defaultRoute = res.data.default_dashboard_route || '/dashboard';
               this.navigateTo(defaultRoute);
             }
           } else {
@@ -209,7 +209,7 @@
 
             this.showAppShell();
             this.loadSidebarMenu();
-            const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+            const defaultRoute = res.data.default_dashboard_route || '/dashboard';
             this.navigateTo(defaultRoute);
           } else {
             errorAlert.innerText = res.message || 'Verification Failed';
@@ -497,24 +497,10 @@
             let html = '';
             
             // Fixed Dashboard link at top of sidebar
-            html += `
-              <a href="#" class="aef-nav-link" onclick="AEF.navigateTo('/dashboard'); return false;" id="nav-item-dashboard">
-                <div class="aef-nav-left">
-                  <i class="bi bi-grid-1x2-fill"></i>
-                  <span>Dashboard</span>
-                </div>
-              </a>
-            `;
-
             res.data.forEach(item => {
               const route = item.route || (item.slug ? '/' + item.slug : '#');
               const menuTitle = item.name || item.menu_name || item.code || 'Menu';
               const menuCode = item.code || item.menu_code || item.id;
-
-              // Ensure Dashboard is not duplicated
-              if (route === '/dashboard' || item.slug === 'dashboard' || item.menu_code === 'MENU_DASHBOARD' || menuTitle === 'Dashboard') {
-                return;
-              }
 
               // If the menu item has children (Parent Module), render section title & child items
               if (Array.isArray(item.children) && item.children.length > 0) {

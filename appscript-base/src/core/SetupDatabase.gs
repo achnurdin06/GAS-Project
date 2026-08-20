@@ -399,7 +399,8 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload) {
     { id: Utils.generateUuid(), config_key: 'APP_LOGO', config_value: adminPayload.appLogo || '', description: 'Application Brand Logo URL or Base64', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
     { id: Utils.generateUuid(), config_key: 'APP_VERSION', config_value: '1.0.0', description: 'Application Version', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
     { id: Utils.generateUuid(), config_key: 'SESSION_TIMEOUT', config_value: '28800', description: 'Session Timeout in Seconds', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
-    { id: Utils.generateUuid(), config_key: 'SPREADSHEET_ID', config_value: spreadsheetId, description: 'Google Spreadsheet ID Connection', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' }
+    { id: Utils.generateUuid(), config_key: 'SPREADSHEET_ID', config_value: spreadsheetId, description: 'Google Spreadsheet ID Connection', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' },
+    { id: Utils.generateUuid(), config_key: 'DEFAULT_DASHBOARD_ROUTE', config_value: '/dashboard', description: 'Rute default setelah login (misal: /dashboard atau /dashboard-2)', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM', status: 'ACTIVE' }
   ];
   initSheet('sys_configuration', configHeaders, configSeed, false);
 
