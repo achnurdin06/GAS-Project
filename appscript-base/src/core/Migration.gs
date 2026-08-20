@@ -99,3 +99,38 @@ function runLogoMigration() {
   
   return 'Logo Migration successful';
 }
+
+/**
+ * Migration: Update SESSION_TIMEOUT from seconds (28800) to minutes (10).
+ * Run this once from Apps Script Editor after deploying this update.
+ */
+function runSessionTimeoutMigration() {
+  const configRepo = new ConfigRepository();
+  const existing = configRepo.find(c => c.config_key === 'SESSION_TIMEOUT');
+
+  if (existing && existing.length > 0) {
+    const current = existing[0];
+    // If the value is >= 3600, it's likely still in seconds — convert to minutes
+    const currentVal = parseInt(current.config_value, 10);
+    if (!isNaN(currentVal) && currentVal >= 3600) {
+      configRepo.updateById(current.id, {
+        config_value: '10',
+        description: 'Session Timeout in Minutes (inactivity auto-logout)'
+      }, 'SYSTEM');
+      return 'SESSION_TIMEOUT updated from ' + currentVal + 's to 10 minutes';
+    }
+    return 'SESSION_TIMEOUT already in minutes format: ' + current.config_value;
+  }
+
+  // Create if not exists
+  configRepo.insert({
+    id: Utils.generateUuid(),
+    config_key: 'SESSION_TIMEOUT',
+    config_value: '10',
+    description: 'Session Timeout in Minutes (inactivity auto-logout)',
+    created_at: Utils.formatIsoDate(),
+    created_by: 'SYSTEM',
+    status: 'ACTIVE'
+  });
+  return 'SESSION_TIMEOUT config created with default 10 minutes';
+}

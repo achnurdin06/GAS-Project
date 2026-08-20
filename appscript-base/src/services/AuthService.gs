@@ -71,11 +71,21 @@ class AuthService {
 
     // Standard session initialization if 2FA is not enabled
     const token = Utils.generateUuid();
-    // Fetch configs for default dashboard route
+    // Fetch configs for default dashboard route and session timeout
     const configRepo = new ConfigRepository();
     const activeConfigs = configRepo.find(row => String(row.status).toUpperCase() === 'ACTIVE');
     const defaultDashConfig = activeConfigs.find(c => c.config_key && c.config_key.toUpperCase().includes('DASHBOARD'));
     const defaultDashboardRoute = defaultDashConfig ? defaultDashConfig.config_value : '/dashboard';
+
+    // Session timeout from config (default 10 minutes)
+    let sessionTimeoutMinutes = 10;
+    try {
+      const timeoutConfig = activeConfigs.find(c => c.config_key && c.config_key.toUpperCase() === 'SESSION_TIMEOUT');
+      if (timeoutConfig && timeoutConfig.config_value) {
+        const parsed = parseInt(timeoutConfig.config_value, 10);
+        if (!isNaN(parsed) && parsed > 0) sessionTimeoutMinutes = parsed;
+      }
+    } catch (e) {}
 
     const sessionData = {
       token: token,
@@ -88,6 +98,7 @@ class AuthService {
       },
       permissions: this.getUserPermissions(user.role_id),
       default_dashboard_route: defaultDashboardRoute,
+      session_timeout_minutes: sessionTimeoutMinutes,
       logged_in_at: Utils.formatIsoDate()
     };
 
@@ -135,6 +146,18 @@ class AuthService {
     } catch (e) {}
 
     const token = Utils.generateUuid();
+    // Read SESSION_TIMEOUT config for 2FA session
+    let sessionTimeoutMinutes2FA = 10;
+    try {
+      const cfgRepo = new ConfigRepository();
+      const cfgs = cfgRepo.find(r => String(r.status).toUpperCase() === 'ACTIVE');
+      const toCfg = cfgs.find(c => c.config_key && c.config_key.toUpperCase() === 'SESSION_TIMEOUT');
+      if (toCfg && toCfg.config_value) {
+        const p = parseInt(toCfg.config_value, 10);
+        if (!isNaN(p) && p > 0) sessionTimeoutMinutes2FA = p;
+      }
+    } catch (e) {}
+
     const sessionData = {
       token: token,
       user: {
@@ -145,6 +168,7 @@ class AuthService {
         profile_pic_url: user.profile_pic_url || ''
       },
       permissions: this.getUserPermissions(user.role_id),
+      session_timeout_minutes: sessionTimeoutMinutes2FA,
       logged_in_at: Utils.formatIsoDate()
     };
 

@@ -60,10 +60,14 @@
           this.state.user = parsed.user;
           this.state.session = parsed.session;
           this.state.permissions = parsed.permissions;
+          // Read session timeout
+          this.state.sessionTimeoutMinutes = parsed.session_timeout_minutes || 10;
+          this.state.loggedInAt = parsed.logged_in_at || new Date().toISOString();
           this.showAppShell();
           this.loadSidebarMenu();
           const defaultRoute = parsed.default_dashboard_route || '/dashboard';
           this.navigateTo(defaultRoute);
+          this.startIdleTimer();
           return;
         } catch (e) {
           localStorage.removeItem('AEF_AUTH_DATA');
@@ -159,11 +163,14 @@
               this.state.user = res.data.user;
               this.state.session = res.data.session;
               this.state.permissions = res.data.permissions;
+              this.state.sessionTimeoutMinutes = res.data.session_timeout_minutes || 10;
+              this.state.loggedInAt = res.data.logged_in_at || new Date().toISOString();
               localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
               this.showAppShell();
               this.loadSidebarMenu();
               const defaultRoute = res.data.default_dashboard_route || '/dashboard';
               this.navigateTo(defaultRoute);
+              this.startIdleTimer();
             }
           } else {
             errorAlert.innerText = res.message || 'Login Gagal';
@@ -200,6 +207,8 @@
             this.state.user = res.data.user;
             this.state.session = res.data.session;
             this.state.permissions = res.data.permissions;
+            this.state.sessionTimeoutMinutes = res.data.session_timeout_minutes || 10;
+            this.state.loggedInAt = res.data.logged_in_at || new Date().toISOString();
             localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
             
             document.getElementById('twofa-form-container').classList.add('d-none');
@@ -211,6 +220,7 @@
             this.loadSidebarMenu();
             const defaultRoute = res.data.default_dashboard_route || '/dashboard';
             this.navigateTo(defaultRoute);
+            this.startIdleTimer();
           } else {
             errorAlert.innerText = res.message || 'Verification Failed';
             errorAlert.classList.remove('d-none');
@@ -3808,24 +3818,18 @@
     },
 
     initDashboardChart: function () {
-      // Update My Information & Welcome Header
+      // Update Welcome Header (from localStorage state)
       if (this.state.user) {
         const u = this.state.user;
         const wTitle = document.getElementById('dash-welcome-title');
         if (wTitle) wTitle.innerText = `Welcome back, ${u.name || 'Administrator'}! 👋`;
-        
-        const iName = document.getElementById('info-user-name');
-        if (iName) iName.innerText = u.name || 'Administrator';
-
-        const iEmail = document.getElementById('info-user-email');
-        if (iEmail) iEmail.innerText = u.email || 'admin@example.com';
-
-        const iRole = document.getElementById('info-user-role');
-        if (iRole) iRole.innerText = u.role_id === 'ROLE_SUPER_ADMIN' ? 'Super Administrator' : (u.role_id || 'System Administrator');
-
-        const iLogin = document.getElementById('info-user-login');
-        if (iLogin) iLogin.innerText = new Date().toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'medium' }) + ' WIB';
       }
+
+      // Set system status indicator active
+      this.setSystemStatus(true);
+
+      // Initialize session countdown display
+      this.updateSessionCountdown();
 
       // Show loaders
       const spinnerHtml = '<span class="spinner-border spinner-border-sm text-muted" style="width:1.1rem; height:1.1rem;" role="status"></span>';
@@ -3838,10 +3842,8 @@
 
       const recentLoader = document.getElementById('recent-activity-loader');
       const recentList = document.getElementById('recent-activity-list');
-      const recentPag = document.getElementById('recent-activity-pagination');
       if (recentLoader) recentLoader.classList.remove('d-none');
       if (recentList) recentList.classList.add('d-none');
-      if (recentPag) recentPag.classList.add('d-none');
 
       google.script.run.withSuccessHandler((res) => {
         if (!res || !res.success || !res.data) return;
@@ -4080,13 +4082,34 @@
         renderSparkline('spark-perm', '#f97316', [counts.permissions || 0, counts.permissions || 0, counts.permissions || 0, counts.permissions || 0, counts.permissions || 0]);
         renderSparkline('spark-audit', '#0ea5e9', [Math.max(0, (counts.audit || 0) - 5), Math.max(0, (counts.audit || 0) - 2), counts.audit || 0, counts.audit || 0, counts.audit || 0]);
 
-        // Populate Recent Activities with pagination support
+        // Populate Recent Activities — top 5 only, no pagination
         this.state.dashboardRecentActivities = data.recentActivities || [];
-        this.state.dashboardRecentActivityPage = 1;
-        const limitEl = document.getElementById('recent-activity-limit');
-        this.state.dashboardRecentActivityLimit = limitEl ? parseInt(limitEl.value, 10) : 20;
-        this.renderRecentActivitiesPagination();
-        
+        this.state.dashboardRecentActivityLimit = 5;
+        this.renderRecentActivitiesTop5();
+
+        // Render real user info from server
+        if (data.currentUserInfo) {
+          const ui = data.currentUserInfo;
+          const iName = document.getElementById('info-user-name');
+          if (iName) iName.innerText = ui.name || 'Administrator';
+          const iEmail = document.getElementById('info-user-email');
+          if (iEmail) iEmail.innerText = ui.email || '-';
+          const iRole = document.getElementById('info-user-role');
+          if (iRole) iRole.innerText = ui.role_name || 'User';
+          const iLogin = document.getElementById('info-user-login');
+          if (iLogin) {
+            const lat = this.state.loggedInAt || new Date().toISOString();
+            try {
+              iLogin.innerText = new Date(lat).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' WIB';
+            } catch(e) { iLogin.innerText = lat; }
+          }
+        }
+
+        // Update session timeout from server (in case config changed)
+        if (data.sessionTimeoutMinutes) {
+          this.state.sessionTimeoutMinutes = data.sessionTimeoutMinutes;
+        }
+
         // Update Date Pill
         const datePill = document.getElementById('dash-date-pill');
         if (datePill) {
@@ -4097,44 +4120,22 @@
       }).apiGetDashboardData({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
-    renderRecentActivitiesPagination: function () {
+    renderRecentActivitiesTop5: function () {
       const allActivities = this.state.dashboardRecentActivities || [];
-      const limit = this.state.dashboardRecentActivityLimit || 20;
-      let page = this.state.dashboardRecentActivityPage || 1;
-      const total = allActivities.length;
-      const totalPages = Math.ceil(total / limit) || 1;
-
-      if (page > totalPages) page = totalPages;
-      if (page < 1) page = 1;
-      this.state.dashboardRecentActivityPage = page;
-
+      const limit = 5;
       const loader = document.getElementById('recent-activity-loader');
       const list = document.getElementById('recent-activity-list');
-      const pag = document.getElementById('recent-activity-pagination');
-      const info = document.getElementById('recent-activity-info');
-      const pageContainer = document.getElementById('recent-activity-pages');
 
       if (loader) loader.classList.add('d-none');
       if (list) list.classList.remove('d-none');
-      if (pag) pag.classList.remove('d-none');
-
       if (!list) return;
 
-      if (total === 0) {
+      if (allActivities.length === 0) {
         list.innerHTML = '<div class="text-muted small text-center p-3">Belum ada aktivitas.</div>';
-        if (info) info.innerText = '0 dari 0 aktivitas';
-        if (pageContainer) pageContainer.innerHTML = '';
         return;
       }
 
-      const startIndex = (page - 1) * limit;
-      const endIndex = Math.min(startIndex + limit, total);
-      const pageItems = allActivities.slice(startIndex, endIndex);
-
-      if (info) {
-        info.innerText = `${startIndex + 1}-${endIndex} dari ${total} aktivitas`;
-      }
-
+      const pageItems = allActivities.slice(0, limit);
       const bgColors = { 'LOGIN': 'bg-primary', 'LOGOUT': 'bg-warning', 'VIEW': 'bg-success', 'INSERT': 'bg-info', 'UPDATE': 'bg-purple', 'DELETE': 'bg-danger' };
       const icons = { 'LOGIN': 'bi-person-check', 'LOGOUT': 'bi-box-arrow-right', 'VIEW': 'bi-eye', 'INSERT': 'bi-plus-circle', 'UPDATE': 'bi-pencil', 'DELETE': 'bi-trash' };
 
@@ -4143,9 +4144,7 @@
         const actType = (act.action || 'VIEW').toUpperCase();
         let matchedType = 'VIEW';
         Object.keys(bgColors).forEach(k => { if (actType.includes(k)) matchedType = k; });
-
         const timeStr = act.timestamp ? new Date(act.timestamp).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' WIB' : '';
-
         html += `
           <div class="aef-recent-activity-item">
             <div class="aef-ra-icon ${bgColors[matchedType]}"><i class="bi ${icons[matchedType]}"></i></div>
@@ -4158,30 +4157,127 @@
         `;
       });
       list.innerHTML = html;
+    },
 
-      // Render pagination buttons
-      if (pageContainer) {
-        let btnHtml = '';
-        btnHtml += `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" ${page === 1 ? 'disabled' : ''} onclick="AEF.setRecentActivitiesPage(${page - 1})"><i class="bi bi-chevron-left"></i></button>`;
-        
-        btnHtml += `<span class="align-self-center px-1 text-muted fw-semibold" style="font-size:0.75rem;">Hal ${page} / ${totalPages}</span>`;
+    // ─── SESSION IDLE TIMER ───────────────────────────────────────────
 
-        btnHtml += `<button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.75rem;" ${page === totalPages ? 'disabled' : ''} onclick="AEF.setRecentActivitiesPage(${page + 1})"><i class="bi bi-chevron-right"></i></button>`;
-        pageContainer.innerHTML = btnHtml;
+    startIdleTimer: function () {
+      // Clear any existing timer
+      if (this._idleIntervalId) clearInterval(this._idleIntervalId);
+      if (this._idleWarningTimeout) clearTimeout(this._idleWarningTimeout);
+
+      this.state.lastActivityAt = Date.now();
+
+      // Listen to user activity events to reset idle clock
+      const resetIdle = () => { this.state.lastActivityAt = Date.now(); };
+      if (!this._idleListenersAttached) {
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => {
+          document.addEventListener(ev, resetIdle, { passive: true });
+        });
+        this._idleListenersAttached = true;
+      }
+
+      // Tick every second
+      this._idleIntervalId = setInterval(() => {
+        const timeoutMs = (this.state.sessionTimeoutMinutes || 10) * 60 * 1000;
+        const elapsed = Date.now() - (this.state.lastActivityAt || Date.now());
+        const remainingMs = Math.max(0, timeoutMs - elapsed);
+
+        // Update countdown UI
+        this.updateSessionCountdown(remainingMs);
+
+        // Auto-logout when time is up
+        if (remainingMs <= 0) {
+          clearInterval(this._idleIntervalId);
+          this.idleLogout();
+        }
+      }, 1000);
+    },
+
+    updateSessionCountdown: function (remainingMs) {
+      const timeoutMs = (this.state.sessionTimeoutMinutes || 10) * 60 * 1000;
+      if (remainingMs === undefined) {
+        const elapsed = Date.now() - (this.state.lastActivityAt || Date.now());
+        remainingMs = Math.max(0, timeoutMs - elapsed);
+      }
+
+      const totalSec = Math.floor(remainingMs / 1000);
+      const mins = Math.floor(totalSec / 60);
+      const secs = totalSec % 60;
+      const label = mins > 0
+        ? `${mins} menit ${secs.toString().padStart(2, '0')} detik tersisa`
+        : `${secs} detik tersisa`;
+
+      const pillEl = document.getElementById('dash-session-countdown');
+      if (pillEl) pillEl.innerText = label;
+
+      const infoEl = document.getElementById('info-session-remaining');
+      if (infoEl) infoEl.innerText = label;
+
+      // Warning at 1 minute remaining
+      if (totalSec <= 60 && totalSec > 0 && !this._idleWarnShown) {
+        this._idleWarnShown = true;
+        const toastHtml = `
+          <div id="idle-warning-toast" style="position:fixed;bottom:2rem;right:2rem;z-index:9999;background:#fff3cd;border:1px solid #ffc107;border-radius:12px;padding:1rem 1.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:320px;">
+            <div style="font-weight:700;color:#856404;margin-bottom:0.3rem;"><i class="bi bi-exclamation-triangle me-1"></i> Sesi Hampir Berakhir!</div>
+            <div style="font-size:0.85rem;color:#664d03;">Sesi Anda akan otomatis berakhir dalam 1 menit karena tidak ada aktivitas. Gerakkan mouse atau tekan tombol apapun untuk memperbarui sesi.</div>
+          </div>`;
+        if (!document.getElementById('idle-warning-toast')) {
+          document.body.insertAdjacentHTML('beforeend', toastHtml);
+          setTimeout(() => { const t = document.getElementById('idle-warning-toast'); if (t) t.remove(); }, 30000);
+        }
+      } else if (totalSec > 60) {
+        this._idleWarnShown = false;
+        const t = document.getElementById('idle-warning-toast');
+        if (t) t.remove();
       }
     },
 
-    setRecentActivitiesPage: function (page) {
-      this.state.dashboardRecentActivityPage = page;
-      this.renderRecentActivitiesPagination();
+    setSystemStatus: function (isActive) {
+      const dot = document.getElementById('dash-system-status-dot');
+      const text = document.getElementById('dash-system-status-text');
+      if (dot) dot.style.color = isActive ? '#4ade80' : '#ef4444';
+      if (text) text.innerText = isActive ? 'Sistem Aktif' : 'Sistem Off';
     },
 
-    changeRecentActivitiesLimit: function (limit) {
-      this.state.dashboardRecentActivityLimit = parseInt(limit, 10) || 20;
-      this.state.dashboardRecentActivityPage = 1;
-      this.renderRecentActivitiesPagination();
-    }
-  };
+    idleLogout: function () {
+      // Stop timers
+      if (this._idleIntervalId) clearInterval(this._idleIntervalId);
+      // Update system status to off
+      this.setSystemStatus(false);
+      // Remove toast
+      const t = document.getElementById('idle-warning-toast');
+      if (t) t.remove();
+
+      // Show notification
+      const toastHtml = `
+        <div id="idle-logout-toast" style="position:fixed;bottom:2rem;right:2rem;z-index:9999;background:#fee2e2;border:1px solid #ef4444;border-radius:12px;padding:1rem 1.5rem;box-shadow:0 4px 20px rgba(0,0,0,0.15);max-width:320px;">
+          <div style="font-weight:700;color:#991b1b;margin-bottom:0.3rem;"><i class="bi bi-shield-x me-1"></i> Sesi Berakhir</div>
+          <div style="font-size:0.85rem;color:#7f1d1d;">Anda telah logout otomatis karena tidak ada aktivitas selama ${this.state.sessionTimeoutMinutes || 10} menit.</div>
+        </div>`;
+      document.body.insertAdjacentHTML('beforeend', toastHtml);
+
+      // Perform logout and redirect to login after 2 seconds
+      setTimeout(() => {
+        const authData = JSON.parse(localStorage.getItem('AEF_AUTH_DATA') || '{}');
+        const token = authData.token;
+        localStorage.removeItem('AEF_AUTH_DATA');
+        this.state.user = null;
+        this.state.session = null;
+        this.state.permissions = [];
+        if (token) {
+          try {
+            google.script.run.apiLogout({ token: token, actor_id: authData.user ? authData.user.id : 'SYSTEM' });
+          } catch(e) {}
+        }
+        this.showLoginShell();
+        const logoutToast = document.getElementById('idle-logout-toast');
+        if (logoutToast) setTimeout(() => logoutToast.remove(), 4000);
+      }, 2000);
+    },
+
+
+  }; // end AEF object
 
   document.addEventListener('DOMContentLoaded', () => {
     AEF.init();

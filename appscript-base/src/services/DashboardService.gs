@@ -9,6 +9,7 @@ class DashboardService {
     this.permRepo = new PermissionRepository();
     this.menuRepo = new MenuRepository();
     this.auditRepo = new AuditRepository();
+    this.configRepo = new ConfigRepository();
   }
 
   getDashboardData(actorId = 'SYSTEM') {
@@ -116,26 +117,60 @@ class DashboardService {
       loginData.push(dayLogins);
     }
 
-    // 5. User Expiration Renewal Warning Check
+    // 5. User Expiration Renewal Warning Check + Current User Info
     let renewalWarning = null;
+    let currentUserInfo = null;
+
     if (actorId && actorId !== 'SYSTEM') {
       const currentUser = this.userRepo.findById(actorId);
-      if (currentUser && currentUser.expired_at) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiry = new Date(currentUser.expired_at);
-        expiry.setHours(0, 0, 0, 0);
-        const diffTime = expiry.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if (diffDays >= 0 && diffDays <= 30) {
-          renewalWarning = {
-            days_left: diffDays,
-            expired_at: currentUser.expired_at,
-            message: `Peringatan: Masa berlaku akun Anda akan habis dalam ${diffDays} hari (pada ${currentUser.expired_at}). Silakan lakukan perpanjangan akun.`
-          };
+      if (currentUser) {
+        // Renewal Warning
+        if (currentUser.expired_at) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const expiry = new Date(currentUser.expired_at);
+          expiry.setHours(0, 0, 0, 0);
+          const diffTime = expiry.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays >= 0 && diffDays <= 30) {
+            renewalWarning = {
+              days_left: diffDays,
+              expired_at: currentUser.expired_at,
+              message: `Peringatan: Masa berlaku akun Anda akan habis dalam ${diffDays} hari (pada ${currentUser.expired_at}). Silakan lakukan perpanjangan akun.`
+            };
+          }
         }
+
+        // Current User Info with real role_name
+        let roleName = currentUser.role_id || 'User';
+        try {
+          const roleRecord = this.roleRepo.findById(currentUser.role_id);
+          if (roleRecord && roleRecord.role_name) roleName = roleRecord.role_name;
+        } catch (e) {
+          roleName = currentUser.role_id || 'User';
+        }
+
+        currentUserInfo = {
+          name: currentUser.name || '',
+          email: currentUser.email || '',
+          role_name: roleName,
+          phone: currentUser.phone || '-',
+          status: currentUser.status || 'ACTIVE'
+        };
       }
     }
+
+    // 5b. Session Timeout from config
+    let sessionTimeoutMinutes = 10; // default
+    try {
+      const allConfigs = this.configRepo.find(r => String(r.status).toUpperCase() === 'ACTIVE');
+      const timeoutConfig = allConfigs.find(c => c.config_key && c.config_key.toUpperCase() === 'SESSION_TIMEOUT');
+      if (timeoutConfig && timeoutConfig.config_value) {
+        const parsed = parseInt(timeoutConfig.config_value, 10);
+        if (!isNaN(parsed) && parsed > 0) sessionTimeoutMinutes = parsed;
+      }
+    } catch (e) {}
+
 
     // 6. Activity Distribution for Donut Chart (Real Calculation)
     const activityDistribution = {
@@ -167,7 +202,9 @@ class DashboardService {
       },
       activityDistribution: activityDistribution,
       recentActivities: recentActivities,
-      renewalWarning: renewalWarning
+      renewalWarning: renewalWarning,
+      currentUserInfo: currentUserInfo,
+      sessionTimeoutMinutes: sessionTimeoutMinutes
     };
 
     return Response.success('Dashboard analytics fetched successfully', payload, 'DASHBOARD_DATA_SUCCESS');
