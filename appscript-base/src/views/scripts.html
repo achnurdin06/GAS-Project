@@ -3026,171 +3026,143 @@
     },
 
     renderConfigsPage: function () {
-      const showEdit = this.hasPermission('CONFIG_UPDATE') ? '' : 'd-none';
+      const loader = document.getElementById('configs-loader');
+      const form = document.getElementById('form-general-settings');
+      
+      if (loader) loader.classList.remove('d-none');
+      if (form) form.classList.add('d-none');
 
-      this.renderTablePagination('configs', (c) => `
-        <tr>
-          <td><code>${c.config_key}</code></td>
-          <td class="fw-bold text-primary">${c.config_value}</td>
-          <td>${c.description || '-'}</td>
-          <td>
-            <button class="btn btn-sm btn-light border text-muted ${showEdit}" onclick="AEF.openEditConfigModal('${c.id}')"><i class="bi bi-pencil me-1"></i> Edit</button>
-          </td>
-        </tr>
-      `, 'configs-table-body', 'configs-pagination-info', 'configs-pagination-controls');
-    },
-
-    openEditConfigModal: function (configId) {
-      const config = (this.configsCache || []).find(c => c.id === configId);
-      if (!config) return;
-      document.getElementById('edit-config-id').value = config.id;
-      document.getElementById('edit-config-key').value = config.config_key;
-      document.getElementById('edit-config-value').value = config.config_value;
-
-      const isLogo = (String(config.config_key).trim().toUpperCase() === 'APP_LOGO');
-      const logoSection = document.getElementById('edit-config-logo-section');
-      const valueLabel = document.getElementById('edit-config-value-label');
-      const previewImg = document.getElementById('logo-live-preview');
-      const infoSpan = document.getElementById('logo-file-info');
-
-      if (logoSection) {
-        if (isLogo) {
-          logoSection.classList.remove('d-none');
-          if (valueLabel) valueLabel.innerText = 'Logo Data URI / URL';
-          if (previewImg) previewImg.src = config.config_value || '';
-          if (infoSpan) infoSpan.innerText = config.config_value ? 'Logo aktif saat ini' : '';
+      // Refresh configs data
+      google.script.run.withSuccessHandler((res) => {
+        if (res.success && res.data) {
+          this.configsCache = res.data;
           
-          // Setup Drag and Drop
-          const dropzone = document.getElementById('logo-dropzone');
-          if (dropzone && !dropzone._dragInit) {
-            dropzone._dragInit = true;
-            ['dragenter', 'dragover'].forEach(eventName => {
-              dropzone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.style.borderColor = '#2563eb';
-                dropzone.style.backgroundColor = '#eff6ff';
-              }, false);
-            });
-            ['dragleave', 'drop'].forEach(eventName => {
-              dropzone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                dropzone.style.borderColor = '#cbd5e1';
-                dropzone.style.backgroundColor = '#f8fafc';
-              }, false);
-            });
-            dropzone.addEventListener('drop', (e) => {
-              const dt = e.dataTransfer;
-              const files = dt.files;
-              if (files && files.length > 0) {
-                AEF.processLogoFile(files[0]);
+          res.data.forEach(config => {
+            const input = document.getElementById('config-' + config.config_key);
+            if (input) {
+              input.value = config.config_value || '';
+              // Set the exact DB id so we know what to update
+              input.setAttribute('data-config-id', config.id);
+            }
+            
+            // Special handling for APP_LOGO
+            if (config.config_key === 'APP_LOGO') {
+              const preview = document.getElementById('preview-APP_LOGO');
+              const icon = document.getElementById('icon-APP_LOGO');
+              if (preview && icon) {
+                if (config.config_value) {
+                  preview.src = config.config_value;
+                  preview.style.display = 'block';
+                  icon.style.display = 'none';
+                } else {
+                  preview.style.display = 'none';
+                  icon.style.display = 'block';
+                }
               }
-            }, false);
-          }
-        } else {
-          logoSection.classList.add('d-none');
-          if (valueLabel) valueLabel.innerText = 'Config Value';
+            }
+          });
         }
-      }
-
-      this.showModal('editConfigModal');
+        
+        if (loader) loader.classList.add('d-none');
+        if (form) form.classList.remove('d-none');
+      }).withFailureHandler((err) => {
+        if (loader) loader.classList.add('d-none');
+        alert('Gagal memuat konfigurasi: ' + err.message);
+      }).apiGetConfigs();
     },
 
-    handleLogoFileUpload: function (event) {
+    handleLogoUpload: function (event) {
       const file = event.target.files && event.target.files[0];
-      if (file) {
-        this.processLogoFile(file);
-      }
-    },
+      if (!file) return;
 
-    processLogoFile: function (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('File harus berupa gambar (PNG, JPG, SVG, WebP)!');
+      // Validate size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file maksimal 2MB!');
+        event.target.value = '';
         return;
       }
+
+      // Validate type
+      if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+        alert('Format file harus PNG atau JPG!');
+        event.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          // Optimize dimensions to keep Base64 compact (max width 300px, max height 100px)
-          let targetW = img.width;
-          let targetH = img.height;
-          const maxW = 320;
-          const maxH = 100;
-          if (targetW > maxW || targetH > maxH) {
-            const ratio = Math.min(maxW / targetW, maxH / targetH);
-            targetW = Math.round(targetW * ratio);
-            targetH = Math.round(targetH * ratio);
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = targetW;
-          canvas.height = targetH;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, targetW, targetH);
-
-          // Use PNG to preserve transparency
-          const dataUrl = canvas.toDataURL('image/png');
-          document.getElementById('edit-config-value').value = dataUrl;
-          const preview = document.getElementById('logo-live-preview');
-          if (preview) preview.src = dataUrl;
-          const info = document.getElementById('logo-file-info');
-          if (info) info.innerText = `${file.name} (${targetW}x${targetH}px, ${(dataUrl.length / 1024).toFixed(1)} KB)`;
-        };
-        img.src = e.target.result;
+        const dataUrl = e.target.result;
+        
+        // Update hidden input
+        const input = document.getElementById('config-APP_LOGO');
+        if (input) input.value = dataUrl;
+        
+        // Update preview
+        const preview = document.getElementById('preview-APP_LOGO');
+        const icon = document.getElementById('icon-APP_LOGO');
+        if (preview && icon) {
+          preview.src = dataUrl;
+          preview.style.display = 'block';
+          icon.style.display = 'none';
+        }
       };
       reader.readAsDataURL(file);
     },
 
-    clearLogoInput: function () {
-      document.getElementById('edit-config-value').value = '';
-      const preview = document.getElementById('logo-live-preview');
-      if (preview) preview.src = '';
-      const fileInput = document.getElementById('logo-file-input');
-      if (fileInput) fileInput.value = '';
-      const info = document.getElementById('logo-file-info');
-      if (info) info.innerText = 'Logo direset (kosong)';
-    },
-
-    submitUpdateConfig: function () {
-      const id = document.getElementById('edit-config-id').value;
-      const key = document.getElementById('edit-config-key').value;
-      const val = document.getElementById('edit-config-value').value;
-      if (!id || !val) return alert('Konfigurasi tidak boleh kosong!');
-      
-      const submitBtn = document.querySelector('#form-edit-config button[type="submit"]');
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+    saveGeneralSettings: function () {
+      if (!this.hasPermission('CONFIG_UPDATE')) {
+        alert('Anda tidak memiliki izin untuk menyimpan konfigurasi!');
+        return;
       }
 
+      const btn = document.getElementById('btn-save-configs');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+      }
+
+      const inputs = document.querySelectorAll('.config-input');
+      const updates = [];
+      
+      inputs.forEach(input => {
+        const id = input.getAttribute('data-config-id');
+        const val = input.value;
+        if (id) {
+          updates.push({ config_id: id, config_value: val });
+        }
+      });
+
       google.script.run.withSuccessHandler((res) => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = 'Perbarui Konfigurasi';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan';
         }
         if (res.success) {
-          this.hideModal('editConfigModal');
-          this.loadConfigsTable();
+          this.showToast('Sukses', 'Konfigurasi berhasil disimpan.', 'success');
           
-          // If APP_LOGO updated, dynamically update the logos in sidebar and login page
-          if (String(key).trim().toUpperCase() === 'APP_LOGO') {
+          // Find APP_LOGO if updated and apply to sidebar
+          const logoUpdate = updates.find(u => {
+            const inp = document.querySelector(`.config-input[data-config-id="${u.config_id}"]`);
+            return inp && inp.getAttribute('data-config-key') === 'APP_LOGO';
+          });
+          
+          if (logoUpdate) {
             const sidebarLogo = document.getElementById('aef-brand-logo');
-            if (sidebarLogo) sidebarLogo.src = val;
-            const loginLogo = document.getElementById('login-brand-logo');
-            if (loginLogo) loginLogo.src = val;
+            if (sidebarLogo) sidebarLogo.src = logoUpdate.config_value;
           }
+          
+          // Reload
+          this.renderConfigsPage();
         } else {
-          alert('Gagal: ' + res.message);
+          this.showToast('Gagal', res.message, 'danger');
         }
       }).withFailureHandler((err) => {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = 'Perbarui Konfigurasi';
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan';
         }
-        alert('Error: ' + err.message);
-      }).apiUpdateConfig({ config_id: id, config_value: val, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+        this.showToast('Error', err.message, 'danger');
+      }).apiUpdateConfigsBatch({ updates: updates, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     // AUDIT LOGS VIEW

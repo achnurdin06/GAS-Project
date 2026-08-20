@@ -1,33 +1,105 @@
 <template id="tpl-config">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-      <h3 class="fw-bold mb-1" style="color: #181c32;">System Configuration</h3>
-      <p class="text-muted small mb-0">Kelola parameter variabel global sistem secara dinamis.</p>
-      <div class="aef-breadcrumb mt-1" style="font-size: 0.75rem; color: var(--aef-text-muted);"><span class="text-muted">Home</span> &gt; <span class="text-dark fw-medium">General Settings</span></div>
+      <h3 class="fw-bold mb-1" style="color: #181c32;">
+        <i class="bi bi-gear text-primary me-2"></i>General Setting
+      </h3>
+      <p class="text-muted small mb-0">Konfigurasi umum aplikasi</p>
+      <div class="aef-breadcrumb mt-1" style="font-size: 0.75rem; color: var(--aef-text-muted);">
+        <span class="text-muted">Home</span> &gt; <span class="text-dark fw-medium">General Settings</span>
+      </div>
     </div>
   </div>
 
   <div class="aef-card">
-    <div class="table-responsive">
-      <table class="table table-aef align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Config Key</th>
-            <th>Value</th>
-            <th>Deskripsi</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="configs-table-body">
-          <!-- Dynamically populated -->
-        </tbody>
-      </table>
+    <div id="configs-loader" class="text-center py-5 text-muted">
+      <div class="spinner-border spinner-border-sm text-primary mb-2 d-block mx-auto" role="status"></div>
+      <span style="font-size: 0.8rem;">Memuat konfigurasi...</span>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-light-subtle">
-      <div class="text-muted small" id="configs-pagination-info">Memuat entri...</div>
-      <ul class="pagination pagination-sm mb-0" id="configs-pagination-controls"></ul>
-    </div>
+    <form id="form-general-settings" class="d-none">
+      
+      <!-- APP_NAME -->
+      <div class="row align-items-center mb-3">
+        <label for="config-APP_NAME" class="col-md-3 col-form-label fw-semibold text-dark">APP_NAME</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control config-input" id="config-APP_NAME" data-config-key="APP_NAME">
+        </div>
+      </div>
+
+      <!-- APP_VERSION -->
+      <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
+        <label for="config-APP_VERSION" class="col-md-3 col-form-label fw-semibold text-dark">APP_VERSION</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control config-input" id="config-APP_VERSION" data-config-key="APP_VERSION">
+        </div>
+      </div>
+
+      <!-- SESSION_TIMEOUT -->
+      <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
+        <label for="config-SESSION_TIMEOUT" class="col-md-3 col-form-label fw-semibold text-dark">SESSION_TIMEOUT</label>
+        <div class="col-md-9">
+          <div class="input-group">
+            <input type="number" class="form-control config-input" id="config-SESSION_TIMEOUT" data-config-key="SESSION_TIMEOUT">
+            <span class="input-group-text bg-white border-start-0 text-muted" style="border-radius: 0 0.375rem 0.375rem 0;">(Menit)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- APP_CODE -->
+      <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
+        <label for="config-APP_CODE" class="col-md-3 col-form-label fw-semibold text-dark">APP_CODE</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control config-input" id="config-APP_CODE" data-config-key="APP_CODE">
+        </div>
+      </div>
+
+      <!-- APP_LOGO -->
+      <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
+        <label class="col-md-3 col-form-label fw-semibold text-dark">APP_LOGO</label>
+        <div class="col-md-9 d-flex align-items-center gap-3">
+          <div style="width: 70px; height: 70px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
+            <img id="preview-APP_LOGO" src="" alt="Logo" style="max-width: 100%; max-height: 100%; display: none;">
+            <i id="icon-APP_LOGO" class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
+          </div>
+          <div>
+            <input type="file" id="file-APP_LOGO" class="d-none" accept="image/png, image/jpeg" onchange="AEF.handleLogoUpload(event)">
+            <input type="hidden" class="config-input" id="config-APP_LOGO" data-config-key="APP_LOGO">
+            <button type="button" class="btn btn-outline-primary btn-sm mb-1 px-3 py-1 fw-medium" onclick="document.getElementById('file-APP_LOGO').click();">
+              <i class="bi bi-upload me-1"></i> Upload Logo
+            </button>
+            <div class="small text-muted" style="font-size: 0.75rem;">Format: PNG/JPG, Maks. 2MB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPREADSHEET_ID -->
+      <div class="row align-items-center mb-3 border-top border-light-subtle pt-3">
+        <label for="config-SPREADSHEET_ID" class="col-md-3 col-form-label fw-semibold text-dark">SPREADSHEET_ID</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control config-input" id="config-SPREADSHEET_ID" data-config-key="SPREADSHEET_ID">
+        </div>
+      </div>
+
+      <!-- DEFAULT_DASHBOARD_ROUTE -->
+      <div class="row align-items-center mb-4 border-top border-light-subtle pt-3">
+        <label for="config-DEFAULT_DASHBOARD_ROUTE" class="col-md-3 col-form-label fw-semibold text-dark">DEFAULT_DASHBOARD_ROUTE</label>
+        <div class="col-md-9">
+          <input type="text" class="form-control config-input" id="config-DEFAULT_DASHBOARD_ROUTE" data-config-key="DEFAULT_DASHBOARD_ROUTE">
+          <div class="form-text mt-1" style="font-size: 0.75rem;">Route halaman dashboard setelah login</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="d-flex justify-content-end gap-2 pt-3 border-top border-light-subtle mt-4">
+        <button type="button" class="btn btn-outline-secondary px-4 fw-medium" onclick="AEF.renderConfigsPage()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+        </button>
+        <button type="button" class="btn btn-primary px-4 fw-medium" id="btn-save-configs" onclick="AEF.saveGeneralSettings()">
+          <i class="bi bi-save me-1"></i> Simpan
+        </button>
+      </div>
+
+    </form>
   </div>
 </template>

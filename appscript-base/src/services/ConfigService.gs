@@ -33,5 +33,23 @@ class ConfigService {
     this.auditService.log('CONFIG', 'UPDATE', 'SUCCESS', actorId, `Config ${existing.config_key} updated to ${newValue}`, configId, existing.config_value, newValue);
     return Response.success('Konfigurasi berhasil diperbarui', null, 'CONFIG_UPDATE_SUCCESS');
   }
+
+  updateConfigsBatch(updates, actorId = 'SYSTEM') {
+    if (!Array.isArray(updates)) {
+      return Response.error('Format data tidak valid', 'VALIDATION_ERROR');
+    }
+    
+    let successCount = 0;
+    for (const update of updates) {
+      const res = this.updateConfig(update.config_id, update.config_value, actorId);
+      if (res.success) successCount++;
+    }
+    
+    if (successCount === updates.length) {
+      return Response.success('Semua konfigurasi berhasil disimpan', null, 'CONFIG_BATCH_SUCCESS');
+    } else {
+      return Response.success(`Berhasil menyimpan ${successCount} dari ${updates.length} konfigurasi`, null, 'CONFIG_BATCH_PARTIAL');
+    }
+  }
 }
 

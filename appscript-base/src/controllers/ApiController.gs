@@ -235,6 +235,16 @@ function apiUpdateConfig(payload) {
   }
 }
 
+function apiUpdateConfigsBatch(payload) {
+  try {
+    checkApiPermission(payload, 'CONFIG_UPDATE');
+    return new ConfigService().updateConfigsBatch(payload.updates, payload ? payload.actor_id : 'SYSTEM');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateConfigsBatch failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
 // AUDIT LOGS
 function apiGetAuditLogs(payload) {
   try {
