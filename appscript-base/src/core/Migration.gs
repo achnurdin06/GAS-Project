@@ -4,7 +4,7 @@ function runDashboardMigration() {
   
   // Create Permission
   const newPermId = Utils.generateUuid();
-  permRepo.create({
+  permRepo.insert({
     id: newPermId,
     role_id: 'ROLE_USER',
     permission_code: 'DASHBOARD2_VIEW',
@@ -16,7 +16,7 @@ function runDashboardMigration() {
   
   // Ensure Super Admin and Admin also get the permission
   ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].forEach(rId => {
-    permRepo.create({
+    permRepo.insert({
       id: Utils.generateUuid(),
       role_id: rId,
       permission_code: 'DASHBOARD2_VIEW',
@@ -28,7 +28,7 @@ function runDashboardMigration() {
   });
 
   // Create Menu
-  menuRepo.create({
+  menuRepo.insert({
     menu_id: Utils.generateUuid(),
     parent_id: '',
     menu_code: 'MENU_DASHBOARD_2',
