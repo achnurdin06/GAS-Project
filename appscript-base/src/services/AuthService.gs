@@ -71,6 +71,12 @@ class AuthService {
 
     // Standard session initialization if 2FA is not enabled
     const token = Utils.generateUuid();
+    // Fetch configs for default dashboard route
+    const configRepo = new ConfigRepository();
+    const activeConfigs = configRepo.find(row => String(row.status).toUpperCase() === 'ACTIVE');
+    const defaultDashConfig = activeConfigs.find(c => c.config_key && c.config_key.toUpperCase().includes('DASHBOARD'));
+    const defaultDashboardRoute = defaultDashConfig ? defaultDashConfig.config_value : '/dashboard';
+
     const sessionData = {
       token: token,
       user: {
@@ -81,6 +87,7 @@ class AuthService {
         profile_pic_url: user.profile_pic_url || ''
       },
       permissions: this.getUserPermissions(user.role_id),
+      default_dashboard_route: defaultDashboardRoute,
       logged_in_at: Utils.formatIsoDate()
     };
 

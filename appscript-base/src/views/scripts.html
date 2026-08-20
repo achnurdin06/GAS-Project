@@ -62,7 +62,8 @@
           this.state.permissions = parsed.permissions;
           this.showAppShell();
           this.loadSidebarMenu();
-          this.navigateTo('/dashboard');
+          const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+          this.navigateTo(defaultRoute);
           return;
         } catch (e) {
           localStorage.removeItem('AEF_AUTH_DATA');
@@ -161,7 +162,8 @@
               localStorage.setItem('AEF_AUTH_DATA', JSON.stringify(res.data));
               this.showAppShell();
               this.loadSidebarMenu();
-              this.navigateTo('/dashboard');
+              const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+              this.navigateTo(defaultRoute);
             }
           } else {
             errorAlert.innerText = res.message || 'Login Gagal';
@@ -207,7 +209,8 @@
 
             this.showAppShell();
             this.loadSidebarMenu();
-            this.navigateTo('/dashboard');
+            const defaultRoute = this.state.session.default_dashboard_route || '/dashboard';
+            this.navigateTo(defaultRoute);
           } else {
             errorAlert.innerText = res.message || 'Verification Failed';
             errorAlert.classList.remove('d-none');
@@ -639,6 +642,8 @@
       if (route === '/dashboard') {
         contentCanvas.innerHTML = document.getElementById('tpl-dashboard').innerHTML;
         this.initDashboardChart();
+      } else if (route === '/dashboard-2') {
+        contentCanvas.innerHTML = document.getElementById('tpl-dashboard-2').innerHTML;
       } else if (route === '/users') {
         contentCanvas.innerHTML = document.getElementById('tpl-users').innerHTML;
         this.loadUsersTable();
@@ -3814,12 +3819,12 @@
         const actionBoxesContainer = document.getElementById('action-metric-boxes');
         if (actionBoxesContainer) {
           actionBoxesContainer.innerHTML = `
-            <div class="aef-metric-box"><div class="icon" style="color:#2563eb;"><i class="bi bi-person-check-fill"></i></div><div class="val">${actions.LOGIN||0}</div><div class="lbl">LOGIN</div></div>
-            <div class="aef-metric-box"><div class="icon" style="color:#10b981;"><i class="bi bi-eye-fill"></i></div><div class="val">${actions.VIEW||0}</div><div class="lbl">VIEW</div></div>
-            <div class="aef-metric-box"><div class="icon" style="color:#8b5cf6;"><i class="bi bi-plus-circle-fill"></i></div><div class="val">${actions.INSERT||0}</div><div class="lbl">INSERT</div></div>
-            <div class="aef-metric-box"><div class="icon" style="color:#f97316;"><i class="bi bi-pencil-fill"></i></div><div class="val">${actions.UPDATE||0}</div><div class="lbl">UPDATE</div></div>
-            <div class="aef-metric-box"><div class="icon" style="color:#ef4444;"><i class="bi bi-trash-fill"></i></div><div class="val">${actions.DELETE||0}</div><div class="lbl">DELETE</div></div>
-            <div class="aef-metric-box"><div class="icon" style="color:#14b8a6;"><i class="bi bi-box-arrow-right"></i></div><div class="val">${actions.LOGOUT||0}</div><div class="lbl">LOGOUT</div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#eff6ff; color:#2563eb;"><i class="bi bi-box-arrow-in-right"></i></div><div class="info"><div class="val">${actions.LOGIN||0}</div><div class="lbl">LOGIN</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#dcfce7; color:#10b981;"><i class="bi bi-eye-fill"></i></div><div class="info"><div class="val">${actions.VIEW||0}</div><div class="lbl">VIEW</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ede9fe; color:#8b5cf6;"><i class="bi bi-plus-circle-fill"></i></div><div class="info"><div class="val">${actions.INSERT||0}</div><div class="lbl">INSERT</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ffedd5; color:#f97316;"><i class="bi bi-pencil-fill"></i></div><div class="info"><div class="val">${actions.UPDATE||0}</div><div class="lbl">UPDATE</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#fee2e2; color:#ef4444;"><i class="bi bi-trash-fill"></i></div><div class="info"><div class="val">${actions.DELETE||0}</div><div class="lbl">DELETE</div></div></div>
+            <div class="aef-metric-box"><div class="icon" style="background:#ccfbf1; color:#14b8a6;"><i class="bi bi-box-arrow-right"></i></div><div class="info"><div class="val">${actions.LOGOUT||0}</div><div class="lbl">LOGOUT</div></div></div>
           `;
         }
 
