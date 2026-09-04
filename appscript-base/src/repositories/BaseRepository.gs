@@ -2,6 +2,8 @@
  * Base Repository Class for AppScript Enterprise Framework (AEF)
  * Implements Memory-First Batch I/O for Google Spreadsheets
  */
+let _globalSpreadsheetCache = null;
+
 class BaseRepository {
   /**
    * @param {string} tableName - Sheet name (e.g. mst_user, sys_configuration)
@@ -25,6 +27,10 @@ class BaseRepository {
    * Gets Spreadsheet reference with standalone fallback
    */
   getSpreadsheet() {
+    if (_globalSpreadsheetCache) {
+      return _globalSpreadsheetCache;
+    }
+
     let ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) {
       const props = PropertiesService.getScriptProperties();
@@ -40,6 +46,8 @@ class BaseRepository {
     if (!ss) {
       throw new Error(`Spreadsheet database not initialized for table: ${this.tableName}. Please run setupDatabase() first.`);
     }
+    
+    _globalSpreadsheetCache = ss;
     return ss;
   }
 
