@@ -13,35 +13,70 @@ function apiCheckSetupStatus() {
 function apiAutoCreateDb() {
   try {
     const result = autoCreateDatabaseFolderAndSheet();
-    return Response.success('Database Google Drive berhasil dibuat secara otomatis', result, 'SETUP_DB_CREATE_SUCCESS');
+    const cleanResult = {
+      spreadsheet_id: result.spreadsheet_id,
+      spreadsheetId: result.spreadsheet_id,
+      spreadsheet_url: result.spreadsheet_url,
+      url: result.spreadsheet_url,
+      folder_name: result.folder_name,
+      name: 'AEF Enterprise Database File'
+    };
+    return {
+      success: true,
+      message: 'Database Google Drive berhasil dibuat secara otomatis',
+      code: 'SETUP_DB_CREATE_SUCCESS',
+      data: cleanResult
+    };
   } catch (err) {
-    LoggerUtil.error('SetupController', 'apiAutoCreateDb failed', err);
-    return Response.error(err.message, 'SYSTEM_ERROR');
+    if (typeof LoggerUtil !== 'undefined') {
+      LoggerUtil.error('SetupController', 'apiAutoCreateDb failed', err);
+    }
+    return {
+      success: false,
+      message: err.message || String(err),
+      code: 'SYSTEM_ERROR'
+    };
   }
 }
 
 function apiVerifySpreadsheetId(spreadsheetId) {
   try {
     if (!spreadsheetId) {
-      return Response.error('Spreadsheet ID wajib diisi', 'VALIDATION_ERROR');
+      return {
+        success: false,
+        message: 'Spreadsheet ID wajib diisi',
+        code: 'VALIDATION_ERROR'
+      };
     }
-    let cleanId = String(spreadsheetId).trim();
+    let cleanId = String(spreadsheetId).trim().replace(/^["']|["']$/g, '');
     // Extract ID if full Google Sheet URL is provided
     const match = cleanId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-    if (match) {
+    if (match && match[1]) {
       cleanId = match[1];
     }
 
     const ss = SpreadsheetApp.openById(cleanId);
     PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', cleanId);
-    return Response.success('Spreadsheet berhasil diverifikasi dan terhubung', {
-      spreadsheet_id: cleanId,
-      name: ss.getName(),
-      url: ss.getUrl()
-    }, 'SPREADSHEET_VERIFIED');
+    return {
+      success: true,
+      message: 'Spreadsheet berhasil diverifikasi dan terhubung',
+      code: 'SPREADSHEET_VERIFIED',
+      data: {
+        spreadsheet_id: cleanId,
+        spreadsheetId: cleanId,
+        name: ss.getName(),
+        url: ss.getUrl()
+      }
+    };
   } catch (err) {
-    LoggerUtil.error('SetupController', 'apiVerifySpreadsheetId failed', err);
-    return Response.error('Gagal mengakses spreadsheet: ' + err.message, 'ACCESS_ERROR');
+    if (typeof LoggerUtil !== 'undefined') {
+      LoggerUtil.error('SetupController', 'apiVerifySpreadsheetId failed', err);
+    }
+    return {
+      success: false,
+      message: 'Gagal mengakses spreadsheet: ' + (err.message || String(err)),
+      code: 'ACCESS_ERROR'
+    };
   }
 }
 

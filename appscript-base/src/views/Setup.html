@@ -318,13 +318,40 @@
 <script>
   let currentStep = 1;
   let connectedSpreadsheetId = "";
-  let serverSetupState = null;
+  let serverSetupState = {};
+
+  <? if (typeof setupState !== 'undefined' && setupState) { ?>
+    try {
+      serverSetupState = <?!= setupState ?>;
+    } catch (e) {
+      console.warn("Could not parse setupState", e);
+    }
+  <? } ?>
 
   document.addEventListener("DOMContentLoaded", function() {
-    try {
-      serverSetupState = JSON.parse('<?= typeof setupState !== "undefined" ? setupState : "{}" ?>');
-    } catch (e) {
-      serverSetupState = {};
+    // Attach explicit click listeners in case inline onclick is restricted by iframe CSP
+    const btnVerify = document.getElementById("btn-verify-db");
+    if (btnVerify) {
+      btnVerify.addEventListener("click", function(e) {
+        e.preventDefault();
+        verifySpreadsheetConnection();
+      });
+    }
+
+    const btnAuto = document.getElementById("btn-auto-create-db");
+    if (btnAuto) {
+      btnAuto.addEventListener("click", function(e) {
+        e.preventDefault();
+        autoCreateDatabase();
+      });
+    }
+
+    const btnNext1 = document.getElementById("btn-next-1");
+    if (btnNext1) {
+      btnNext1.addEventListener("click", function(e) {
+        e.preventDefault();
+        handleStep1Next();
+      });
     }
 
     // Pre-fill admin email if active Google user is detected
@@ -347,7 +374,7 @@
 
   function extractSpreadsheetId(val) {
     if (!val) return "";
-    let clean = String(val).trim();
+    let clean = String(val).trim().replace(/^["']|["']$/g, '');
     // Match Google Spreadsheet URL: /spreadsheets/d/<ID>/...
     const match = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
     if (match && match[1]) {
@@ -366,7 +393,7 @@
       if (cleanId) {
         statusBadge.className = "badge bg-warning text-dark";
         statusBadge.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>Belum Diuji`;
-        statusDesc.innerHTML = `Spreadsheet ID dimasukkan: <code>${cleanId}</code>. Silakan klik <strong>Uji Koneksi</strong> atau lanjutkan langkah.`;
+        statusDesc.innerHTML = `Spreadsheet ID dimasukkan: <code>${cleanId}</code>. Klik tombol <strong>Uji Koneksi</strong> untuk memverifikasi.`;
       } else {
         connectedSpreadsheetId = "";
         statusBadge.className = "badge bg-secondary";
@@ -377,13 +404,45 @@
     }
   }
 
+  function showError(msg) {
+    const container = document.getElementById("alert-container");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-octagon-fill fs-5 me-2"></i>
+        <div class="flex-grow-1">${msg}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function showSuccess(msg) {
+    const container = document.getElementById("alert-container");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+        <div class="flex-grow-1">${msg}</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    `;
+  }
+
+  function clearAlert() {
+    const container = document.getElementById("alert-container");
+    if (container) container.innerHTML = "";
+  }
+
   function verifySpreadsheetConnection(onComplete) {
+    clearAlert();
     const input = document.getElementById("spreadsheet-id-input");
     const rawVal = input ? input.value : "";
     const cleanId = extractSpreadsheetId(rawVal);
 
     if (!cleanId) {
-      alert("Harap masukkan Spreadsheet ID atau URL Google Sheets terlebih dahulu.");
+      showError("Harap masukkan Spreadsheet ID atau URL Google Sheets terlebih dahulu.");
+      if (input) input.focus();
       if (typeof onComplete === 'function') onComplete(false);
       return;
     }
@@ -408,7 +467,7 @@
 
     statusBadge.className = "badge bg-info text-white";
     statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menguji Koneksi...`;
-    statusDesc.innerText = "Memverifikasi akses ke Google Spreadsheet ID: " + cleanId;
+    statusDesc.innerHTML = `Memverifikasi akses ke Google Spreadsheet ID: <code>${cleanId}</code>...`;
 
     google.script.run
       .withSuccessHandler(function(response) {
@@ -422,11 +481,13 @@
           statusBadge.className = "badge bg-success";
           statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Terhubung`;
           const sheetInfo = response.data || {};
-          statusDesc.innerHTML = `Spreadsheet <strong>"${sheetInfo.name || 'AEF Database'}"</strong> berhasil diverifikasi dan siap digunakan.`;
-          if (dbSheetName) dbSheetName.innerText = sheetInfo.name || cleanId;
+          const sheetName = sheetInfo.name || "AEF Enterprise Database File";
+          const sheetUrl = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
+          statusDesc.innerHTML = `Spreadsheet <strong>"${sheetName}"</strong> berhasil diverifikasi dan siap digunakan.`;
+          if (dbSheetName) dbSheetName.innerText = sheetName;
           if (dbSheetLink) {
-            dbSheetLink.href = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
-            dbSheetLink.innerText = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
+            dbSheetLink.href = sheetUrl;
+            dbSheetLink.innerText = sheetUrl;
           }
           if (dbDetails) dbDetails.classList.remove("d-none");
           if (typeof onComplete === 'function') onComplete(true);
@@ -434,7 +495,8 @@
           connectedSpreadsheetId = "";
           statusBadge.className = "badge bg-danger";
           statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Gagal`;
-          statusDesc.innerText = response ? (response.message || "Spreadsheet tidak dapat diakses") : "Koneksi gagal";
+          const errText = response ? (response.message || "Spreadsheet tidak dapat diakses") : "Koneksi gagal";
+          statusDesc.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>${errText}</span>`;
           if (dbDetails) dbDetails.classList.add("d-none");
           if (typeof onComplete === 'function') onComplete(false);
         }
@@ -447,7 +509,7 @@
         connectedSpreadsheetId = "";
         statusBadge.className = "badge bg-danger";
         statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Error`;
-        statusDesc.innerText = "Gagal memanggil backend: " + (err.message || err);
+        statusDesc.innerHTML = `<span class="text-danger">Gagal memanggil backend: ${err.message || err}</span>`;
         if (dbDetails) dbDetails.classList.add("d-none");
         if (typeof onComplete === 'function') onComplete(false);
       })
@@ -455,12 +517,14 @@
   }
 
   function handleStep1Next() {
+    clearAlert();
     const input = document.getElementById("spreadsheet-id-input");
     const rawVal = input ? input.value : "";
     const cleanId = extractSpreadsheetId(rawVal);
 
     if (!cleanId) {
-      alert("Harap masukkan Spreadsheet ID atau klik 'Buat Spreadsheet Baru Otomatis' terlebih dahulu.");
+      showError("Harap masukkan Spreadsheet ID atau klik 'Buat Spreadsheet Baru Otomatis' terlebih dahulu.");
+      if (input) input.focus();
       return;
     }
 
@@ -484,16 +548,13 @@
       if (success) {
         nextStep(2);
       } else {
-        alert("Verifikasi Spreadsheet gagal. Pastikan ID benar dan akun Google Anda memiliki hak akses Edit ke file tersebut.");
+        showError("Verifikasi Spreadsheet gagal. Pastikan ID benar dan akun Google Anda memiliki hak akses Edit ke file tersebut.");
       }
     });
   }
 
   function autoCreateDatabase() {
-    if (!confirm("Buat file Google Spreadsheet database baru secara otomatis di Google Drive Anda?")) {
-      return;
-    }
-
+    clearAlert();
     const statusBadge = document.getElementById("db-status-badge");
     const statusDesc = document.getElementById("db-status-desc");
     const progressBar = document.getElementById("db-progress-bar");
@@ -504,47 +565,68 @@
     const spreadsheetInput = document.getElementById("spreadsheet-id-input");
     const btnAutoCreate = document.getElementById("btn-auto-create-db");
 
-    if (btnAutoCreate) btnAutoCreate.disabled = true;
+    const originalBtnHtml = btnAutoCreate ? btnAutoCreate.innerHTML : "";
+    if (btnAutoCreate) {
+      btnAutoCreate.disabled = true;
+      btnAutoCreate.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Membuat di Drive...`;
+    }
     if (progressContainer) progressContainer.classList.remove("d-none");
     if (progressBar) progressBar.style.width = "45%";
 
     statusBadge.className = "badge bg-warning text-dark px-3 py-2";
     statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Membuat Database di Drive...`;
-    statusDesc.innerText = "Sedang menyiapkan folder dan file spreadsheet di Google Drive...";
+    statusDesc.innerText = "Sedang menyiapkan folder dan file spreadsheet di Google Drive Anda...";
 
     google.script.run
       .withSuccessHandler(function(response) {
-        if (btnAutoCreate) btnAutoCreate.disabled = false;
+        if (btnAutoCreate) {
+          btnAutoCreate.disabled = false;
+          btnAutoCreate.innerHTML = originalBtnHtml;
+        }
+
         if (response && response.success) {
-          connectedSpreadsheetId = response.spreadsheetId;
-          if (spreadsheetInput) spreadsheetInput.value = response.spreadsheetId;
+          const data = response.data || {};
+          const newId = data.spreadsheet_id || data.spreadsheetId || response.spreadsheetId || "";
+          const newName = data.name || response.name || "AEF Enterprise Database File";
+          const newUrl = data.spreadsheet_url || data.url || (newId ? `https://docs.google.com/spreadsheets/d/${newId}/edit` : "#");
+
+          connectedSpreadsheetId = newId;
+          if (spreadsheetInput) spreadsheetInput.value = newId;
           if (response.email) {
             const adminEmail = document.getElementById("admin-email");
             if (adminEmail && !adminEmail.value) adminEmail.value = response.email;
           }
+
           statusBadge.className = "badge bg-success px-3 py-2";
           statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Terhubung`;
-          statusDesc.innerText = "Spreadsheet '" + response.name + "' berhasil dibuat di Google Drive.";
+          statusDesc.innerHTML = `Spreadsheet <strong>"${newName}"</strong> berhasil dibuat di Google Drive Anda.`;
           if (progressBar) progressBar.style.width = "100%";
-          if (dbSheetName) dbSheetName.innerText = response.name;
+          if (dbSheetName) dbSheetName.innerText = newName;
           if (dbSheetLink) {
-            dbSheetLink.href = `https://docs.google.com/spreadsheets/d/${response.spreadsheetId}/edit`;
-            dbSheetLink.innerText = `https://docs.google.com/spreadsheets/d/${response.spreadsheetId}/edit`;
+            dbSheetLink.href = newUrl;
+            dbSheetLink.innerText = newUrl;
           }
           if (dbDetails) dbDetails.classList.remove("d-none");
+          showSuccess("Spreadsheet database baru berhasil dibuat di Google Drive!");
         } else {
           statusBadge.className = "badge bg-danger px-3 py-2";
           statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Gagal`;
-          statusDesc.innerText = "Error: " + (response ? response.message : "Gagal membuat database");
+          const errText = response ? (response.message || "Gagal membuat database") : "Gagal membuat database";
+          statusDesc.innerHTML = `<span class="text-danger">${errText}</span>`;
+          showError(errText);
         }
       })
       .withFailureHandler(function(err) {
-        if (btnAutoCreate) btnAutoCreate.disabled = false;
+        if (btnAutoCreate) {
+          btnAutoCreate.disabled = false;
+          btnAutoCreate.innerHTML = originalBtnHtml;
+        }
         statusBadge.className = "badge bg-danger px-3 py-2";
         statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Backend Error`;
-        statusDesc.innerText = "Gagal memanggil backend: " + err.message;
+        statusDesc.innerHTML = `<span class="text-danger">Gagal memanggil backend: ${err.message || err}</span>`;
+        showError("Backend Error: " + (err.message || err));
       })
-      .autoCreateDatabaseFolderAndSheet();
+      .apiAutoCreateDb();
   }
 
   function updateStepIndicators(step) {
@@ -561,11 +643,12 @@
   }
 
   function nextStep(step) {
+    clearAlert();
     if (step === 2) {
       const input = document.getElementById("spreadsheet-id-input");
       const cleanId = extractSpreadsheetId(input ? input.value : "");
       if (!connectedSpreadsheetId || connectedSpreadsheetId !== cleanId) {
-        alert("Harap pastikan koneksi database telah terhubung terlebih dahulu.");
+        showError("Harap pastikan koneksi database telah terhubung terlebih dahulu.");
         return;
       }
     } else if (step === 3) {
@@ -575,7 +658,7 @@
       const password = document.getElementById("admin-password").value;
 
       if (!name || !username || !email || !password) {
-        alert("Semua kolom isian admin wajib diisi.");
+        showError("Semua kolom isian admin wajib diisi.");
         return;
       }
     }
@@ -588,6 +671,7 @@
   }
 
   function prevStep(step) {
+    clearAlert();
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
     document.getElementById(`step-${step}`).classList.remove("d-none");
 
@@ -604,21 +688,12 @@
     }
   }
 
-  function showError(msg) {
-    const container = document.getElementById("alert-container");
-    container.innerHTML = `
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-octagon-fill me-2"></i> ${msg}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    `;
-  }
-
   function submitSetup() {
+    clearAlert();
     const input = document.getElementById("spreadsheet-id-input");
     const finalSpreadsheetId = connectedSpreadsheetId || (input ? extractSpreadsheetId(input.value) : "");
     if (!finalSpreadsheetId) {
-      alert("Spreadsheet ID belum terhubung!");
+      showError("Spreadsheet ID belum terhubung!");
       return;
     }
 

@@ -34,7 +34,8 @@
     "src/services/DashboardService.gs",
     "src/controllers/MainController.gs",
     "src/controllers/ApiController.gs",
-    "src/core/SetupDatabase.gs"
+    "src/core/SetupDatabase.gs",
+    "src/controllers/SetupController.gs"
   ],
   "skipSubdirectories": false
 }
