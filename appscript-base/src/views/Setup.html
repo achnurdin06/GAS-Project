@@ -229,33 +229,56 @@
 
       <!-- STEP 2: Super Admin Credentials -->
       <div id="step-2" class="wizard-step d-none">
-        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-person-badge me-2 text-primary"></i>2. Akun Super Admin</h4>
-        <p class="text-muted small mb-4">Tentukan informasi akun administrator utama sistem AEF Anda.</p>
+        <h4 class="fw-bold text-dark mb-2"><i class="bi bi-person-badge me-2 text-primary"></i>2. Akun Super Admin</h4>
+        <p class="text-muted small mb-3" id="step-2-subtitle">Tentukan informasi akun administrator utama sistem AEF Anda.</p>
 
-        <div class="row g-3">
-          <div class="col-md-6">
+        <!-- Existing Database Banner (Muncul jika database yang dihubungkan sudah memiliki user) -->
+        <div id="existing-user-banner" class="alert alert-info d-none mb-3 py-3 px-3 rounded-3 border-info-subtle shadow-sm">
+          <div class="d-flex align-items-center mb-2">
+            <i class="bi bi-shield-check fs-4 me-2 text-success"></i>
+            <div class="fw-bold text-dark">Database AEF Lama Terdeteksi (<span id="existing-user-count" class="text-primary">0</span> Pengguna Aktif)</div>
+          </div>
+          <div class="small text-muted mb-3">Seluruh data pengguna, peran, dan transaksi Anda tetap utuh. Silakan pilih apakah ingin tetap menggunakan akun yang ada atau memperbarui password Super Admin:</div>
+          <div class="p-2 bg-white rounded border d-flex flex-column gap-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="adminModeChoice" id="choice-keep-admin" value="KEEP" checked onchange="toggleAdminFormMode()">
+              <label class="form-check-label small fw-semibold text-dark" for="choice-keep-admin">
+                Pertahankan Akun Admin yang Ada <span class="badge bg-success-subtle text-success ms-1">Direkomendasikan (Non-Destructive)</span>
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="adminModeChoice" id="choice-reset-admin" value="RESET" onchange="toggleAdminFormMode()">
+              <label class="form-check-label small fw-semibold text-dark" for="choice-reset-admin">
+                Reset / Ubah Password Super Admin
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-fields-container" class="row g-3">
+          <div class="col-md-6" id="field-admin-name-container">
             <label for="admin-name" class="form-label small fw-semibold">Nama Lengkap</label>
             <input type="text" class="form-control" id="admin-name" value="Super Administrator">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6" id="field-admin-username-container">
             <label for="admin-username" class="form-label small fw-semibold">Username Admin</label>
             <input type="text" class="form-control" id="admin-username" value="superadmin">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6" id="field-admin-email-container">
             <label for="admin-email" class="form-label small fw-semibold">Email Admin</label>
             <input type="email" class="form-control" id="admin-email" value="superadmin@aef.com">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6" id="field-admin-phone-container">
             <label for="admin-phone" class="form-label small fw-semibold">No. Telepon / WhatsApp</label>
             <input type="text" class="form-control" id="admin-phone" value="+62 812-3456-7890">
           </div>
-          <div class="col-12">
-            <label for="admin-password" class="form-label small fw-semibold">Password Akun</label>
+          <div class="col-12" id="field-admin-password-container">
+            <label for="admin-password" class="form-label small fw-semibold" id="admin-password-label">Password Akun</label>
             <div class="input-group">
               <input type="password" class="form-control" id="admin-password" value="admin123">
               <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()"><i class="bi bi-eye"></i></button>
             </div>
-            <div class="form-text">Password default: <code>admin123</code>. Silakan ganti untuk keamanan ekstra.</div>
+            <div class="form-text" id="admin-password-hint">Password default: <code>admin123</code>. Silakan ganti untuk keamanan ekstra.</div>
           </div>
         </div>
 
@@ -321,6 +344,7 @@
   let currentStep = 1;
   let connectedSpreadsheetId = "";
   let serverSetupState = {};
+  let currentInspection = null;
 
   try {
     const rawState = document.getElementById("initial-setup-state");
@@ -341,6 +365,73 @@
     return clean;
   }
 
+  function toggleAdminFormMode() {
+    const keepRadio = document.getElementById("choice-keep-admin");
+    const isKeep = keepRadio ? keepRadio.checked : true;
+    const nameCont = document.getElementById("field-admin-name-container");
+    const userCont = document.getElementById("field-admin-username-container");
+    const emailCont = document.getElementById("field-admin-email-container");
+    const phoneCont = document.getElementById("field-admin-phone-container");
+    const passCont = document.getElementById("field-admin-password-container");
+    const passLabel = document.getElementById("admin-password-label");
+    const passHint = document.getElementById("admin-password-hint");
+
+    if (isKeep) {
+      if (nameCont) nameCont.classList.add("d-none");
+      if (userCont) userCont.classList.add("d-none");
+      if (emailCont) emailCont.classList.add("d-none");
+      if (phoneCont) phoneCont.classList.add("d-none");
+      if (passCont) passCont.classList.add("d-none");
+    } else {
+      if (nameCont) nameCont.classList.add("d-none");
+      if (userCont) userCont.classList.add("d-none");
+      if (emailCont) emailCont.classList.add("d-none");
+      if (phoneCont) phoneCont.classList.add("d-none");
+      if (passCont) passCont.classList.remove("d-none");
+      if (passLabel) passLabel.innerText = "Password Baru Super Admin";
+      if (passHint) passHint.innerHTML = "Masukkan password baru untuk akun Super Admin di spreadsheet ini.";
+      const passInput = document.getElementById("admin-password");
+      if (passInput && passInput.value === "admin123") passInput.value = "";
+    }
+  }
+
+  function applyInspectionToUi(inspection) {
+    currentInspection = inspection;
+    const banner = document.getElementById("existing-user-banner");
+    const userCountEl = document.getElementById("existing-user-count");
+    const nameCont = document.getElementById("field-admin-name-container");
+    const userCont = document.getElementById("field-admin-username-container");
+    const emailCont = document.getElementById("field-admin-email-container");
+    const phoneCont = document.getElementById("field-admin-phone-container");
+    const passCont = document.getElementById("field-admin-password-container");
+    const passLabel = document.getElementById("admin-password-label");
+    const passHint = document.getElementById("admin-password-hint");
+
+    if (inspection && inspection.existing_users_count > 0) {
+      if (banner) banner.classList.remove("d-none");
+      if (userCountEl) userCountEl.innerText = inspection.existing_users_count;
+      toggleAdminFormMode();
+    } else {
+      if (banner) banner.classList.add("d-none");
+      if (nameCont) nameCont.classList.remove("d-none");
+      if (userCont) userCont.classList.remove("d-none");
+      if (emailCont) emailCont.classList.remove("d-none");
+      if (phoneCont) phoneCont.classList.remove("d-none");
+      if (passCont) passCont.classList.remove("d-none");
+      if (passLabel) passLabel.innerText = "Password Akun";
+      if (passHint) passHint.innerHTML = "Password default: <code>admin123</code>. Silakan ganti untuk keamanan ekstra.";
+    }
+
+    if (inspection && inspection.app_info) {
+      const appNameEl = document.getElementById("app-name-input");
+      const appCodeEl = document.getElementById("app-code-input");
+      const appLogoEl = document.getElementById("app-logo-input");
+      if (appNameEl && inspection.app_info.appName) appNameEl.value = inspection.app_info.appName;
+      if (appCodeEl && inspection.app_info.appCode) appCodeEl.value = inspection.app_info.appCode;
+      if (appLogoEl && inspection.app_info.appLogo) appLogoEl.value = inspection.app_info.appLogo;
+    }
+  }
+
   function handleSpreadsheetInputChange(val) {
     const cleanId = extractSpreadsheetId(val);
     const statusBadge = document.getElementById("db-status-badge");
@@ -354,6 +445,7 @@
         statusDesc.innerHTML = `Spreadsheet ID dimasukkan: <code>${cleanId}</code>. Klik tombol <strong>Uji Koneksi</strong> untuk memverifikasi.`;
       } else {
         connectedSpreadsheetId = "";
+        currentInspection = null;
         statusBadge.className = "badge bg-secondary";
         statusBadge.textContent = "Menunggu Input";
         statusDesc.textContent = "Silakan masukkan Spreadsheet ID di atas lalu klik Uji Koneksi atau lanjutkan langkah.";
@@ -435,12 +527,32 @@
 
         if (response && response.success) {
           connectedSpreadsheetId = cleanId;
-          statusBadge.className = "badge bg-success";
-          statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Terhubung`;
           const sheetInfo = response.data || {};
           const sheetName = sheetInfo.name || "AEF Enterprise Database File";
           const sheetUrl = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
-          statusDesc.innerHTML = `Spreadsheet <strong>"${sheetName}"</strong> berhasil diverifikasi dan siap digunakan.`;
+          const inspection = sheetInfo.inspection || {};
+          currentInspection = inspection;
+
+          applyInspectionToUi(inspection);
+
+          if (inspection.state === 'FULL_AEF_DB') {
+            statusBadge.className = "badge bg-success";
+            statusBadge.innerHTML = `<i class="bi bi-database-check me-1"></i>Database AEF Aktif`;
+            statusDesc.innerHTML = `Spreadsheet <strong>"${sheetName}"</strong> terhubung dengan <strong>${inspection.existing_users_count || 0}</strong> pengguna terdaftar. Data Anda aman!`;
+          } else if (inspection.state === 'PARTIAL_AEF_DB') {
+            statusBadge.className = "badge bg-info text-white";
+            statusBadge.innerHTML = `<i class="bi bi-wrench-adjustable me-1"></i>Tersinkronisasi & Terhubung`;
+            statusDesc.innerHTML = `Spreadsheet <strong>"${sheetName}"</strong> terhubung dan modul delta (Master Proyek & Menu) telah disinkronkan secara non-destructive.`;
+          } else if (inspection.state === 'EMPTY_SHEET') {
+            statusBadge.className = "badge bg-primary";
+            statusBadge.innerHTML = `<i class="bi bi-file-earmark-plus me-1"></i>Spreadsheet Baru`;
+            statusDesc.innerHTML = `Spreadsheet kosong <strong>"${sheetName}"</strong> terhubung. Skema database & data awal standar akan dibuat pada langkah berikutnya.`;
+          } else {
+            statusBadge.className = "badge bg-success";
+            statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Terhubung`;
+            statusDesc.innerHTML = `Spreadsheet <strong>"${sheetName}"</strong> berhasil diverifikasi dan siap digunakan.`;
+          }
+
           if (dbSheetName) dbSheetName.innerText = sheetName;
           if (dbSheetLink) {
             dbSheetLink.href = sheetUrl;
@@ -450,6 +562,7 @@
           if (typeof onComplete === 'function') onComplete(true);
         } else {
           connectedSpreadsheetId = "";
+          currentInspection = null;
           statusBadge.className = "badge bg-danger";
           statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Gagal`;
           const errText = response ? (response.message || "Spreadsheet tidak dapat diakses") : "Koneksi gagal";
@@ -464,6 +577,7 @@
           btnVerify.innerHTML = originalBtnHtml;
         }
         connectedSpreadsheetId = "";
+        currentInspection = null;
         statusBadge.className = "badge bg-danger";
         statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Error`;
         statusDesc.innerHTML = `<span class="text-danger">Gagal memanggil backend: ${err.message || err}</span>`;
@@ -548,6 +662,13 @@
           const newUrl = data.spreadsheet_url || data.url || (newId ? `https://docs.google.com/spreadsheets/d/${newId}/edit` : "#");
 
           connectedSpreadsheetId = newId;
+          currentInspection = {
+            state: 'EMPTY_SHEET',
+            existing_users_count: 0,
+            requires_admin_creation: true
+          };
+          applyInspectionToUi(currentInspection);
+
           if (spreadsheetInput) spreadsheetInput.value = newId;
           if (response.email) {
             const adminEmail = document.getElementById("admin-email");
@@ -609,14 +730,27 @@
         return;
       }
     } else if (step === 3) {
-      const name = document.getElementById("admin-name").value;
-      const username = document.getElementById("admin-username").value;
-      const email = document.getElementById("admin-email").value;
-      const password = document.getElementById("admin-password").value;
+      const isExisting = currentInspection && currentInspection.existing_users_count > 0;
+      const isResetChoice = document.getElementById("choice-reset-admin") && document.getElementById("choice-reset-admin").checked;
 
-      if (!name || !username || !email || !password) {
-        showError("Semua kolom isian admin wajib diisi.");
-        return;
+      if (isExisting) {
+        if (isResetChoice) {
+          const pass = document.getElementById("admin-password").value;
+          if (!pass) {
+            showError("Silakan masukkan password baru untuk Super Admin.");
+            return;
+          }
+        }
+      } else {
+        const name = document.getElementById("admin-name").value;
+        const username = document.getElementById("admin-username").value;
+        const email = document.getElementById("admin-email").value;
+        const password = document.getElementById("admin-password").value;
+
+        if (!name || !username || !email || !password) {
+          showError("Semua kolom isian admin wajib diisi untuk instalasi database baru.");
+          return;
+        }
       }
     }
 
@@ -654,18 +788,31 @@
       return;
     }
 
+    // Determine installation mode
+    const isExisting = currentInspection && (
+      currentInspection.state === 'FULL_AEF_DB' || 
+      currentInspection.state === 'PARTIAL_AEF_DB' || 
+      (currentInspection.existing_users_count && currentInspection.existing_users_count > 0)
+    );
+    const isResetChoice = document.getElementById("choice-reset-admin") && document.getElementById("choice-reset-admin").checked;
+
     // Hide all steps
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
     document.getElementById("progress-overlay").classList.remove("d-none");
+    document.getElementById("progress-text").innerText = isExisting 
+      ? "Menyinkronkan modul delta & konfigurasi database..." 
+      : "Membuat tabel, skema 7 modul, menu katalog, dan data awal standar...";
 
     const payload = {
       spreadsheet_id: finalSpreadsheetId,
+      mode: isExisting ? 'MIGRATE' : 'FRESH_INSTALL',
       admin: {
         name: document.getElementById("admin-name").value,
         username: document.getElementById("admin-username").value,
         email: document.getElementById("admin-email").value,
         phone: document.getElementById("admin-phone").value,
         password: document.getElementById("admin-password").value,
+        update_admin: isExisting ? isResetChoice : true,
         appName: document.getElementById("app-name-input").value,
         appCode: document.getElementById("app-code-input").value,
         appLogo: document.getElementById("app-logo-input").value
@@ -698,6 +845,8 @@
   window.autoCreateDatabase = autoCreateDatabase;
   window.handleStep1Next = handleStep1Next;
   window.handleSpreadsheetInputChange = handleSpreadsheetInputChange;
+  window.toggleAdminFormMode = toggleAdminFormMode;
+  window.applyInspectionToUi = applyInspectionToUi;
   window.nextStep = nextStep;
   window.prevStep = prevStep;
   window.togglePassword = togglePassword;
@@ -735,6 +884,10 @@
       if (emailInput && !emailInput.value) {
         emailInput.value = serverSetupState.google_email;
       }
+    }
+
+    if (serverSetupState && serverSetupState.inspection) {
+      applyInspectionToUi(serverSetupState.inspection);
     }
 
     if (serverSetupState && serverSetupState.spreadsheet_id) {
