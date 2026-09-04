@@ -13,7 +13,7 @@ class ProjectRepository extends BaseRepository {
   getSheet() {
     const ss = this.getSpreadsheet();
     let sheet = ss.getSheetByName(this.tableName);
-    if (!sheet) {
+    if (!sheet || sheet.getLastRow() === 0) {
       sheet = this.initProjectSheet(ss);
     }
     return sheet;

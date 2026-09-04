@@ -9,6 +9,23 @@ class ProjectService {
   }
 
   /**
+   * Helper to safely format dates and prevent RangeError on invalid dates
+   */
+  formatDateHelper(val, isDateOnly = false) {
+    if (!val) return '';
+    if (val instanceof Date) {
+      if (isNaN(val.getTime())) return '';
+      const iso = val.toISOString();
+      return isDateOnly ? iso.split('T')[0] : iso;
+    }
+    const str = String(val).trim();
+    if (isDateOnly && str.includes('T')) {
+      return str.split('T')[0];
+    }
+    return str;
+  }
+
+  /**
    * Retrieves all non-deleted projects
    */
   getAllProjects(actorId = 'SYSTEM') {
@@ -19,16 +36,16 @@ class ProjectService {
       project_name: p.project_name || '',
       client_name: p.client_name || '',
       project_manager: p.project_manager || '',
-      start_date: p.start_date instanceof Date ? p.start_date.toISOString().split('T')[0] : String(p.start_date || ''),
-      end_date: p.end_date instanceof Date ? p.end_date.toISOString().split('T')[0] : String(p.end_date || ''),
+      start_date: this.formatDateHelper(p.start_date, true),
+      end_date: this.formatDateHelper(p.end_date, true),
       budget: Number(p.budget || 0),
       priority: String(p.priority || 'MEDIUM').toUpperCase(),
       status: String(p.status || 'PLANNING').toUpperCase(),
       progress: Math.min(100, Math.max(0, Number(p.progress || 0))),
       description: p.description || '',
-      created_at: p.created_at instanceof Date ? p.created_at.toISOString() : String(p.created_at || ''),
+      created_at: this.formatDateHelper(p.created_at, false),
       created_by: p.created_by || '',
-      updated_at: p.updated_at instanceof Date ? p.updated_at.toISOString() : String(p.updated_at || ''),
+      updated_at: this.formatDateHelper(p.updated_at, false),
       updated_by: p.updated_by || ''
     }));
 
@@ -79,7 +96,16 @@ class ProjectService {
     if (!project || String(project.status).trim().toUpperCase() === 'DELETED') {
       return Response.error('Proyek tidak ditemukan', 'NOT_FOUND');
     }
-    return Response.success('Detail proyek berhasil diambil', project, 'PROJECT_DETAIL_SUCCESS');
+    const safeProject = {
+      ...project,
+      start_date: this.formatDateHelper(project.start_date, true),
+      end_date: this.formatDateHelper(project.end_date, true),
+      created_at: this.formatDateHelper(project.created_at, false),
+      updated_at: this.formatDateHelper(project.updated_at, false),
+      budget: Number(project.budget || 0),
+      progress: Math.min(100, Math.max(0, Number(project.progress || 0)))
+    };
+    return Response.success('Detail proyek berhasil diambil', safeProject, 'PROJECT_DETAIL_SUCCESS');
   }
 
   /**

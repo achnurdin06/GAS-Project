@@ -4,6 +4,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+  window.escapeHtml = escapeHtml;
+
   /**
    * AppScript Enterprise Framework (AEF) Client Engine
    */
@@ -4478,7 +4489,7 @@
             <button class="btn btn-sm btn-icon btn-light text-info me-1" title="Edit Proyek" onclick="AEF.openEditProjectModal('${p.id}')">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-icon btn-light text-danger" title="Hapus Proyek" onclick="AEF.confirmDeleteProject('${p.id}', '${escapeHtml(p.project_name)}')">
+            <button class="btn btn-sm btn-icon btn-light text-danger" title="Hapus Proyek" onclick="AEF.confirmDeleteProject('${p.id}')">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -4736,6 +4747,10 @@
     },
 
     confirmDeleteProject: function (id, name) {
+      if (!name && this.paginationState && this.paginationState.projects && Array.isArray(this.paginationState.projects.rawData)) {
+        const found = this.paginationState.projects.rawData.find(p => p.id === id);
+        if (found) name = found.project_name;
+      }
       document.getElementById('delete-project-id').value = id;
       document.getElementById('delete-project-name-preview').innerText = name || 'proyek terpilih';
       this.showModal('modal-delete-project');

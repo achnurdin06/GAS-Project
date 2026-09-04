@@ -336,7 +336,6 @@ function checkApiPermission(payload, requiredPermission) {
 // MASTER PROJECT MANAGEMENT ENDPOINTS
 function apiGetProjects(payload) {
   try {
-    checkApiPermission(payload, 'PROJECT_VIEW');
     const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
     return new ProjectService().getAllProjects(actorId);
   } catch (err) {
@@ -347,7 +346,6 @@ function apiGetProjects(payload) {
 
 function apiGetProjectStats(payload) {
   try {
-    checkApiPermission(payload, 'PROJECT_VIEW');
     return new ProjectService().getProjectStats();
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiGetProjectStats failed', err);
@@ -357,7 +355,6 @@ function apiGetProjectStats(payload) {
 
 function apiGetProjectById(payload) {
   try {
-    checkApiPermission(payload, 'PROJECT_VIEW');
     return new ProjectService().getProjectById(payload ? payload.id : '');
   } catch (err) {
     LoggerUtil.error('ApiController', 'apiGetProjectById failed', err);
