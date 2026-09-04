@@ -213,20 +213,8 @@ function checkSetupState() {
 
     // 3. Table/Sheet existence check
   if (ss) {
-    // Proactively self-heal & sync menus, configurations, and project module if existing database
-    if (ss.getSheetByName('mst_user') || ss.getSheetByName('mst_menu')) {
-      try {
-        syncConfigurations(ss);
-        syncMasterClient(ss);
-        syncMasterProject(ss);
-        syncMenuPermissions(ss);
-        if (typeof MenuService !== 'undefined') {
-          new MenuService().syncMenuCatalog(ss);
-        }
-      } catch (e) {
-        LoggerUtil.error('SetupDatabase', 'Auto-healing sync failed', e);
-      }
-    }
+    // (Auto-healing sync has been removed from checkSetupState to optimize initial load time)
+    // Run sync operations explicitly if needed from setup or admin settings.
 
     const inspection = inspectSpreadsheetDatabase(ss);
     result.inspection = inspection;
@@ -396,6 +384,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
       }
     }
 
+    PropertiesService.getScriptProperties().setProperty('DB_INITIALIZED', 'true');
     return { success: true, mode: 'MIGRATE' };
   }
 
@@ -756,6 +745,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
     }
   } catch (e) {}
 
+  PropertiesService.getScriptProperties().setProperty('DB_INITIALIZED', 'true');
   return { success: true, mode: 'FRESH_INSTALL' };
 }
 

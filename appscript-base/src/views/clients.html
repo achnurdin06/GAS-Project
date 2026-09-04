@@ -113,7 +113,7 @@
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header border-bottom-0 pb-0">
           <h5 class="modal-title fw-bold" id="modal-client-title">Tambah Pelanggan Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" onclick="AEF.hideModal('modal-client')" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="form-client">
@@ -167,7 +167,7 @@
           </form>
         </div>
         <div class="modal-footer border-top-0 pt-0">
-          <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-sm btn-light" onclick="AEF.hideModal('modal-client')">Batal</button>
           <button type="button" class="btn btn-sm btn-aef-primary px-4" id="btn-save-client" onclick="AEF.submitClientForm()">
             <i class="bi bi-save me-1"></i> Simpan Data
           </button>

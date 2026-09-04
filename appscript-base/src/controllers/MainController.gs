@@ -7,33 +7,51 @@ const DEFAULT_APP_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABl
 
 function doGet(e) {
   try {
-    // 1. Check Google Login session & Setup state
-    const setupState = checkSetupState();
-    
-    // Check if we are checking database status explicitly or if it's the setup screen
-    if (!setupState.google_logged_in) {
-      const template = HtmlService.createTemplateFromFile('views/Setup');
-      template.noGoogleLogin = true;
-      return template.evaluate()
-        .setTitle('AEF - Google Account Required')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-    }
+    const isSetupMode = (e && e.parameter && e.parameter.setup === 'true');
+    const isDebugMode = (e && e.parameter && e.parameter.debug === 'login');
+    const props = PropertiesService.getScriptProperties();
+    const isDbInitialized = props.getProperty('DB_INITIALIZED') === 'true';
 
-    if (!setupState.database_initialized) {
-      const template = HtmlService.createTemplateFromFile('views/Setup');
-      template.noGoogleLogin = false;
-      template.setupState = JSON.stringify(setupState);
-      return template.evaluate()
-        .setTitle('AEF - System Configuration Wizard')
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-    }
-
-    // Default Web App loading
-    if (e && e.parameter && e.parameter.setup === 'true') {
+    // Default Web App loading - Explicit Setup Re-initialization
+    if (isSetupMode) {
       setupDatabase();
       return HtmlService.createHtmlOutput('<h3>Database reinitialized successfully!</h3>');
+    }
+
+    // Fast Path Bypass: Skip slow spreadsheet checks if DB is fully initialized
+    if (isDbInitialized && !isDebugMode) {
+      const email = Session.getActiveUser().getEmail();
+      if (!email) {
+        const template = HtmlService.createTemplateFromFile('views/Setup');
+        template.noGoogleLogin = true;
+        return template.evaluate()
+          .setTitle('AEF - Google Account Required')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+          .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      }
+      // Bypass checkSetupState and proceed to render Index below
+    } else {
+      // Slow Path: Check full Setup state (happens during setup or uninitialized state)
+      const setupState = checkSetupState();
+      
+      if (!setupState.google_logged_in) {
+        const template = HtmlService.createTemplateFromFile('views/Setup');
+        template.noGoogleLogin = true;
+        return template.evaluate()
+          .setTitle('AEF - Google Account Required')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+          .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      }
+  
+      if (!setupState.database_initialized) {
+        const template = HtmlService.createTemplateFromFile('views/Setup');
+        template.noGoogleLogin = false;
+        template.setupState = JSON.stringify(setupState);
+        return template.evaluate()
+          .setTitle('AEF - System Configuration Wizard')
+          .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
+          .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      }
     }
     
     if (e && e.parameter && e.parameter.debug === 'login') {
@@ -68,7 +86,6 @@ function doGet(e) {
       }
     }
     const template = HtmlService.createTemplateFromFile('views/Index');
-    const props = PropertiesService.getScriptProperties();
     template.appName = props.getProperty('APP_NAME') || 'AppScript Enterprise Framework';
     template.appLogo = getAppLogo();
     
