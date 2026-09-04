@@ -604,3 +604,73 @@ function syncMasterProject(ss) {
     }
   }
 }
+
+/**
+ * Endpoint for client-side Spreadsheet verification during setup
+ */
+function apiVerifySpreadsheetId(spreadsheetId) {
+  try {
+    if (!spreadsheetId) {
+      return {
+        success: false,
+        message: 'Spreadsheet ID wajib diisi',
+        code: 'VALIDATION_ERROR'
+      };
+    }
+    let cleanId = String(spreadsheetId).trim().replace(/^["']|["']$/g, '');
+    const match = cleanId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      cleanId = match[1];
+    }
+
+    const ss = SpreadsheetApp.openById(cleanId);
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', cleanId);
+    return {
+      success: true,
+      message: 'Spreadsheet berhasil diverifikasi dan terhubung',
+      code: 'SPREADSHEET_VERIFIED',
+      data: {
+        spreadsheet_id: cleanId,
+        spreadsheetId: cleanId,
+        name: ss.getName(),
+        url: ss.getUrl()
+      }
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: 'Gagal mengakses spreadsheet: ' + (err.message || String(err)),
+      code: 'ACCESS_ERROR'
+    };
+  }
+}
+
+/**
+ * Endpoint for client-side auto creation of Google Drive folder and Spreadsheet
+ */
+function apiAutoCreateDb() {
+  try {
+    const result = autoCreateDatabaseFolderAndSheet();
+    const cleanResult = {
+      spreadsheet_id: result.spreadsheet_id,
+      spreadsheetId: result.spreadsheet_id,
+      spreadsheet_url: result.spreadsheet_url,
+      url: result.spreadsheet_url,
+      folder_name: result.folder_name,
+      name: 'AEF Enterprise Database File'
+    };
+    return {
+      success: true,
+      message: 'Database Google Drive berhasil dibuat secara otomatis',
+      code: 'SETUP_DB_CREATE_SUCCESS',
+      data: cleanResult
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.message || String(err),
+      code: 'SYSTEM_ERROR'
+    };
+  }
+}
+

@@ -315,67 +315,25 @@
   <? } ?>
 </div>
 
+<input type="hidden" id="initial-setup-state" value="<?= typeof setupState !== 'undefined' ? setupState : '' ?>">
+
 <script>
   let currentStep = 1;
   let connectedSpreadsheetId = "";
   let serverSetupState = {};
 
-  <? if (typeof setupState !== 'undefined' && setupState) { ?>
-    try {
-      serverSetupState = <?!= setupState ?>;
-    } catch (e) {
-      console.warn("Could not parse setupState", e);
+  try {
+    const rawState = document.getElementById("initial-setup-state");
+    if (rawState && rawState.value) {
+      serverSetupState = JSON.parse(rawState.value);
     }
-  <? } ?>
-
-  document.addEventListener("DOMContentLoaded", function() {
-    // Attach explicit click listeners in case inline onclick is restricted by iframe CSP
-    const btnVerify = document.getElementById("btn-verify-db");
-    if (btnVerify) {
-      btnVerify.addEventListener("click", function(e) {
-        e.preventDefault();
-        verifySpreadsheetConnection();
-      });
-    }
-
-    const btnAuto = document.getElementById("btn-auto-create-db");
-    if (btnAuto) {
-      btnAuto.addEventListener("click", function(e) {
-        e.preventDefault();
-        autoCreateDatabase();
-      });
-    }
-
-    const btnNext1 = document.getElementById("btn-next-1");
-    if (btnNext1) {
-      btnNext1.addEventListener("click", function(e) {
-        e.preventDefault();
-        handleStep1Next();
-      });
-    }
-
-    // Pre-fill admin email if active Google user is detected
-    if (serverSetupState && serverSetupState.google_email) {
-      const emailInput = document.getElementById("admin-email");
-      if (emailInput && !emailInput.value) {
-        emailInput.value = serverSetupState.google_email;
-      }
-    }
-
-    // If an existing linked spreadsheet is already configured in ScriptProperties
-    if (serverSetupState && serverSetupState.spreadsheet_id) {
-      const input = document.getElementById("spreadsheet-id-input");
-      if (input) {
-        input.value = serverSetupState.spreadsheet_id;
-        verifySpreadsheetConnection();
-      }
-    }
-  });
+  } catch (e) {
+    console.warn("Could not parse initial-setup-state", e);
+  }
 
   function extractSpreadsheetId(val) {
     if (!val) return "";
     let clean = String(val).trim().replace(/^["']|["']$/g, '');
-    // Match Google Spreadsheet URL: /spreadsheets/d/<ID>/...
     const match = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
     if (match && match[1]) {
       return match[1];
@@ -447,7 +405,6 @@
       return;
     }
 
-    // If pasted full URL, normalize input display to clean ID
     if (input && rawVal !== cleanId && rawVal.includes('/spreadsheets/d/')) {
       input.value = cleanId;
     }
@@ -735,6 +692,59 @@
       })
       .apiExecuteSetup(payload);
   }
+
+  // Explicitly assign all handlers to global window object
+  window.verifySpreadsheetConnection = verifySpreadsheetConnection;
+  window.autoCreateDatabase = autoCreateDatabase;
+  window.handleStep1Next = handleStep1Next;
+  window.handleSpreadsheetInputChange = handleSpreadsheetInputChange;
+  window.nextStep = nextStep;
+  window.prevStep = prevStep;
+  window.togglePassword = togglePassword;
+  window.submitSetup = submitSetup;
+  window.showError = showError;
+  window.showSuccess = showSuccess;
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const btnVerify = document.getElementById("btn-verify-db");
+    if (btnVerify) {
+      btnVerify.addEventListener("click", function(e) {
+        e.preventDefault();
+        verifySpreadsheetConnection();
+      });
+    }
+
+    const btnAuto = document.getElementById("btn-auto-create-db");
+    if (btnAuto) {
+      btnAuto.addEventListener("click", function(e) {
+        e.preventDefault();
+        autoCreateDatabase();
+      });
+    }
+
+    const btnNext1 = document.getElementById("btn-next-1");
+    if (btnNext1) {
+      btnNext1.addEventListener("click", function(e) {
+        e.preventDefault();
+        handleStep1Next();
+      });
+    }
+
+    if (serverSetupState && serverSetupState.google_email) {
+      const emailInput = document.getElementById("admin-email");
+      if (emailInput && !emailInput.value) {
+        emailInput.value = serverSetupState.google_email;
+      }
+    }
+
+    if (serverSetupState && serverSetupState.spreadsheet_id) {
+      const input = document.getElementById("spreadsheet-id-input");
+      if (input) {
+        input.value = serverSetupState.spreadsheet_id;
+        verifySpreadsheetConnection();
+      }
+    }
+  });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
