@@ -164,5 +164,17 @@ class MenuService {
     };
 
     this.menuRepo.insert(projectMenu, 'SYSTEM');
+
+    // Also auto-generate mst_project sheet and project permissions
+    try {
+      const ss = this.menuRepo.getSpreadsheet();
+      if (typeof syncMasterProject === 'function') {
+        syncMasterProject(ss);
+      } else {
+        new ProjectRepository().initProjectSheet(ss);
+      }
+    } catch (e) {
+      LoggerUtil.error('MenuService', 'Failed to auto-generate mst_project sheet', e);
+    }
   }
 }

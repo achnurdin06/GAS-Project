@@ -57,6 +57,18 @@ function apiVerifySpreadsheetId(spreadsheetId) {
 
     const ss = SpreadsheetApp.openById(cleanId);
     PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', cleanId);
+
+    // Auto-heal/sync mst_project if the spreadsheet is already initialized
+    try {
+      if (ss.getSheetByName('mst_user') || ss.getSheetByName('mst_menu')) {
+        syncMasterProject(ss);
+      }
+    } catch (e) {
+      if (typeof LoggerUtil !== 'undefined') {
+        LoggerUtil.error('SetupController', 'syncMasterProject during verify failed', e);
+      }
+    }
+
     return {
       success: true,
       message: 'Spreadsheet berhasil diverifikasi dan terhubung',

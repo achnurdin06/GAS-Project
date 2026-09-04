@@ -28,6 +28,10 @@ class ProjectRepository extends BaseRepository {
       sheet = ss.insertSheet(this.tableName);
     }
 
+    if (sheet.getLastRow() > 0) {
+      return sheet;
+    }
+
     const headers = [
       'id', 'project_code', 'project_name', 'client_name', 'project_manager',
       'start_date', 'end_date', 'budget', 'priority', 'status',

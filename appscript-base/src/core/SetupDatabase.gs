@@ -84,6 +84,16 @@ function checkSetupState() {
 
   // 3. Table/Sheet existence check
   if (ss) {
+    // Proactively self-heal & generate mst_project and configurations if existing database
+    if (ss.getSheetByName('mst_user') || ss.getSheetByName('mst_menu')) {
+      try {
+        syncConfigurations(ss);
+        syncMasterProject(ss);
+      } catch (e) {
+        LoggerUtil.error('SetupDatabase', 'Auto-healing sync failed', e);
+      }
+    }
+
     const requiredSheets = ['mst_user', 'mst_role', 'mst_permission', 'mst_menu', 'sys_configuration', 'log_audit', 'mst_project'];
     requiredSheets.forEach(name => {
       try {
@@ -96,12 +106,6 @@ function checkSetupState() {
     });
     if (result.missing_sheets.length === 0) {
       result.database_initialized = true;
-      try {
-        syncConfigurations(ss);
-        syncMasterProject(ss);
-      } catch (e) {
-        LoggerUtil.error('SetupDatabase', 'syncConfigurations or syncMasterProject failed', e);
-      }
     }
   }
 
@@ -511,7 +515,7 @@ function syncMasterProject(ss) {
 
   // 1. Ensure mst_project exists
   let projectSheet = ss.getSheetByName('mst_project');
-  if (!projectSheet) {
+  if (!projectSheet || projectSheet.getLastRow() === 0) {
     const repo = new ProjectRepository();
     repo.initProjectSheet(ss);
   }
@@ -625,6 +629,16 @@ function apiVerifySpreadsheetId(spreadsheetId) {
 
     const ss = SpreadsheetApp.openById(cleanId);
     PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', cleanId);
+
+    // Auto-heal/sync mst_project if the spreadsheet is already initialized
+    try {
+      if (ss.getSheetByName('mst_user') || ss.getSheetByName('mst_menu')) {
+        syncMasterProject(ss);
+      }
+    } catch (e) {
+      LoggerUtil.error('Setup', 'syncMasterProject during verify failed', e);
+    }
+
     return {
       success: true,
       message: 'Spreadsheet berhasil diverifikasi dan terhubung',

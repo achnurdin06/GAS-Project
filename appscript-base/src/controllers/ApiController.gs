@@ -398,3 +398,26 @@ function apiDeleteProject(payload) {
   }
 }
 
+function apiSyncProjectTable(payload) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const ssId = props.getProperty('SPREADSHEET_ID');
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss && ssId) {
+      ss = SpreadsheetApp.openById(ssId);
+    }
+    if (ss) {
+      syncMasterProject(ss);
+      return Response.success('Tabel mst_project, permission, dan menu proyek berhasil disinkronisasi', {
+        sheet_name: 'mst_project',
+        spreadsheet_name: ss.getName()
+      }, 'SYNC_SUCCESS');
+    }
+    return Response.error('Spreadsheet database belum terhubung', 'NOT_FOUND');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiSyncProjectTable failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+
