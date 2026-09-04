@@ -239,16 +239,6 @@ class MenuService {
 
   getUserMenu(actorId = 'SYSTEM') {
     let activeMenus = this.menuRepo.findActiveMenus();
-    
-    // Auto-sync missing menus from default catalog if any missing
-    if (!activeMenus.some(m => String(m.menu_code).trim().toUpperCase() === 'MENU_PROJECT_MGMT')) {
-      try {
-        this.syncMenuCatalog();
-        activeMenus = this.menuRepo.findActiveMenus();
-      } catch (err) {
-        LoggerUtil.error('MenuService', 'syncMenuCatalog in getUserMenu failed', err);
-      }
-    }
 
     let allowedPermCodes = null;
 
