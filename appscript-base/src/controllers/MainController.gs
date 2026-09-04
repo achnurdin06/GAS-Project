@@ -35,6 +35,38 @@ function doGet(e) {
       setupDatabase();
       return HtmlService.createHtmlOutput('<h3>Database reinitialized successfully!</h3>');
     }
+    
+    if (e && e.parameter && e.parameter.debug === 'login') {
+      try {
+        const auth = new AuthService();
+        const userRepo = new UserRepository();
+        const allUsers = userRepo.readAll();
+        const email = 'superadmin@aef.com';
+        const password = 'admin123';
+        const cleanEmail = String(email).trim().toLowerCase();
+        
+        const userList = userRepo.find(row => String(row.email).trim().toLowerCase() === cleanEmail);
+        const user = userList.length > 0 ? userList[0] : null;
+        let debugInfo = {
+          allUsersCount: allUsers.length,
+          userFound: !!user,
+          user: user,
+          inputHash: Utils.hashSha256(password)
+        };
+
+        if (user) {
+          const todayStr = Utils.formatIsoDate().split('T')[0];
+          debugInfo.status = String(user.status).trim().toUpperCase();
+          debugInfo.expired_at = user.expired_at;
+          debugInfo.isExpired = (user.expired_at && user.expired_at < todayStr);
+          debugInfo.hashMatch = (user.password_hash === debugInfo.inputHash);
+        }
+
+        return ContentService.createTextOutput(JSON.stringify(debugInfo, null, 2)).setMimeType(ContentService.MimeType.JSON);
+      } catch (err) {
+        return ContentService.createTextOutput(err.message + "\n" + err.stack).setMimeType(ContentService.MimeType.TEXT);
+      }
+    }
     const template = HtmlService.createTemplateFromFile('views/Index');
     const props = PropertiesService.getScriptProperties();
     template.appName = props.getProperty('APP_NAME') || 'AppScript Enterprise Framework';
