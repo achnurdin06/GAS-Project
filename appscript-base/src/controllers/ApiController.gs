@@ -417,4 +417,55 @@ function apiSyncProjectTable(payload) {
   }
 }
 
+// MASTER CLIENT MANAGEMENT ENDPOINTS
+function apiGetClients(payload) {
+  try {
+    return new ClientService().getAllClients();
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetClients failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiGetClientById(payload) {
+  try {
+    return new ClientService().getClientById(payload ? payload.id : '');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetClientById failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiCreateClient(payload) {
+  try {
+    checkApiPermission(payload, 'CLIENT_CREATE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ClientService().createClient(payload, actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreateClient failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiUpdateClient(payload) {
+  try {
+    checkApiPermission(payload, 'CLIENT_UPDATE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ClientService().updateClient(payload ? payload.id : '', payload, actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateClient failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeleteClient(payload) {
+  try {
+    checkApiPermission(payload, 'CLIENT_DELETE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ClientService().deleteClient(payload ? payload.id : '', actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeleteClient failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
 

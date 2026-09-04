@@ -75,12 +75,35 @@ class BaseRepository {
       }
     }
 
-    const sheet = this.getSheet();
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    if (lastRow < 2 || lastCol < 1) return [];
+    const ss = this.getSpreadsheet();
+    let values = null;
 
-    const values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    // Fast-path: Use Advanced Sheets API if enabled
+    try {
+      if (typeof Sheets !== 'undefined') {
+        const response = Sheets.Spreadsheets.Values.get(ss.getId(), this.tableName, {
+          valueRenderOption: 'UNFORMATTED_VALUE'
+        });
+        if (response && response.values) {
+          values = response.values;
+        }
+      }
+    } catch (e) {
+      // Fallback if Sheets API is disabled or fails
+      values = null;
+    }
+
+    // Slow-path fallback: Use SpreadsheetApp
+    if (!values || values.length === 0) {
+      const sheet = this.getSheet();
+      const lastRow = sheet.getLastRow();
+      const lastCol = sheet.getLastColumn();
+      if (lastRow < 2 || lastCol < 1) return [];
+      values = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    }
+
+    if (!values || values.length < 2) return [];
+
     const headers = values[0].map(h => String(h).trim());
     const dataRows = values.slice(1);
 

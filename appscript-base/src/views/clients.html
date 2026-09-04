@@ -1,0 +1,178 @@
+<template id="tpl-clients">
+  <div id="clients-list-view">
+    <!-- TOP HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="fw-bold mb-1" style="color: #181c32;">Data Pelanggan</h3>
+        <p class="text-muted small mb-0">Kelola direktori profil pelanggan dan instansi klien.</p>
+        <div class="aef-breadcrumb mt-1" style="font-size: 0.75rem; color: var(--aef-text-muted);">
+          <span class="text-muted">Home</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-dark fw-medium">Data Pelanggan</span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-sm btn-light border text-muted d-flex align-items-center gap-1" onclick="AEF.loadClientsTable(true)">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 text-nowrap" onclick="AEF.toggleClientsFilterRow()" style="background-color: #6c757d; border: none; padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-funnel"></i> View Filter
+        </button>
+        <button id="btn-add-client-trigger" class="btn btn-sm btn-aef-primary d-flex align-items-center gap-1 text-nowrap" onclick="AEF.openAddClientModal()" style="padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-plus-lg"></i> Tambah Pelanggan
+        </button>
+      </div>
+    </div>
+
+    <!-- SEARCH & QUICK FILTER BAR -->
+    <div class="aef-card p-3 mb-3">
+      <div class="row g-3 align-items-center">
+        <!-- Search Input -->
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold mb-1">Pencarian Pelanggan</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" id="clients-search" class="form-control border-start-0 ps-0" placeholder="Cari by kode, nama, kontak, email..." oninput="AEF.handleClientsSearch(this.value)">
+          </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-6">
+          <label class="form-label text-muted small fw-semibold mb-1">Status Pelanggan</label>
+          <select id="clients-status-filter" class="form-select form-select-sm" onchange="AEF.handleClientsStatusFilter(this.value)">
+            <option value="ALL">Semua Status</option>
+            <option value="ACTIVE">Aktif</option>
+            <option value="INACTIVE">Nonaktif</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA TABLE CARD -->
+    <div class="aef-card p-0 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-aef align-middle mb-0">
+          <thead>
+            <tr>
+              <th onclick="AEF.handleClientsSort('client_code')" style="cursor: pointer; user-select: none; width: 12%;">
+                Kode <i id="clients-sort-icon-client_code" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleClientsSort('client_name')" style="cursor: pointer; user-select: none; width: 25%;">
+                Nama Klien <i id="clients-sort-icon-client_name" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleClientsSort('contact_person')" style="cursor: pointer; user-select: none; width: 18%;">
+                Kontak Person <i id="clients-sort-icon-contact_person" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleClientsSort('phone')" style="cursor: pointer; user-select: none; width: 15%;">
+                Telepon / Email <i id="clients-sort-icon-phone" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleClientsSort('status')" style="cursor: pointer; user-select: none; width: 10%;">
+                Status <i id="clients-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th style="width: 10%; text-align: center;">Aksi</th>
+            </tr>
+
+            <!-- Table Header Filter Row (Toggleable) -->
+            <tr id="clients-filter-row" class="d-none bg-light">
+              <th><input type="text" id="clients-filter-code" class="form-control form-control-sm" placeholder="Filter kode..." oninput="AEF.handleClientsColumnFilter()"></th>
+              <th><input type="text" id="clients-filter-name" class="form-control form-control-sm" placeholder="Filter nama..." oninput="AEF.handleClientsColumnFilter()"></th>
+              <th><input type="text" id="clients-filter-contact" class="form-control form-control-sm" placeholder="Filter PIC..." oninput="AEF.handleClientsColumnFilter()"></th>
+              <th><input type="text" id="clients-filter-contactinfo" class="form-control form-control-sm" placeholder="Filter kontak..." oninput="AEF.handleClientsColumnFilter()"></th>
+              <th><input type="text" id="clients-filter-status" class="form-control form-control-sm" placeholder="Filter status..." oninput="AEF.handleClientsColumnFilter()"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="clients-table-body">
+            <!-- Dynamically populated rows -->
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data pelanggan...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top border-light-subtle flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <select id="clients-page-size" class="form-select form-select-sm border-light-subtle text-muted" style="width: auto;" onchange="AEF.handleClientsPageSizeChange(Number(this.value))">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <div class="text-muted small" id="clients-pagination-info">Memuat data...</div>
+        </div>
+        <ul class="pagination pagination-sm mb-0" id="clients-pagination-controls"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLIENT MODAL -->
+  <div class="modal fade" id="modal-client" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title fw-bold" id="modal-client-title">Tambah Pelanggan Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-client">
+            <input type="hidden" id="client-id" name="client_id">
+            
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Kode Pelanggan <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm bg-light" id="client-code" name="client_code" placeholder="Otomatis digenerate" readonly>
+                <div class="form-text" style="font-size: 0.7rem;">Dikosongkan untuk auto-generate.</div>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label text-muted small fw-semibold">Nama Klien / Instansi <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" id="client-name" name="client_name" placeholder="Misal: PT Teknologi Cemerlang" required>
+              </div>
+
+              <div class="col-md-12">
+                <hr class="my-2 border-light-subtle">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Contact Person (PIC)</label>
+                <input type="text" class="form-control form-control-sm" id="client-pic" name="contact_person" placeholder="Nama lengkap">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">No. Telepon / HP</label>
+                <input type="text" class="form-control form-control-sm" id="client-phone" name="phone" placeholder="0812...">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Email Kontak</label>
+                <input type="email" class="form-control form-control-sm" id="client-email" name="email" placeholder="email@perusahaan.com">
+              </div>
+
+              <div class="col-md-12">
+                <label class="form-label text-muted small fw-semibold">Alamat Lengkap</label>
+                <textarea class="form-control form-control-sm" id="client-address" name="address" rows="2" placeholder="Alamat lengkap kantor / domisili"></textarea>
+              </div>
+
+              <div class="col-md-8">
+                <label class="form-label text-muted small fw-semibold">Keterangan / Deskripsi</label>
+                <textarea class="form-control form-control-sm" id="client-description" name="description" rows="1" placeholder="Catatan opsional"></textarea>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label text-muted small fw-semibold">Status <span class="text-danger">*</span></label>
+                <select class="form-select form-select-sm" id="client-status" name="status" required>
+                  <option value="ACTIVE" selected>Aktif</option>
+                  <option value="INACTIVE">Nonaktif</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top-0 pt-0">
+          <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-sm btn-aef-primary px-4" id="btn-save-client" onclick="AEF.submitClientForm()">
+            <i class="bi bi-save me-1"></i> Simpan Data
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

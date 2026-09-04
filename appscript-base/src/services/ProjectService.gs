@@ -5,6 +5,7 @@
 class ProjectService {
   constructor() {
     this.projectRepo = new ProjectRepository();
+    this.clientRepo = new ClientRepository();
     this.auditService = new AuditService();
   }
 
@@ -30,11 +31,15 @@ class ProjectService {
    */
   getAllProjects(actorId = 'SYSTEM') {
     const projects = this.projectRepo.find(row => String(row.status).trim().toUpperCase() !== 'DELETED');
+    const clients = this.clientRepo.readAll();
+    const clientMap = new Map(clients.map(c => [c.id, c.client_name]));
+
     const safeProjects = projects.map(p => ({
       id: p.id,
       project_code: p.project_code || '',
       project_name: p.project_name || '',
-      client_name: p.client_name || '',
+      client_id: p.client_id || '',
+      client_name: clientMap.get(p.client_id) || 'Unknown Client',
       project_manager: p.project_manager || '',
       start_date: this.formatDateHelper(p.start_date, true),
       end_date: this.formatDateHelper(p.end_date, true),
@@ -96,8 +101,10 @@ class ProjectService {
     if (!project || String(project.status).trim().toUpperCase() === 'DELETED') {
       return Response.error('Proyek tidak ditemukan', 'NOT_FOUND');
     }
+    const client = this.clientRepo.findById(project.client_id);
     const safeProject = {
       ...project,
+      client_name: client ? client.client_name : 'Unknown Client',
       start_date: this.formatDateHelper(project.start_date, true),
       end_date: this.formatDateHelper(project.end_date, true),
       created_at: this.formatDateHelper(project.created_at, false),
@@ -115,8 +122,8 @@ class ProjectService {
     if (!payload.project_name || String(payload.project_name).trim() === '') {
       return Response.error('Nama Proyek wajib diisi', 'VALIDATION_ERROR');
     }
-    if (!payload.client_name || String(payload.client_name).trim() === '') {
-      return Response.error('Nama Klien / Instansi wajib diisi', 'VALIDATION_ERROR');
+    if (!payload.client_id || String(payload.client_id).trim() === '') {
+      return Response.error('Klien / Instansi wajib dipilih', 'VALIDATION_ERROR');
     }
 
     let projectCode = payload.project_code ? String(payload.project_code).trim().toUpperCase() : '';
@@ -139,7 +146,7 @@ class ProjectService {
       id: Utils.generateUuid(),
       project_code: projectCode,
       project_name: String(payload.project_name).trim(),
-      client_name: String(payload.client_name).trim(),
+      client_id: String(payload.client_id).trim(),
       project_manager: payload.project_manager ? String(payload.project_manager).trim() : '',
       start_date: payload.start_date ? String(payload.start_date).trim() : '',
       end_date: payload.end_date ? String(payload.end_date).trim() : '',
@@ -184,7 +191,7 @@ class ProjectService {
     const updateData = {};
     if (payload.project_code !== undefined) updateData.project_code = String(payload.project_code).trim().toUpperCase();
     if (payload.project_name !== undefined) updateData.project_name = String(payload.project_name).trim();
-    if (payload.client_name !== undefined) updateData.client_name = String(payload.client_name).trim();
+    if (payload.client_id !== undefined) updateData.client_id = String(payload.client_id).trim();
     if (payload.project_manager !== undefined) updateData.project_manager = String(payload.project_manager).trim();
     if (payload.start_date !== undefined) updateData.start_date = String(payload.start_date).trim();
     if (payload.end_date !== undefined) updateData.end_date = String(payload.end_date).trim();

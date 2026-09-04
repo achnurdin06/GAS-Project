@@ -33,7 +33,7 @@ class ProjectRepository extends BaseRepository {
     }
 
     const headers = [
-      'id', 'project_code', 'project_name', 'client_name', 'project_manager',
+      'id', 'project_code', 'project_name', 'client_id', 'project_manager',
       'start_date', 'end_date', 'budget', 'priority', 'status',
       'progress', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by'
     ];
@@ -48,7 +48,7 @@ class ProjectRepository extends BaseRepository {
         id: Utils.generateUuid(),
         project_code: 'PRJ-2025-001',
         project_name: 'Implementasi Core ERP Enterprise',
-        client_name: 'PT Nusantara Jaya Mandiri',
+        client_id: 'CLI-001',
         project_manager: 'Budi Santoso, PMP',
         start_date: '2025-01-15',
         end_date: '2025-08-30',
@@ -66,7 +66,7 @@ class ProjectRepository extends BaseRepository {
         id: Utils.generateUuid(),
         project_code: 'PRJ-2025-002',
         project_name: 'Pengembangan Portal Mobile Client',
-        client_name: 'Bank Sinar Harapan',
+        client_id: 'CLI-002',
         project_manager: 'Siti Aminah, CSM',
         start_date: '2025-02-01',
         end_date: '2025-06-15',
@@ -84,7 +84,7 @@ class ProjectRepository extends BaseRepository {
         id: Utils.generateUuid(),
         project_code: 'PRJ-2025-003',
         project_name: 'Infrastruktur Data Center & Cyber Security',
-        client_name: 'Dinas Komunikasi & Informatika',
+        client_id: 'CLI-003',
         project_manager: 'Rian Prasetyo, CISSP',
         start_date: '2024-10-10',
         end_date: '2025-02-28',
@@ -102,7 +102,7 @@ class ProjectRepository extends BaseRepository {
         id: Utils.generateUuid(),
         project_code: 'PRJ-2025-004',
         project_name: 'Sistem Manajemen Pergudangan Otomatis',
-        client_name: 'Logistik Prima Sejahtera',
+        client_id: 'CLI-004',
         project_manager: 'Dewi Lestari, ST',
         start_date: '2025-04-01',
         end_date: '2025-11-30',

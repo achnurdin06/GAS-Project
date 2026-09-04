@@ -211,12 +211,13 @@ function checkSetupState() {
     result.spreadsheet_url = ss.getUrl();
   }
 
-  // 3. Table/Sheet existence check
+    // 3. Table/Sheet existence check
   if (ss) {
     // Proactively self-heal & sync menus, configurations, and project module if existing database
     if (ss.getSheetByName('mst_user') || ss.getSheetByName('mst_menu')) {
       try {
         syncConfigurations(ss);
+        syncMasterClient(ss);
         syncMasterProject(ss);
         syncMenuPermissions(ss);
         if (typeof MenuService !== 'undefined') {
@@ -518,7 +519,11 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
     { code: 'PROJECT_VIEW', name: 'View Project Management' },
     { code: 'PROJECT_CREATE', name: 'Create Project' },
     { code: 'PROJECT_UPDATE', name: 'Update Project' },
-    { code: 'PROJECT_DELETE', name: 'Delete Project' }
+    { code: 'PROJECT_DELETE', name: 'Delete Project' },
+    { code: 'CLIENT_VIEW', name: 'View Client Data' },
+    { code: 'CLIENT_CREATE', name: 'Create Client' },
+    { code: 'CLIENT_UPDATE', name: 'Update Client' },
+    { code: 'CLIENT_DELETE', name: 'Delete Client' }
   ];
 
   const permSeed = [];
@@ -559,7 +564,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
     { menu_id: Utils.generateUuid(), parent_id: 'PARENT_ADMIN', menu_code: 'MENU_AUDIT', menu_name: 'Audit Trail', slug: 'audit-trail', type: 'Internal Link', route: '/audit', icon: 'bi-journal-text', sort_order: 5, permission_code: 'AUDIT_VIEW', description: 'Rekam riwayat dan catatan aktivitas pengguna', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: 'PARENT_MASTER', parent_id: '', menu_code: 'MODULE_MASTER_DATA', menu_name: 'Master Data', slug: 'master-data', type: 'Module', route: '#', icon: 'bi-database-fill-gear', sort_order: 4, permission_code: 'USER_VIEW', description: 'Modul Pengelolaan Referensi Master Data', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: Utils.generateUuid(), parent_id: 'PARENT_MASTER', menu_code: 'MENU_PROJECT_MGMT', menu_name: 'Master Proyek', slug: 'projects', type: 'Internal Link', route: '/projects', icon: 'bi-kanban-fill', sort_order: 1, permission_code: 'PROJECT_VIEW', description: 'Kelola master data proyek, timeline, budget, dan status pengerjaan', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
-    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_MASTER', menu_code: 'MENU_CUSTOMERS', menu_name: 'Data Pelanggan', slug: 'customers', type: 'Internal Link', route: '/customers', icon: 'bi-person-vcard-fill', sort_order: 2, permission_code: 'USER_VIEW', description: 'Kelola direktori profil pelanggan', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
+    { menu_id: Utils.generateUuid(), parent_id: 'PARENT_MASTER', menu_code: 'MENU_CUSTOMERS', menu_name: 'Data Pelanggan', slug: 'customers', type: 'Internal Link', route: '/customers', icon: 'bi-person-vcard-fill', sort_order: 2, permission_code: 'CLIENT_VIEW', description: 'Kelola direktori profil pelanggan', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: Utils.generateUuid(), parent_id: 'PARENT_MASTER', menu_code: 'MENU_PRODUCTS', menu_name: 'Data Produk & Layanan', slug: 'products', type: 'Internal Link', route: '/products', icon: 'bi-box-seam-fill', sort_order: 3, permission_code: 'USER_VIEW', description: 'Katalog barang dan tarif layanan', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: Utils.generateUuid(), parent_id: 'PARENT_MASTER', menu_code: 'MENU_CATEGORIES', menu_name: 'Kategori Produk', slug: 'categories', type: 'Internal Link', route: '/categories', icon: 'bi-tags-fill', sort_order: 4, permission_code: 'USER_VIEW', description: 'Pengelompokan jenis dan taksonomi produk', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
     { menu_id: 'PARENT_REPORTS', parent_id: '', menu_code: 'MODULE_REPORTS', menu_name: 'Laporan & Laporan', slug: 'reports', type: 'Module', route: '#', icon: 'bi-graph-up-arrow', sort_order: 4, permission_code: 'AUDIT_VIEW', description: 'Modul Rekapitulasi Laporan & Kinerja', status: 'ACTIVE', created_at: Utils.formatIsoDate(), created_by: 'SYSTEM' },
@@ -588,14 +593,80 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
   const auditHeaders = ['event_id', 'timestamp', 'user_id', 'module', 'action', 'reference_id', 'status', 'description', 'old_value', 'new_value', 'id', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   initSheet('log_audit', auditHeaders, []);
 
-  // 7. mst_project Sheet
-  const projectHeaders = ['id', 'project_code', 'project_name', 'client_name', 'project_manager', 'start_date', 'end_date', 'budget', 'priority', 'status', 'progress', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by'];
+  // 7. mst_client Sheet
+  const clientHeaders = ['id', 'client_code', 'client_name', 'contact_person', 'phone', 'email', 'address', 'status', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by'];
+  const clientSeed = [
+    {
+      id: 'CLI-001',
+      client_code: 'CLI-2025-001',
+      client_name: 'PT Nusantara Jaya Mandiri',
+      contact_person: 'Ahmad Suyanto',
+      phone: '021-5551234',
+      email: 'contact@nusantarajaya.co.id',
+      address: 'Jl. Sudirman Kav 21, Jakarta Selatan',
+      status: 'ACTIVE',
+      description: 'Perusahaan manufaktur komponen otomotif',
+      created_at: Utils.formatIsoDate(),
+      created_by: 'SYSTEM',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'SYSTEM'
+    },
+    {
+      id: 'CLI-002',
+      client_code: 'CLI-2025-002',
+      client_name: 'Bank Sinar Harapan',
+      contact_person: 'Diana Puspita',
+      phone: '021-8889999',
+      email: 'it.procurement@sinarharapan.co.id',
+      address: 'Menara Sinar Lt 15, Jakarta Pusat',
+      status: 'ACTIVE',
+      description: 'Lembaga perbankan swasta nasional',
+      created_at: Utils.formatIsoDate(),
+      created_by: 'SYSTEM',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'SYSTEM'
+    },
+    {
+      id: 'CLI-003',
+      client_code: 'CLI-2025-003',
+      client_name: 'Dinas Komunikasi & Informatika',
+      contact_person: 'Budi Santoso',
+      phone: '022-1234567',
+      email: 'info@diskominfo.go.id',
+      address: 'Pusat Pemerintahan, Bandung',
+      status: 'ACTIVE',
+      description: 'Instansi pemerintahan daerah',
+      created_at: Utils.formatIsoDate(),
+      created_by: 'SYSTEM',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'SYSTEM'
+    },
+    {
+      id: 'CLI-004',
+      client_code: 'CLI-2025-004',
+      client_name: 'Logistik Prima Sejahtera',
+      contact_person: 'Siti Aminah',
+      phone: '031-7654321',
+      email: 'vendor@logistikprima.com',
+      address: 'Kawasan Industri Rungkut, Surabaya',
+      status: 'ACTIVE',
+      description: 'Penyedia layanan logistik 3PL',
+      created_at: Utils.formatIsoDate(),
+      created_by: 'SYSTEM',
+      updated_at: Utils.formatIsoDate(),
+      updated_by: 'SYSTEM'
+    }
+  ];
+  initSheet('mst_client', clientHeaders, clientSeed, false);
+
+  // 8. mst_project Sheet
+  const projectHeaders = ['id', 'project_code', 'project_name', 'client_id', 'project_manager', 'start_date', 'end_date', 'budget', 'priority', 'status', 'progress', 'description', 'created_at', 'created_by', 'updated_at', 'updated_by'];
   const projectSeed = [
     {
       id: Utils.generateUuid(),
       project_code: 'PRJ-2025-001',
       project_name: 'Implementasi Core ERP Enterprise',
-      client_name: 'PT Nusantara Jaya Mandiri',
+      client_id: 'CLI-001',
       project_manager: 'Budi Santoso, PMP',
       start_date: '2025-01-15',
       end_date: '2025-08-30',
@@ -613,7 +684,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
       id: Utils.generateUuid(),
       project_code: 'PRJ-2025-002',
       project_name: 'Pengembangan Portal Mobile Client',
-      client_name: 'Bank Sinar Harapan',
+      client_id: 'CLI-002',
       project_manager: 'Siti Aminah, CSM',
       start_date: '2025-02-01',
       end_date: '2025-06-15',
@@ -631,7 +702,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
       id: Utils.generateUuid(),
       project_code: 'PRJ-2025-003',
       project_name: 'Infrastruktur Data Center & Cyber Security',
-      client_name: 'Dinas Komunikasi & Informatika',
+      client_id: 'CLI-003',
       project_manager: 'Rian Prasetyo, CISSP',
       start_date: '2024-10-10',
       end_date: '2025-02-28',
@@ -649,7 +720,7 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
       id: Utils.generateUuid(),
       project_code: 'PRJ-2025-004',
       project_name: 'Sistem Manajemen Pergudangan Otomatis',
-      client_name: 'Logistik Prima Sejahtera',
+      client_id: 'CLI-004',
       project_manager: 'Dewi Lestari, ST',
       start_date: '2025-04-01',
       end_date: '2025-11-30',
@@ -689,6 +760,63 @@ function initializeDatabaseSchema(spreadsheetId, adminPayload = {}, mode = 'FRES
 }
 
 /**
+ * Automatically ensures mst_client table, permissions, and menu exist in the active spreadsheet
+ */
+function syncMasterClient(ss) {
+  if (!ss) return;
+
+  // 1. Ensure mst_client exists
+  let clientSheet = ss.getSheetByName('mst_client');
+  if (!clientSheet || clientSheet.getLastRow() === 0) {
+    const repo = new ClientRepository();
+    repo.initClientSheet(ss);
+  }
+
+  // 2. Ensure mst_permission has CLIENT permissions
+  const permSheet = ss.getSheetByName('mst_permission');
+  if (permSheet && permSheet.getLastRow() > 0) {
+    const permData = permSheet.getDataRange().getValues();
+    const headers = permData[0];
+    const roleIdx = headers.indexOf('role_id');
+    const codeIdx = headers.indexOf('permission_code');
+    
+    if (roleIdx !== -1 && codeIdx !== -1) {
+      const existingPerms = new Set();
+      for (let i = 1; i < permData.length; i++) {
+        const rId = String(permData[i][roleIdx]).trim().toUpperCase();
+        const pCode = String(permData[i][codeIdx]).trim().toUpperCase();
+        existingPerms.add(`${rId}:${pCode}`);
+      }
+
+      const clientPerms = [
+        { code: 'CLIENT_VIEW', name: 'View Client Data' },
+        { code: 'CLIENT_CREATE', name: 'Create Client' },
+        { code: 'CLIENT_UPDATE', name: 'Update Client' },
+        { code: 'CLIENT_DELETE', name: 'Delete Client' }
+      ];
+
+      ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].forEach(roleId => {
+        clientPerms.forEach(p => {
+          if (!existingPerms.has(`${roleId}:${p.code}`)) {
+            const row = headers.map(h => {
+              if (h === 'id') return Utils.generateUuid();
+              if (h === 'role_id') return roleId;
+              if (h === 'permission_code') return p.code;
+              if (h === 'permission_name') return p.name;
+              if (h === 'created_at') return Utils.formatIsoDate();
+              if (h === 'created_by') return 'SYSTEM';
+              if (h === 'status') return 'ACTIVE';
+              return '';
+            });
+            permSheet.appendRow(row);
+          }
+        });
+      });
+    }
+  }
+}
+
+/**
  * Automatically ensures mst_project table, permissions, and menu exist in the active spreadsheet
  */
 function syncMasterProject(ss) {
@@ -699,6 +827,14 @@ function syncMasterProject(ss) {
   if (!projectSheet || projectSheet.getLastRow() === 0) {
     const repo = new ProjectRepository();
     repo.initProjectSheet(ss);
+  } else {
+    // If it exists, ensure it has client_id instead of client_name
+    const pData = projectSheet.getRange(1, 1, 1, projectSheet.getLastColumn()).getValues();
+    if (pData[0].indexOf('client_name') !== -1) {
+      // It still uses client_name, rename header to client_id
+      const colIdx = pData[0].indexOf('client_name') + 1;
+      projectSheet.getRange(1, colIdx).setValue('client_id');
+    }
   }
 
   // 2. Ensure mst_permission has PROJECT permissions

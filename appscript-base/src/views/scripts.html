@@ -619,7 +619,8 @@
         '/config': 'CONFIG_VIEW',
         '/audit': 'AUDIT_VIEW',
         '/menus': 'MENU_VIEW',
-        '/projects': 'PROJECT_VIEW'
+        '/projects': 'PROJECT_VIEW',
+        '/customers': 'CLIENT_VIEW'
       };
 
       const requiredPerm = routePermissions[route];
@@ -673,6 +674,9 @@
       } else if (route === '/projects') {
         contentCanvas.innerHTML = document.getElementById('tpl-projects').innerHTML;
         this.loadProjectsTable();
+      } else if (route === '/customers') {
+        contentCanvas.innerHTML = document.getElementById('tpl-clients').innerHTML;
+        this.loadClientsTable();
       } else {
         contentCanvas.innerHTML = `
           <div class="aef-card text-center py-5">
@@ -684,10 +688,16 @@
       }
     },
 
-    // PAGINATION ENGINE
     paginationState: {
       users: { page: 1, pageSize: 20, data: [] },
       roles: { page: 1, pageSize: 20, data: [] },
+      permissions: { page: 1, pageSize: 20, data: [] },
+      configs: { page: 1, pageSize: 20, data: [] },
+      audit: { page: 1, pageSize: 50, data: [] },
+      menus: { page: 1, pageSize: 20, data: [] },
+      projects: { page: 1, pageSize: 20, data: [] },
+      clients: { page: 1, pageSize: 20, data: [] }
+    },
       perms: { page: 1, pageSize: 20, data: [] },
       configs: { page: 1, pageSize: 5, data: [] },
       audit: { page: 1, pageSize: 5, data: [] },
@@ -4653,6 +4663,8 @@
       const startInput = document.getElementById('add-project-start');
       if (startInput) startInput.value = new Date().toISOString().split('T')[0];
 
+      this.populateClientDropdown('add-project-client');
+
       this.showModal('modal-add-project');
     },
 
@@ -4668,7 +4680,7 @@
       const payload = {
         project_code: document.getElementById('add-project-code')?.value || '',
         project_name: document.getElementById('add-project-name')?.value || '',
-        client_name: document.getElementById('add-project-client')?.value || '',
+        client_id: document.getElementById('add-project-client')?.value || '',
         project_manager: document.getElementById('add-project-pm')?.value || '',
         start_date: document.getElementById('add-project-start')?.value || '',
         end_date: document.getElementById('add-project-end')?.value || '',
@@ -4712,7 +4724,9 @@
       document.getElementById('edit-project-id').value = project.id;
       document.getElementById('edit-project-code').value = project.project_code || '';
       document.getElementById('edit-project-name').value = project.project_name || '';
-      document.getElementById('edit-project-client').value = project.client_name || '';
+      
+      this.populateClientDropdown('edit-project-client', project.client_id || '');
+      
       document.getElementById('edit-project-pm').value = project.project_manager || '';
       document.getElementById('edit-project-start').value = project.start_date || '';
       document.getElementById('edit-project-end').value = project.end_date || '';
@@ -4740,7 +4754,7 @@
         id: id,
         project_code: document.getElementById('edit-project-code')?.value || '',
         project_name: document.getElementById('edit-project-name')?.value || '',
-        client_name: document.getElementById('edit-project-client')?.value || '',
+        client_id: document.getElementById('edit-project-client')?.value || '',
         project_manager: document.getElementById('edit-project-pm')?.value || '',
         start_date: document.getElementById('edit-project-start')?.value || '',
         end_date: document.getElementById('edit-project-end')?.value || '',
@@ -4878,6 +4892,335 @@
           alert('Terjadi kesalahan: ' + (err.message || err));
         })
         .apiDeleteProject({ id: id, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    }
+
+    },
+
+    // ==========================================
+    // CLIENT MANAGEMENT LOGIC
+    // ==========================================
+    loadClientsTable: function (forceRefresh = false) {
+      if (forceRefresh) this.paginationState.clients.rawData = null;
+      
+      const tbody = document.getElementById('clients-table-body');
+      if (tbody && !this.paginationState.clients.rawData) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data pelanggan...</td></tr>';
+      }
+
+      if (this.paginationState.clients.rawData && !forceRefresh) {
+        this.renderClientsTablePagination();
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res && res.success) {
+            let data = res.data || [];
+            this.paginationState.clients.rawData = data;
+            this.renderClientsTablePagination();
+          } else {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${res.message || 'Gagal memuat data pelanggan'}</td></tr>`;
+          }
+        })
+        .withFailureHandler((err) => {
+          if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Terjadi kesalahan: ${err.message || err}</td></tr>`;
+        })
+        .apiGetClients();
+    },
+
+    renderClientsTablePagination: function () {
+      const state = this.paginationState.clients;
+      const tbody = document.getElementById('clients-table-body');
+      const info = document.getElementById('clients-pagination-info');
+      const controls = document.getElementById('clients-pagination-controls');
+
+      if (!tbody || !info || !controls) return;
+
+      let filteredData = state.rawData || [];
+
+      // Global Search
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        filteredData = filteredData.filter(c => 
+          (c.client_code && c.client_code.toLowerCase().includes(q)) ||
+          (c.client_name && c.client_name.toLowerCase().includes(q)) ||
+          (c.contact_person && c.contact_person.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q))
+        );
+      }
+
+      // Status Filter
+      if (state.statusFilter && state.statusFilter !== 'ALL') {
+        filteredData = filteredData.filter(c => c.status === state.statusFilter);
+      }
+
+      // Column Filters
+      if (state.columnFilters) {
+        Object.keys(state.columnFilters).forEach(key => {
+          const val = state.columnFilters[key].toLowerCase();
+          if (val) {
+            filteredData = filteredData.filter(c => {
+              if (key === 'code') return (c.client_code || '').toLowerCase().includes(val);
+              if (key === 'name') return (c.client_name || '').toLowerCase().includes(val);
+              if (key === 'contact') return (c.contact_person || '').toLowerCase().includes(val);
+              if (key === 'contactinfo') return (c.email || '').toLowerCase().includes(val) || (c.phone || '').toLowerCase().includes(val);
+              if (key === 'status') return (c.status || '').toLowerCase().includes(val);
+              return true;
+            });
+          }
+        });
+      }
+
+      // Sorting
+      if (state.sortCol) {
+        filteredData.sort((a, b) => {
+          let valA = a[state.sortCol] || '';
+          let valB = b[state.sortCol] || '';
+          if (typeof valA === 'string') valA = valA.toLowerCase();
+          if (typeof valB === 'string') valB = valB.toLowerCase();
+          if (valA < valB) return state.sortAsc ? -1 : 1;
+          if (valA > valB) return state.sortAsc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      const totalItems = filteredData.length;
+      const totalPages = Math.ceil(totalItems / state.pageSize) || 1;
+      if (state.page > totalPages) state.page = totalPages;
+
+      const startIndex = (state.page - 1) * state.pageSize;
+      const endIndex = Math.min(startIndex + state.pageSize, totalItems);
+      const pageData = filteredData.slice(startIndex, endIndex);
+
+      info.innerHTML = `Menampilkan ${totalItems === 0 ? 0 : startIndex + 1} s/d ${endIndex} dari total ${totalItems} data`;
+
+      if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">Tidak ada data pelanggan ditemukan.</td></tr>';
+      } else {
+        tbody.innerHTML = pageData.map(c => {
+          const statusBadge = c.status === 'ACTIVE' 
+            ? '<span class="badge badge-light-success">Aktif</span>' 
+            : '<span class="badge badge-light-danger">Nonaktif</span>';
+          
+          let contactInfo = '';
+          if (c.phone) contactInfo += `<div><i class="bi bi-telephone text-muted me-1"></i> ${c.phone}</div>`;
+          if (c.email) contactInfo += `<div><i class="bi bi-envelope text-muted me-1"></i> ${c.email}</div>`;
+
+          return `
+            <tr class="aef-table-row">
+              <td class="fw-medium text-dark">${c.client_code || '-'}</td>
+              <td>
+                <div class="fw-bold text-dark">${c.client_name || '-'}</div>
+              </td>
+              <td>${c.contact_person || '-'}</td>
+              <td>${contactInfo || '-'}</td>
+              <td>${statusBadge}</td>
+              <td class="text-center">
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-light btn-icon rounded" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots text-muted"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-light-subtle" style="font-size: 0.85rem; border-radius: 0.5rem; z-index: 1050;">
+                    <li><a class="dropdown-item py-2" href="#" onclick="event.preventDefault(); AEF.openEditClientModal('${c.id}')"><i class="bi bi-pencil me-2 text-primary"></i> Edit Data</a></li>
+                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><a class="dropdown-item py-2 text-danger" href="#" onclick="event.preventDefault(); AEF.confirmDeleteClient('${c.id}')"><i class="bi bi-trash me-2"></i> Hapus</a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      this.renderPaginationControls(state.page, totalPages, 'clients', (newPage) => {
+        this.paginationState.clients.page = newPage;
+        this.renderClientsTablePagination();
+      });
+    },
+
+    handleClientsSearch: function (query) {
+      this.paginationState.clients.searchQuery = query;
+      this.paginationState.clients.page = 1;
+      this.renderClientsTablePagination();
+    },
+
+    handleClientsStatusFilter: function (status) {
+      this.paginationState.clients.statusFilter = status;
+      this.paginationState.clients.page = 1;
+      this.renderClientsTablePagination();
+    },
+
+    toggleClientsFilterRow: function () {
+      const row = document.getElementById('clients-filter-row');
+      if (row) row.classList.toggle('d-none');
+    },
+
+    handleClientsColumnFilter: function () {
+      this.paginationState.clients.columnFilters = {
+        code: document.getElementById('clients-filter-code')?.value || '',
+        name: document.getElementById('clients-filter-name')?.value || '',
+        contact: document.getElementById('clients-filter-contact')?.value || '',
+        contactinfo: document.getElementById('clients-filter-contactinfo')?.value || '',
+        status: document.getElementById('clients-filter-status')?.value || ''
+      };
+      this.paginationState.clients.page = 1;
+      this.renderClientsTablePagination();
+    },
+
+    handleClientsSort: function (col) {
+      const state = this.paginationState.clients;
+      if (state.sortCol === col) {
+        state.sortAsc = !state.sortAsc;
+      } else {
+        state.sortCol = col;
+        state.sortAsc = true;
+      }
+      document.querySelectorAll('[id^="clients-sort-icon-"]').forEach(el => {
+        el.className = 'bi bi-arrow-down-up ms-1 text-muted opacity-50';
+      });
+      const icon = document.getElementById(`clients-sort-icon-${col}`);
+      if (icon) {
+        icon.className = state.sortAsc ? 'bi bi-arrow-up ms-1 text-primary' : 'bi bi-arrow-down ms-1 text-primary';
+      }
+      this.renderClientsTablePagination();
+    },
+
+    handleClientsPageSizeChange: function (size) {
+      this.paginationState.clients.pageSize = Number(size) || 20;
+      this.renderClientsTablePagination();
+    },
+
+    openAddClientModal: function () {
+      const form = document.getElementById('form-client');
+      if (form) form.reset();
+      document.getElementById('client-id').value = '';
+      document.getElementById('modal-client-title').innerText = 'Tambah Pelanggan Baru';
+      this.showModal('modal-client');
+    },
+
+    openEditClientModal: function (id) {
+      const raw = this.paginationState.clients.rawData || [];
+      const client = raw.find(c => c.id === id);
+      if (!client) return;
+
+      document.getElementById('client-id').value = client.id;
+      document.getElementById('client-code').value = client.client_code || '';
+      document.getElementById('client-name').value = client.client_name || '';
+      document.getElementById('client-pic').value = client.contact_person || '';
+      document.getElementById('client-phone').value = client.phone || '';
+      document.getElementById('client-email').value = client.email || '';
+      document.getElementById('client-address').value = client.address || '';
+      document.getElementById('client-description').value = client.description || '';
+      document.getElementById('client-status').value = client.status || 'ACTIVE';
+      
+      document.getElementById('modal-client-title').innerText = 'Edit Data Pelanggan';
+      this.showModal('modal-client');
+    },
+
+    submitClientForm: function () {
+      const btn = document.getElementById('btn-save-client');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+      }
+
+      const id = document.getElementById('client-id')?.value;
+      const payload = {
+        client_code: document.getElementById('client-code')?.value || '',
+        client_name: document.getElementById('client-name')?.value || '',
+        contact_person: document.getElementById('client-pic')?.value || '',
+        phone: document.getElementById('client-phone')?.value || '',
+        email: document.getElementById('client-email')?.value || '',
+        address: document.getElementById('client-address')?.value || '',
+        description: document.getElementById('client-description')?.value || '',
+        status: document.getElementById('client-status')?.value || 'ACTIVE',
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      };
+
+      if (id) {
+        payload.id = id;
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data'; }
+            if (res && res.success) {
+              this.hideModal('modal-client');
+              this.showToast(res.message || 'Perubahan berhasil disimpan!', 'success');
+              this.loadClientsTable(true);
+            } else {
+              alert(res.message || 'Gagal mengubah data pelanggan.');
+            }
+          })
+          .withFailureHandler((err) => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data'; }
+            alert('Terjadi kesalahan: ' + (err.message || err));
+          })
+          .apiUpdateClient(payload);
+      } else {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data'; }
+            if (res && res.success) {
+              this.hideModal('modal-client');
+              this.showToast(res.message || 'Pelanggan baru berhasil ditambahkan!', 'success');
+              this.loadClientsTable(true);
+            } else {
+              alert(res.message || 'Gagal menyimpan data pelanggan.');
+            }
+          })
+          .withFailureHandler((err) => {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i> Simpan Data'; }
+            alert('Terjadi kesalahan: ' + (err.message || err));
+          })
+          .apiCreateClient(payload);
+      }
+    },
+
+    confirmDeleteClient: function (id) {
+      if (confirm('Apakah Anda yakin ingin menghapus data pelanggan ini? Tindakan ini tidak dapat dibatalkan.')) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.success) {
+              this.showToast('Data pelanggan berhasil dihapus', 'success');
+              this.loadClientsTable(true);
+            } else {
+              alert(res.message || 'Gagal menghapus data.');
+            }
+          })
+          .withFailureHandler((err) => {
+            alert('Terjadi kesalahan: ' + (err.message || err));
+          })
+          .apiDeleteClient({ id: id, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+      }
+    },
+
+    populateClientDropdown: function (elementId, selectedId = '') {
+      const select = document.getElementById(elementId);
+      if (!select) return;
+
+      if (!this.paginationState.clients.rawData) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.success) {
+              this.paginationState.clients.rawData = res.data;
+              this._renderClientOptions(select, res.data, selectedId);
+            }
+          })
+          .apiGetClients();
+      } else {
+        this._renderClientOptions(select, this.paginationState.clients.rawData, selectedId);
+      }
+    },
+
+    _renderClientOptions: function (select, clients, selectedId) {
+      select.innerHTML = '<option value="">-- Pilih Klien / Instansi --</option>';
+      const activeClients = clients.filter(c => c.status === 'ACTIVE');
+      activeClients.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.id;
+        option.textContent = c.client_name;
+        if (c.id === selectedId) option.selected = true;
+        select.appendChild(option);
+      });
     }
 
   }; // end AEF object
