@@ -99,10 +99,23 @@ function doGet(e) {
   }
 }
 
+// Memory cache for single request execution
+let _globalSharedProps = null;
+function getSharedProps() {
+  if (!_globalSharedProps) {
+    const props = PropertiesService.getScriptProperties();
+    _globalSharedProps = {
+      appName: props.getProperty('APP_NAME') || 'AppScript Enterprise Framework',
+      appLogo: getAppLogoCore()
+    };
+  }
+  return _globalSharedProps;
+}
+
 /**
  * Gets APP_LOGO with database and default fallback
  */
-function getAppLogo() {
+function getAppLogoCore() {
   let logo = '';
   try {
     logo = PropertiesService.getScriptProperties().getProperty('APP_LOGO');
@@ -126,15 +139,19 @@ function getAppLogo() {
   return logo;
 }
 
+function getAppLogo() {
+  return getSharedProps().appLogo;
+}
+
 /**
  * Helper to include partial HTML files into templates
  * @param {string} filename 
  * @returns {string} File content
  */
 function include(filename) {
-  const props = PropertiesService.getScriptProperties();
+  const shared = getSharedProps();
   const template = HtmlService.createTemplateFromFile(filename);
-  template.appName = props.getProperty('APP_NAME') || 'AppScript Enterprise Framework';
-  template.appLogo = getAppLogo();
+  template.appName = shared.appName;
+  template.appLogo = shared.appLogo;
   return template.evaluate().getContent();
 }
