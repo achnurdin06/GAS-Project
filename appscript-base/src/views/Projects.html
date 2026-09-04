@@ -1,0 +1,184 @@
+<template id="tpl-projects">
+  <!-- 1. MAIN PROJECTS LIST VIEW -->
+  <div id="projects-list-view">
+    <!-- TOP HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="fw-bold mb-1" style="color: #181c32;">Master Proyek</h3>
+        <p class="text-muted small mb-0">Kelola direktori proyek, alokasi anggaran, status pengerjaan, dan manajer proyek.</p>
+        <div class="aef-breadcrumb mt-1" style="font-size: 0.75rem; color: var(--aef-text-muted);">
+          <span class="text-muted">Home</span> &gt; <span class="text-muted">Master Data</span> &gt; <span class="text-dark fw-medium">Master Proyek</span>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-sm btn-light border text-muted d-flex align-items-center gap-1" onclick="AEF.loadProjectsTable(true)">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <button class="btn btn-sm btn-secondary text-white d-flex align-items-center gap-1 text-nowrap" onclick="AEF.toggleProjectsFilterRow()" style="background-color: #6c757d; border: none; padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-funnel"></i> View Filter
+        </button>
+        <button id="btn-add-project-trigger" class="btn btn-sm btn-aef-primary d-flex align-items-center gap-1 text-nowrap" onclick="AEF.openAddProjectModal()" style="padding: 0.4rem 0.8rem; font-weight: 500;">
+          <i class="bi bi-plus-lg"></i> Tambah Proyek
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. METRIC STATISTIC CARDS -->
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="aef-card p-3 h-100 d-flex align-items-center gap-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background-color: #f8f5ff; color: #7239ea;">
+            <i class="bi bi-kanban-fill fs-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <span class="text-muted small fw-semibold d-block text-truncate">Total Proyek</span>
+            <h4 class="fw-bold mb-0 text-dark" id="stat-project-total">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="aef-card p-3 h-100 d-flex align-items-center gap-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background-color: #f1faff; color: #009ef7;">
+            <i class="bi bi-arrow-repeat fs-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <span class="text-muted small fw-semibold d-block text-truncate">Proyek Berjalan</span>
+            <h4 class="fw-bold mb-0 text-dark" id="stat-project-progress">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="aef-card p-3 h-100 d-flex align-items-center gap-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background-color: #e8fff3; color: #50cd89;">
+            <i class="bi bi-check2-circle fs-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <span class="text-muted small fw-semibold d-block text-truncate">Proyek Selesai</span>
+            <h4 class="fw-bold mb-0 text-dark" id="stat-project-completed">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-sm-6 col-xl-3">
+        <div class="aef-card p-3 h-100 d-flex align-items-center gap-3">
+          <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background-color: #fff8dd; color: #ffc700;">
+            <i class="bi bi-cash-stack fs-4"></i>
+          </div>
+          <div class="overflow-hidden">
+            <span class="text-muted small fw-semibold d-block text-truncate">Total Nilai Anggaran</span>
+            <h5 class="fw-bold mb-0 text-dark text-truncate" id="stat-project-budget">Rp 0</h5>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SEARCH & QUICK FILTER BAR -->
+    <div class="aef-card p-3 mb-3">
+      <div class="row g-3 align-items-center">
+        <!-- Search Input -->
+        <div class="col-md-5">
+          <label class="form-label text-muted small fw-semibold mb-1">Pencarian Proyek</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" id="projects-search" class="form-control border-start-0 ps-0" placeholder="Cari by kode, nama, klien, manager..." oninput="AEF.handleProjectsSearch(this.value)">
+          </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-4">
+          <label class="form-label text-muted small fw-semibold mb-1">Status Proyek</label>
+          <select id="projects-status-filter" class="form-select form-select-sm" onchange="AEF.handleProjectsStatusFilter(this.value)">
+            <option value="ALL">Semua Status</option>
+            <option value="PLANNING">Planning</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="ON_HOLD">On Hold</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="col-md-3">
+          <label class="form-label text-muted small fw-semibold mb-1">Tingkat Prioritas</label>
+          <select id="projects-priority-filter" class="form-select form-select-sm" onchange="AEF.handleProjectsPriorityFilter(this.value)">
+            <option value="ALL">Semua Prioritas</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. DATA TABLE CARD -->
+    <div class="aef-card p-0 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table table-aef align-middle mb-0">
+          <thead>
+            <tr>
+              <th onclick="AEF.handleProjectsSort('project_code')" style="cursor: pointer; user-select: none; width: 13%;">
+                Kode Proyek <i id="projects-sort-icon-project_code" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('project_name')" style="cursor: pointer; user-select: none; width: 23%;">
+                Nama Proyek & Klien <i id="projects-sort-icon-project_name" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('project_manager')" style="cursor: pointer; user-select: none; width: 15%;">
+                Manajer Proyek <i id="projects-sort-icon-project_manager" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('start_date')" style="cursor: pointer; user-select: none; width: 13%;">
+                Timeline <i id="projects-sort-icon-start_date" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('budget')" style="cursor: pointer; user-select: none; width: 12%;">
+                Anggaran <i id="projects-sort-icon-budget" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('progress')" style="cursor: pointer; user-select: none; width: 10%;">
+                Progress <i id="projects-sort-icon-progress" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('status')" style="cursor: pointer; user-select: none; width: 8%;">
+                Status <i id="projects-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th style="width: 6%; text-align: center;">Aksi</th>
+            </tr>
+
+            <!-- Table Header Filter Row (Toggleable) -->
+            <tr id="projects-filter-row" class="d-none bg-light">
+              <th><input type="text" id="projects-filter-code" class="form-control form-control-sm" placeholder="Filter kode..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-name" class="form-control form-control-sm" placeholder="Filter nama / klien..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-pm" class="form-control form-control-sm" placeholder="Filter manager..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-timeline" class="form-control form-control-sm" placeholder="Filter timeline..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-budget" class="form-control form-control-sm" placeholder="Filter anggaran..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-progress" class="form-control form-control-sm" placeholder="Filter %..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-status" class="form-control form-control-sm" placeholder="Filter status..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="projects-table-body">
+            <!-- Dynamically populated rows -->
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data proyek...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top border-light-subtle flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <select id="projects-page-size" class="form-select form-select-sm border-light-subtle text-muted" style="width: auto;" onchange="AEF.handleProjectsPageSizeChange(Number(this.value))">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <div class="text-muted small" id="projects-pagination-info">Memuat data...</div>
+        </div>
+        <ul class="pagination pagination-sm mb-0" id="projects-pagination-controls"></ul>
+      </div>
+    </div>
+  </div>
+</template>

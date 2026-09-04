@@ -332,3 +332,69 @@ function checkApiPermission(payload, requiredPermission) {
     throw new Error('Akses Ditolak: Anda tidak memiliki permission ' + requiredPermission);
   }
 }
+
+// MASTER PROJECT MANAGEMENT ENDPOINTS
+function apiGetProjects(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_VIEW');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ProjectService().getAllProjects(actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetProjects failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiGetProjectStats(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_VIEW');
+    return new ProjectService().getProjectStats();
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetProjectStats failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiGetProjectById(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_VIEW');
+    return new ProjectService().getProjectById(payload ? payload.id : '');
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiGetProjectById failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiCreateProject(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_CREATE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ProjectService().createProject(payload, actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiCreateProject failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiUpdateProject(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_UPDATE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ProjectService().updateProject(payload ? payload.id : '', payload, actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiUpdateProject failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+
+function apiDeleteProject(payload) {
+  try {
+    checkApiPermission(payload, 'PROJECT_DELETE');
+    const actorId = payload && payload.actor_id ? payload.actor_id : 'SYSTEM';
+    return new ProjectService().deleteProject(payload ? payload.id : '', actorId);
+  } catch (err) {
+    LoggerUtil.error('ApiController', 'apiDeleteProject failed', err);
+    return Response.error(err.message, 'SYSTEM_ERROR');
+  }
+}
+

@@ -7,7 +7,18 @@ class MenuService {
   }
 
   getUserMenu(actorId = 'SYSTEM') {
-    const activeMenus = this.menuRepo.findActiveMenus();
+    let activeMenus = this.menuRepo.findActiveMenus();
+    
+    // Auto-sync Project menu if not yet seeded in active database
+    if (!activeMenus.some(m => String(m.menu_code).trim().toUpperCase() === 'MENU_PROJECT_MGMT')) {
+      try {
+        this.ensureProjectMenuExists(activeMenus);
+        activeMenus = this.menuRepo.findActiveMenus();
+      } catch (err) {
+        LoggerUtil.error('MenuService', 'ensureProjectMenuExists failed', err);
+      }
+    }
+
     let allowedPermCodes = null;
 
     if (actorId && actorId !== 'SYSTEM' && actorId !== 'ANONYMOUS') {
@@ -131,5 +142,27 @@ class MenuService {
 
     this.auditService.log('MENU', 'DELETE', 'SUCCESS', actorId, `Menu deleted: ${menuId}`, menuId);
     return Response.success('Menu berhasil dihapus', null, 'MENU_DELETE_SUCCESS');
+  }
+
+  ensureProjectMenuExists(activeMenus) {
+    const parent = activeMenus.find(m => String(m.menu_code).trim().toUpperCase() === 'MODULE_MASTER_DATA');
+    const parentId = parent ? (parent.menu_id || parent.id || 'PARENT_MASTER') : 'PARENT_MASTER';
+
+    const projectMenu = {
+      menu_id: Utils.generateUuid(),
+      parent_id: parentId,
+      menu_code: 'MENU_PROJECT_MGMT',
+      menu_name: 'Master Proyek',
+      slug: 'projects',
+      type: 'Internal Link',
+      route: '/projects',
+      icon: 'bi-kanban-fill',
+      sort_order: 1,
+      permission_code: 'PROJECT_VIEW',
+      description: 'Kelola master data proyek, timeline, budget, dan status pengerjaan',
+      status: 'ACTIVE'
+    };
+
+    this.menuRepo.insert(projectMenu, 'SYSTEM');
   }
 }

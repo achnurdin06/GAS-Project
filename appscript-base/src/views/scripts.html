@@ -607,7 +607,8 @@
         '/permissions': 'PERMISSION_VIEW',
         '/config': 'CONFIG_VIEW',
         '/audit': 'AUDIT_VIEW',
-        '/menus': 'MENU_VIEW'
+        '/menus': 'MENU_VIEW',
+        '/projects': 'PROJECT_VIEW'
       };
 
       const requiredPerm = routePermissions[route];
@@ -658,6 +659,9 @@
       } else if (route === '/menus') {
         contentCanvas.innerHTML = document.getElementById('tpl-menus').innerHTML;
         this.loadMenusTable();
+      } else if (route === '/projects') {
+        contentCanvas.innerHTML = document.getElementById('tpl-projects').innerHTML;
+        this.loadProjectsTable();
       } else {
         contentCanvas.innerHTML = `
           <div class="aef-card text-center py-5">
@@ -677,6 +681,7 @@
       configs: { page: 1, pageSize: 5, data: [] },
       audit: { page: 1, pageSize: 5, data: [] },
       menus: { page: 1, pageSize: 5, data: [] },
+      projects: { page: 1, pageSize: 20, data: [], rawData: [], sortCol: 'project_code', sortAsc: true },
       userDetailRecentLogs: { page: 1, pageSize: 20, data: [] },
       userDetailFullLogs: { page: 1, pageSize: 20, data: [] }
     },
@@ -4262,6 +4267,513 @@
       }, 2000);
     },
 
+    // ==========================================
+    // MASTER PROJECT MANAGEMENT MODULE
+    // ==========================================
+    loadProjectsTable: function (forceRefresh = false) {
+      const tbody = document.getElementById('projects-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data proyek...</td></tr>';
+
+      // 1. Load Stats
+      this.loadProjectStats();
+
+      // 2. Load Table Data
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.data)) {
+            this.paginationState.projects.rawData = res.data;
+            this.applyProjectsFilter();
+          } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${(res && res.message) ? res.message : 'Gagal memuat data proyek.'}</td></tr>`;
+          }
+        })
+        .withFailureHandler((err) => {
+          tbody.innerHTML = `<tr role="row"><td colspan="8" class="text-center text-danger py-4">Terjadi kesalahan: ${err.message || err}</td></tr>`;
+        })
+        .apiGetProjects({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    loadProjectStats: function () {
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (res && res.success && res.data) {
+            const d = res.data;
+            const totalEl = document.getElementById('stat-project-total');
+            const progEl = document.getElementById('stat-project-progress');
+            const compEl = document.getElementById('stat-project-completed');
+            const budgEl = document.getElementById('stat-project-budget');
+
+            if (totalEl) totalEl.innerText = d.total_projects || 0;
+            if (progEl) progEl.innerText = d.in_progress || 0;
+            if (compEl) compEl.innerText = d.completed || 0;
+            if (budgEl) {
+              const formatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(d.total_budget || 0);
+              budgEl.innerText = formatted;
+            }
+          }
+        })
+        .apiGetProjectStats({ actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    },
+
+    applyProjectsFilter: function () {
+      const state = this.paginationState.projects;
+      const raw = state.rawData || [];
+
+      const searchVal = (document.getElementById('projects-search')?.value || '').toLowerCase().trim();
+      const statusFilter = document.getElementById('projects-status-filter')?.value || 'ALL';
+      const priorityFilter = document.getElementById('projects-priority-filter')?.value || 'ALL';
+
+      // Column filters
+      const filterCode = (document.getElementById('projects-filter-code')?.value || '').toLowerCase().trim();
+      const filterName = (document.getElementById('projects-filter-name')?.value || '').toLowerCase().trim();
+      const filterPm = (document.getElementById('projects-filter-pm')?.value || '').toLowerCase().trim();
+      const filterTimeline = (document.getElementById('projects-filter-timeline')?.value || '').toLowerCase().trim();
+      const filterBudget = (document.getElementById('projects-filter-budget')?.value || '').toLowerCase().trim();
+      const filterProgress = (document.getElementById('projects-filter-progress')?.value || '').toLowerCase().trim();
+      const filterStatus = (document.getElementById('projects-filter-status')?.value || '').toLowerCase().trim();
+
+      let filtered = raw.filter(p => {
+        // Search text matching
+        if (searchVal) {
+          const matchSearch = String(p.project_code || '').toLowerCase().includes(searchVal) ||
+            String(p.project_name || '').toLowerCase().includes(searchVal) ||
+            String(p.client_name || '').toLowerCase().includes(searchVal) ||
+            String(p.project_manager || '').toLowerCase().includes(searchVal);
+          if (!matchSearch) return false;
+        }
+
+        // Status filter
+        if (statusFilter !== 'ALL' && String(p.status || '').toUpperCase() !== statusFilter) {
+          return false;
+        }
+
+        // Priority filter
+        if (priorityFilter !== 'ALL' && String(p.priority || '').toUpperCase() !== priorityFilter) {
+          return false;
+        }
+
+        // Column filters
+        if (filterCode && !String(p.project_code || '').toLowerCase().includes(filterCode)) return false;
+        if (filterName && !(String(p.project_name || '').toLowerCase().includes(filterName) || String(p.client_name || '').toLowerCase().includes(filterName))) return false;
+        if (filterPm && !String(p.project_manager || '').toLowerCase().includes(filterPm)) return false;
+        if (filterTimeline && !(String(p.start_date || '').toLowerCase().includes(filterTimeline) || String(p.end_date || '').toLowerCase().includes(filterTimeline))) return false;
+        if (filterBudget && !String(p.budget || '').toLowerCase().includes(filterBudget)) return false;
+        if (filterProgress && !String(p.progress || '').toLowerCase().includes(filterProgress)) return false;
+        if (filterStatus && !String(p.status || '').toLowerCase().includes(filterStatus)) return false;
+
+        return true;
+      });
+
+      // Sorting
+      const col = state.sortCol || 'project_code';
+      const asc = state.sortAsc !== false;
+      filtered.sort((a, b) => {
+        let valA = a[col] !== undefined ? a[col] : '';
+        let valB = b[col] !== undefined ? b[col] : '';
+
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return asc ? valA - valB : valB - valA;
+        }
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      });
+
+      state.data = filtered;
+      state.page = 1;
+      this.renderProjectsTablePagination();
+    },
+
+    renderProjectsTablePagination: function () {
+      this.renderTablePagination(
+        'projects',
+        this.renderProjectRow.bind(this),
+        'projects-table-body',
+        'projects-pagination-info',
+        'projects-pagination-controls'
+      );
+    },
+
+    renderProjectRow: function (p) {
+      // Priority badge
+      const priority = String(p.priority || 'MEDIUM').toUpperCase();
+      let priorityBadge = '';
+      if (priority === 'CRITICAL') priorityBadge = '<span class="badge badge-light-danger fw-bold">Critical</span>';
+      else if (priority === 'HIGH') priorityBadge = '<span class="badge badge-light-warning fw-bold">High</span>';
+      else if (priority === 'LOW') priorityBadge = '<span class="badge bg-light text-muted border">Low</span>';
+      else priorityBadge = '<span class="badge badge-light-primary">Medium</span>';
+
+      // Status badge
+      const status = String(p.status || 'PLANNING').toUpperCase();
+      let statusBadge = '';
+      if (status === 'COMPLETED') statusBadge = '<span class="badge badge-light-success fw-bold">Completed</span>';
+      else if (status === 'IN_PROGRESS') statusBadge = '<span class="badge badge-light-info fw-bold">In Progress</span>';
+      else if (status === 'ON_HOLD') statusBadge = '<span class="badge badge-light-warning fw-bold">On Hold</span>';
+      else if (status === 'CANCELLED') statusBadge = '<span class="badge badge-light-danger fw-bold">Cancelled</span>';
+      else statusBadge = '<span class="badge badge-light-primary fw-bold">Planning</span>';
+
+      // Currency format
+      const formattedBudget = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.budget || 0);
+
+      // Progress bar styling
+      const progress = Number(p.progress || 0);
+      let progressColor = 'bg-primary';
+      if (progress >= 100) progressColor = 'bg-success';
+      else if (progress <= 25) progressColor = 'bg-warning';
+
+      // PM Initials
+      const pmName = p.project_manager || 'Unassigned';
+      const pmInitial = pmName.charAt(0).toUpperCase();
+
+      const canEdit = this.hasPermission('PROJECT_UPDATE') || this.hasPermission('PROJECT_VIEW');
+      const canDelete = this.hasPermission('PROJECT_DELETE');
+
+      return `
+        <tr>
+          <td>
+            <a href="#" class="badge badge-light-primary text-decoration-none fw-bold" onclick="AEF.openDetailProjectModal('${p.id}'); return false;">
+              ${p.project_code || '-'}
+            </a>
+            <div class="mt-1">${priorityBadge}</div>
+          </td>
+          <td>
+            <div class="fw-bold text-dark fs-7">${p.project_name || '-'}</div>
+            <div class="text-muted small d-flex align-items-center gap-1 mt-1">
+              <i class="bi bi-building"></i> <span>${p.client_name || '-'}</span>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-primary fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem; border: 1px solid #e4e6ef;">
+                ${pmInitial}
+              </div>
+              <span class="text-dark fs-7">${pmName}</span>
+            </div>
+          </td>
+          <td>
+            <div class="text-dark small d-flex align-items-center gap-1">
+              <i class="bi bi-calendar3 text-muted" style="font-size: 0.75rem;"></i>
+              <span>${p.start_date || '-'}</span>
+            </div>
+            <div class="text-muted small mt-1" style="font-size: 0.72rem;">s/d ${p.end_date || '-'}</div>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark fs-7">${formattedBudget}</div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height: 6px; border-radius: 4px; min-width: 50px;">
+                <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <span class="text-muted small fw-bold" style="font-size: 0.75rem;">${progress}%</span>
+            </div>
+          </td>
+          <td>${statusBadge}</td>
+          <td class="text-center text-nowrap">
+            <button class="btn btn-sm btn-icon btn-light text-primary me-1" title="Detail Proyek" onclick="AEF.openDetailProjectModal('${p.id}')">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="btn btn-sm btn-icon btn-light text-info me-1" title="Edit Proyek" onclick="AEF.openEditProjectModal('${p.id}')">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-icon btn-light text-danger" title="Hapus Proyek" onclick="AEF.confirmDeleteProject('${p.id}', '${escapeHtml(p.project_name)}')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    },
+
+    handleProjectsSearch: function (val) {
+      this.applyProjectsFilter();
+    },
+
+    handleProjectsStatusFilter: function (status) {
+      this.applyProjectsFilter();
+    },
+
+    handleProjectsPriorityFilter: function (priority) {
+      this.applyProjectsFilter();
+    },
+
+    handleProjectsColumnFilter: function () {
+      this.applyProjectsFilter();
+    },
+
+    toggleProjectsFilterRow: function () {
+      const row = document.getElementById('projects-filter-row');
+      if (row) row.classList.toggle('d-none');
+    },
+
+    handleProjectsSort: function (column) {
+      const state = this.paginationState.projects;
+      if (state.sortCol === column) {
+        state.sortAsc = !state.sortAsc;
+      } else {
+        state.sortCol = column;
+        state.sortAsc = true;
+      }
+
+      // Update sort icons
+      document.querySelectorAll('[id^="projects-sort-icon-"]').forEach(el => {
+        el.className = 'bi bi-arrow-down-up ms-1 text-muted opacity-50';
+      });
+      const icon = document.getElementById(`projects-sort-icon-${column}`);
+      if (icon) {
+        icon.className = state.sortAsc ? 'bi bi-sort-down-alt ms-1 text-primary' : 'bi bi-sort-up ms-1 text-primary';
+      }
+
+      this.applyProjectsFilter();
+    },
+
+    handleProjectsPageSizeChange: function (size) {
+      this.paginationState.projects.pageSize = Number(size) || 20;
+      this.renderProjectsTablePagination();
+    },
+
+    // CRUD ACTIONS
+    openAddProjectModal: function () {
+      const form = document.getElementById('form-add-project');
+      if (form) form.reset();
+      
+      const progVal = document.getElementById('add-project-progress-val');
+      if (progVal) progVal.innerText = '0%';
+
+      // Suggest next project code
+      const raw = this.paginationState.projects.rawData || [];
+      const year = new Date().getFullYear();
+      const nextNum = String(raw.length + 1).padStart(3, '0');
+      const codeInput = document.getElementById('add-project-code');
+      if (codeInput) codeInput.value = `PRJ-${year}-${nextNum}`;
+
+      // Default start date = today
+      const startInput = document.getElementById('add-project-start');
+      if (startInput) startInput.value = new Date().toISOString().split('T')[0];
+
+      this.showModal('modal-add-project');
+    },
+
+    submitAddProject: function (e) {
+      if (e) e.preventDefault();
+
+      const btn = document.getElementById('btn-submit-add-project');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+      }
+
+      const payload = {
+        project_code: document.getElementById('add-project-code')?.value || '',
+        project_name: document.getElementById('add-project-name')?.value || '',
+        client_name: document.getElementById('add-project-client')?.value || '',
+        project_manager: document.getElementById('add-project-pm')?.value || '',
+        start_date: document.getElementById('add-project-start')?.value || '',
+        end_date: document.getElementById('add-project-end')?.value || '',
+        budget: Number(document.getElementById('add-project-budget')?.value || 0),
+        priority: document.getElementById('add-project-priority')?.value || 'MEDIUM',
+        status: document.getElementById('add-project-status')?.value || 'PLANNING',
+        progress: Number(document.getElementById('add-project-progress')?.value || 0),
+        description: document.getElementById('add-project-description')?.value || '',
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      };
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Simpan Proyek';
+          }
+          if (res && res.success) {
+            this.hideModal('modal-add-project');
+            this.showToast(res.message || 'Proyek baru berhasil ditambahkan!', 'success');
+            this.loadProjectsTable();
+          } else {
+            alert(res.message || 'Gagal menyimpan proyek.');
+          }
+        })
+        .withFailureHandler((err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i> Simpan Proyek';
+          }
+          alert('Terjadi kesalahan: ' + (err.message || err));
+        })
+        .apiCreateProject(payload);
+    },
+
+    openEditProjectModal: function (id) {
+      const raw = this.paginationState.projects.rawData || [];
+      const project = raw.find(p => p.id === id);
+      if (!project) return;
+
+      document.getElementById('edit-project-id').value = project.id;
+      document.getElementById('edit-project-code').value = project.project_code || '';
+      document.getElementById('edit-project-name').value = project.project_name || '';
+      document.getElementById('edit-project-client').value = project.client_name || '';
+      document.getElementById('edit-project-pm').value = project.project_manager || '';
+      document.getElementById('edit-project-start').value = project.start_date || '';
+      document.getElementById('edit-project-end').value = project.end_date || '';
+      document.getElementById('edit-project-budget').value = project.budget || 0;
+      document.getElementById('edit-project-priority').value = String(project.priority || 'MEDIUM').toUpperCase();
+      document.getElementById('edit-project-status').value = String(project.status || 'PLANNING').toUpperCase();
+      document.getElementById('edit-project-progress').value = project.progress || 0;
+      document.getElementById('edit-project-progress-val').innerText = (project.progress || 0) + '%';
+      document.getElementById('edit-project-description').value = project.description || '';
+
+      this.showModal('modal-edit-project');
+    },
+
+    submitEditProject: function (e) {
+      if (e) e.preventDefault();
+
+      const btn = document.getElementById('btn-submit-edit-project');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+      }
+
+      const id = document.getElementById('edit-project-id')?.value;
+      const payload = {
+        id: id,
+        project_code: document.getElementById('edit-project-code')?.value || '',
+        project_name: document.getElementById('edit-project-name')?.value || '',
+        client_name: document.getElementById('edit-project-client')?.value || '',
+        project_manager: document.getElementById('edit-project-pm')?.value || '',
+        start_date: document.getElementById('edit-project-start')?.value || '',
+        end_date: document.getElementById('edit-project-end')?.value || '',
+        budget: Number(document.getElementById('edit-project-budget')?.value || 0),
+        priority: document.getElementById('edit-project-priority')?.value || 'MEDIUM',
+        status: document.getElementById('edit-project-status')?.value || 'PLANNING',
+        progress: Number(document.getElementById('edit-project-progress')?.value || 0),
+        description: document.getElementById('edit-project-description')?.value || '',
+        actor_id: this.state.user ? this.state.user.id : 'SYSTEM'
+      };
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2"></i> Simpan Perubahan';
+          }
+          if (res && res.success) {
+            this.hideModal('modal-edit-project');
+            this.showToast(res.message || 'Perubahan proyek berhasil disimpan!', 'success');
+            this.loadProjectsTable();
+          } else {
+            alert(res.message || 'Gagal mengubah data proyek.');
+          }
+        })
+        .withFailureHandler((err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2"></i> Simpan Perubahan';
+          }
+          alert('Terjadi kesalahan: ' + (err.message || err));
+        })
+        .apiUpdateProject(payload);
+    },
+
+    openDetailProjectModal: function (id) {
+      const raw = this.paginationState.projects.rawData || [];
+      const project = raw.find(p => p.id === id);
+      if (!project) return;
+
+      document.getElementById('detail-project-code').innerText = project.project_code || '-';
+      document.getElementById('detail-project-name').innerText = project.project_name || '-';
+      document.getElementById('detail-project-client').innerText = project.client_name || '-';
+      document.getElementById('detail-project-pm').innerText = project.project_manager || 'Unassigned';
+      document.getElementById('detail-project-timeline').innerText = `${project.start_date || '-'} s/d ${project.end_date || '-'}`;
+      
+      const formattedBudget = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(project.budget || 0);
+      document.getElementById('detail-project-budget').innerText = formattedBudget;
+
+      const progress = Number(project.progress || 0);
+      document.getElementById('detail-project-progress-text').innerText = `${progress}%`;
+      const progressBar = document.getElementById('detail-project-progress-bar');
+      if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+        progressBar.className = progress >= 100 ? 'progress-bar bg-success' : (progress <= 25 ? 'progress-bar bg-warning' : 'progress-bar bg-primary');
+      }
+
+      // Status badge
+      const statusBadge = document.getElementById('detail-project-status-badge');
+      const status = String(project.status || 'PLANNING').toUpperCase();
+      if (statusBadge) {
+        statusBadge.innerText = status;
+        if (status === 'COMPLETED') statusBadge.className = 'badge badge-light-success';
+        else if (status === 'IN_PROGRESS') statusBadge.className = 'badge badge-light-info';
+        else if (status === 'ON_HOLD') statusBadge.className = 'badge badge-light-warning';
+        else if (status === 'CANCELLED') statusBadge.className = 'badge badge-light-danger';
+        else statusBadge.className = 'badge badge-light-primary';
+      }
+
+      // Priority badge
+      const priorityBadge = document.getElementById('detail-project-priority-badge');
+      const priority = String(project.priority || 'MEDIUM').toUpperCase();
+      if (priorityBadge) {
+        priorityBadge.innerText = priority;
+        if (priority === 'CRITICAL') priorityBadge.className = 'badge badge-light-danger';
+        else if (priority === 'HIGH') priorityBadge.className = 'badge badge-light-warning';
+        else if (priority === 'LOW') priorityBadge.className = 'badge bg-light text-muted border';
+        else priorityBadge.className = 'badge badge-light-primary';
+      }
+
+      document.getElementById('detail-project-description').innerText = project.description || 'Tidak ada deskripsi tambahan.';
+      document.getElementById('detail-project-created').innerText = project.created_at ? project.created_at.split('T')[0] : '-';
+      document.getElementById('detail-project-updated').innerText = project.updated_at ? project.updated_at.split('T')[0] : '-';
+
+      const editBtn = document.getElementById('btn-detail-edit-action');
+      if (editBtn) {
+        editBtn.onclick = () => {
+          this.hideModal('modal-detail-project');
+          this.openEditProjectModal(project.id);
+        };
+      }
+
+      this.showModal('modal-detail-project');
+    },
+
+    confirmDeleteProject: function (id, name) {
+      document.getElementById('delete-project-id').value = id;
+      document.getElementById('delete-project-name-preview').innerText = name || 'proyek terpilih';
+      this.showModal('modal-delete-project');
+    },
+
+    submitDeleteProject: function () {
+      const id = document.getElementById('delete-project-id')?.value;
+      if (!id) return;
+
+      const btn = document.getElementById('btn-submit-delete-project');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menghapus...';
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i> Ya, Hapus Proyek';
+          }
+          if (res && res.success) {
+            this.hideModal('modal-delete-project');
+            this.showToast(res.message || 'Proyek berhasil dihapus!', 'success');
+            this.loadProjectsTable();
+          } else {
+            alert(res.message || 'Gagal menghapus proyek.');
+          }
+        })
+        .withFailureHandler((err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i> Ya, Hapus Proyek';
+          }
+          alert('Terjadi kesalahan: ' + (err.message || err));
+        })
+        .apiDeleteProject({ id: id, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    }
 
   }; // end AEF object
 
