@@ -218,6 +218,7 @@ function checkSetupState() {
       try {
         syncConfigurations(ss);
         syncMasterProject(ss);
+        syncMenuPermissions(ss);
         if (typeof MenuService !== 'undefined') {
           new MenuService().syncMenuCatalog(ss);
         }
@@ -865,6 +866,119 @@ function apiAutoCreateDb() {
       message: err.message || String(err),
       code: 'SYSTEM_ERROR'
     };
+  }
+}
+
+/**
+ * Ensures all standard permissions for current menus exist in mst_permission
+ */
+function syncMenuPermissions(ss) {
+  if (!ss) return;
+  const permSheet = ss.getSheetByName('mst_permission');
+  if (!permSheet || permSheet.getLastRow() === 0) return;
+
+  const permData = permSheet.getDataRange().getValues();
+  const headers = permData[0];
+  const roleIdx = headers.indexOf('role_id');
+  const codeIdx = headers.indexOf('permission_code');
+  if (roleIdx === -1 || codeIdx === -1) return;
+
+  const existingPerms = new Set();
+  for (let i = 1; i < permData.length; i++) {
+    const rId = String(permData[i][roleIdx]).trim().toUpperCase();
+    const pCode = String(permData[i][codeIdx]).trim().toUpperCase();
+    existingPerms.add(`${rId}:${pCode}`);
+  }
+
+  const standardMenuPerms = [
+    // Dashboard
+    { code: 'DASHBOARD_VIEW', name: 'Dashboard - VIEW' },
+    // Users
+    { code: 'USER_VIEW', name: 'User Management - VIEW' },
+    { code: 'USER_CREATE', name: 'User Management - CREATE' },
+    { code: 'USER_UPDATE', name: 'User Management - UPDATE' },
+    { code: 'USER_DELETE', name: 'User Management - DELETE' },
+    { code: 'USER_EXPORT', name: 'User Management - EXPORT' },
+    { code: 'USER_IMPORT', name: 'User Management - IMPORT' },
+    // Roles
+    { code: 'ROLE_VIEW', name: 'Role Management - VIEW' },
+    { code: 'ROLE_CREATE', name: 'Role Management - CREATE' },
+    { code: 'ROLE_UPDATE', name: 'Role Management - UPDATE' },
+    { code: 'ROLE_DELETE', name: 'Role Management - DELETE' },
+    { code: 'ROLE_EXPORT', name: 'Role Management - EXPORT' },
+    { code: 'ROLE_IMPORT', name: 'Role Management - IMPORT' },
+    // Permissions
+    { code: 'PERMISSION_VIEW', name: 'Permission Control - VIEW' },
+    { code: 'PERMISSION_CREATE', name: 'Permission Control - CREATE' },
+    { code: 'PERMISSION_UPDATE', name: 'Permission Control - UPDATE' },
+    { code: 'PERMISSION_DELETE', name: 'Permission Control - DELETE' },
+    { code: 'PERMISSION_EXPORT', name: 'Permission Control - EXPORT' },
+    { code: 'PERMISSION_IMPORT', name: 'Permission Control - IMPORT' },
+    // Master Proyek
+    { code: 'PROJECT_VIEW', name: 'Master Proyek - VIEW' },
+    { code: 'PROJECT_CREATE', name: 'Master Proyek - CREATE' },
+    { code: 'PROJECT_UPDATE', name: 'Master Proyek - UPDATE' },
+    { code: 'PROJECT_DELETE', name: 'Master Proyek - DELETE' },
+    { code: 'PROJECT_EXPORT', name: 'Master Proyek - EXPORT' },
+    { code: 'PROJECT_IMPORT', name: 'Master Proyek - IMPORT' },
+    // Menus
+    { code: 'MENU_VIEW', name: 'Menu Management - VIEW' },
+    { code: 'MENU_CREATE', name: 'Menu Management - CREATE' },
+    { code: 'MENU_UPDATE', name: 'Menu Management - UPDATE' },
+    { code: 'MENU_DELETE', name: 'Menu Management - DELETE' },
+    { code: 'MENU_EXPORT', name: 'Menu Management - EXPORT' },
+    { code: 'MENU_IMPORT', name: 'Menu Management - IMPORT' },
+    // Config
+    { code: 'CONFIG_VIEW', name: 'Konfigurasi Aplikasi - VIEW' },
+    { code: 'CONFIG_UPDATE', name: 'Konfigurasi Aplikasi - UPDATE' },
+    { code: 'CONFIG_EXPORT', name: 'Konfigurasi Aplikasi - EXPORT' },
+    { code: 'CONFIG_IMPORT', name: 'Konfigurasi Aplikasi - IMPORT' },
+    // Audit
+    { code: 'AUDIT_VIEW', name: 'Audit Trail - VIEW' },
+    { code: 'AUDIT_EXPORT', name: 'Audit Trail - EXPORT' },
+    { code: 'AUDIT_IMPORT', name: 'Audit Trail - IMPORT' }
+  ];
+
+  let added = false;
+  ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].forEach(roleId => {
+    standardMenuPerms.forEach(p => {
+      if (!existingPerms.has(`${roleId}:${p.code}`)) {
+        const row = headers.map(h => {
+          if (h === 'id') return Utils.generateUuid();
+          if (h === 'role_id') return roleId;
+          if (h === 'permission_code') return p.code;
+          if (h === 'permission_name') return p.name;
+          if (h === 'created_at') return Utils.formatIsoDate();
+          if (h === 'created_by') return 'SYSTEM';
+          if (h === 'status') return 'ACTIVE';
+          return '';
+        });
+        permSheet.appendRow(row);
+        added = true;
+      }
+    });
+  });
+
+  // Ensure ROLE_USER has DASHBOARD_VIEW
+  if (!existingPerms.has('ROLE_USER:DASHBOARD_VIEW')) {
+    const row = headers.map(h => {
+      if (h === 'id') return Utils.generateUuid();
+      if (h === 'role_id') return 'ROLE_USER';
+      if (h === 'permission_code') return 'DASHBOARD_VIEW';
+      if (h === 'permission_name') return 'Dashboard - VIEW';
+      if (h === 'created_at') return Utils.formatIsoDate();
+      if (h === 'created_by') return 'SYSTEM';
+      if (h === 'status') return 'ACTIVE';
+      return '';
+    });
+    permSheet.appendRow(row);
+    added = true;
+  }
+
+  if (added) {
+    try {
+      CacheService.getScriptCache().remove('CACHE_TABLE_mst_permission');
+    } catch (e) {}
   }
 }
 

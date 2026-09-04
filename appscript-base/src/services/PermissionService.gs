@@ -5,6 +5,14 @@ class PermissionService {
   }
 
   getAllPermissions() {
+    try {
+      const ss = this.permRepo.getSpreadsheet();
+      if (ss && typeof syncMenuPermissions === 'function') {
+        syncMenuPermissions(ss);
+      }
+    } catch (e) {
+      LoggerUtil.warn('PermissionService', 'Sync permissions fallback warning', e);
+    }
     const perms = this.permRepo.find(row => String(row.status).trim().toUpperCase() === 'ACTIVE');
     return Response.success('List permission berhasil diambil', perms, 'PERMISSION_LIST_SUCCESS');
   }

@@ -205,10 +205,10 @@ class RoleService {
     return Response.success('Role berhasil dihapus', null, 'ROLE_DELETE_SUCCESS');
   }
 
-  // Permission Helpers
   saveRolePermissions(roleCode, permissionCodes, actorId = 'SYSTEM') {
     const permRepo = new PermissionRepository();
-    const existing = permRepo.find(row => String(row.role_id).trim().toUpperCase() === String(roleCode).trim().toUpperCase());
+    const cleanRole = String(roleCode).trim().toUpperCase();
+    const existing = permRepo.find(row => String(row.role_id).trim().toUpperCase() === cleanRole);
     
     // Deactivate/soft-delete all existing perms
     existing.forEach(p => {
@@ -217,12 +217,41 @@ class RoleService {
 
     // Write new perms
     if (Array.isArray(permissionCodes)) {
+      const codeSet = new Set();
       permissionCodes.forEach(code => {
+        if (!code) return;
+        String(code).split(',').forEach(c => {
+          const trimmed = c.trim().toUpperCase();
+          if (trimmed) codeSet.add(trimmed);
+        });
+      });
+
+      const standardPrefixNames = {
+        'DASHBOARD': 'Dashboard',
+        'USER': 'User Management',
+        'ROLE': 'Role Management',
+        'PERMISSION': 'Permission Control',
+        'PROJECT': 'Master Proyek',
+        'MENU': 'Menu Management',
+        'CONFIG': 'Konfigurasi Aplikasi',
+        'AUDIT': 'Audit Trail'
+      };
+
+      codeSet.forEach(cleanCode => {
+        const matched = existing.find(e => String(e.permission_code).toUpperCase() === cleanCode);
+        let permName = matched && matched.permission_name ? matched.permission_name : null;
+        if (!permName) {
+          const parts = cleanCode.split('_');
+          const suffix = parts.length > 1 ? parts.pop() : '';
+          const prefix = parts.join('_');
+          const prefixName = standardPrefixNames[prefix] || prefix;
+          permName = suffix ? `${prefixName} - ${suffix}` : `${prefixName} Permission`;
+        }
         const newPerm = {
           id: Utils.generateUuid(),
-          role_id: roleCode.toUpperCase(),
-          permission_code: code.toUpperCase(),
-          permission_name: code,
+          role_id: cleanRole,
+          permission_code: cleanCode,
+          permission_name: permName,
           status: 'ACTIVE'
         };
         permRepo.insert(newPerm, actorId);
@@ -240,6 +269,18 @@ class RoleService {
       String(row.role_id).trim().toUpperCase() === cleanRole &&
       String(row.permission_code).toUpperCase().startsWith(cleanPrefix + '_')
     );
+
+    const standardPrefixNames = {
+      'DASHBOARD': 'Dashboard',
+      'USER': 'User Management',
+      'ROLE': 'Role Management',
+      'PERMISSION': 'Permission Control',
+      'PROJECT': 'Master Proyek',
+      'MENU': 'Menu Management',
+      'CONFIG': 'Konfigurasi Aplikasi',
+      'AUDIT': 'Audit Trail'
+    };
+    const prefixName = standardPrefixNames[cleanPrefix] || cleanPrefix;
 
     // List of suffixes we are managing
     const suffixes = ['VIEW', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT'];
@@ -265,7 +306,7 @@ class RoleService {
             id: Utils.generateUuid(),
             role_id: cleanRole,
             permission_code: code,
-            permission_name: `${cleanPrefix} - ${suffix}`,
+            permission_name: `${prefixName} - ${suffix}`,
             status: 'ACTIVE'
           };
           permRepo.insert(newPerm, actorId);

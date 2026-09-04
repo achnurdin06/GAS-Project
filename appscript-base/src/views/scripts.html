@@ -1691,6 +1691,50 @@
       }, 'roles-table-body', 'roles-pagination-info', 'roles-pagination-controls');
     },
 
+    getPrefixMetadata: function (prefix) {
+      const p = String(prefix || '').trim().toUpperCase();
+      const catalog = {
+        'DASHBOARD': { name: 'Dashboard', icon: 'bi-grid-1x2-fill' },
+        'USER': { name: 'User Management', icon: 'bi-people-fill' },
+        'ROLE': { name: 'Role Management', icon: 'bi-shield-check' },
+        'PERMISSION': { name: 'Permission Control', icon: 'bi-key-fill' },
+        'PROJECT': { name: 'Master Proyek', icon: 'bi-kanban-fill' },
+        'MENU': { name: 'Menu Management', icon: 'bi-menu-button-wide-fill' },
+        'CONFIG': { name: 'Konfigurasi Aplikasi', icon: 'bi-sliders' },
+        'AUDIT': { name: 'Audit Trail', icon: 'bi-journal-text' }
+      };
+
+      if (catalog[p]) return catalog[p];
+
+      // Lookup from menusCache if available
+      if (this.menusCache && Array.isArray(this.menusCache)) {
+        const found = this.menusCache.find(m => 
+          (m.permission_code && m.permission_code.toUpperCase().startsWith(p + '_')) ||
+          (m.menu_code && m.menu_code.toUpperCase().includes(p))
+        );
+        if (found) {
+          return { name: found.menu_name, icon: found.icon || 'bi-folder-fill' };
+        }
+      }
+
+      // Lookup from permissionsCache
+      if (this.permissionsCache && Array.isArray(this.permissionsCache)) {
+        const viewCode = `${p}_VIEW`;
+        const matched = this.permissionsCache.find(x => x.permission_code === viewCode);
+        if (matched && matched.permission_name) {
+          return {
+            name: String(matched.permission_name).replace(/\s*-\s*VIEW$/i, '').replace(/\s*Permission$/i, '').trim(),
+            icon: 'bi-shield-lock-fill'
+          };
+        }
+      }
+
+      return {
+        name: p.charAt(0) + p.slice(1).toLowerCase() + ' Management',
+        icon: 'bi-shield-lock-fill'
+      };
+    },
+
     // Dynamic Form Builders for Roles Modal Checkboxes
     renderRoleFormCheckboxes: function (mode) {
       const menuListDiv = document.getElementById(mode + '-role-menu-list');
@@ -1763,8 +1807,9 @@
         google.script.run
           .withSuccessHandler((res) => {
             if (res && res.success && Array.isArray(res.data)) {
-              // Group existing permissions to extract unique prefixes, seeded with default cores
-              const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
+              AEF.permissionsCache = res.data;
+              // Group existing permissions to extract unique prefixes, seeded with default cores including PROJECT
+              const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'PROJECT', 'MENU', 'CONFIG', 'AUDIT']);
               res.data.forEach(p => {
                 const code = String(p.permission_code || '').trim().toUpperCase();
                 if (!code) return;
@@ -1819,26 +1864,19 @@
             <thead>
               <tr class="text-muted fw-bold fs-7 text-uppercase gs-0">
                 <th style="min-width: 180px;">Permission Code</th>
-                <th class="text-center" style="width: 90px;">Select All</th>
-                <th class="text-center" style="width: 90px;">Create (C)</th>
-                <th class="text-center" style="width: 90px;">Read (R)</th>
-                <th class="text-center" style="width: 90px;">Update (U)</th>
-                <th class="text-center" style="width: 90px;">Delete (D)</th>
+                <th style="min-width: 160px;">Name Permission</th>
+                <th class="text-center" style="width: 80px;">Status</th>
+                <th class="text-center" style="width: 80px;">Select All</th>
+                <th class="text-center" style="width: 80px;">Create (C)</th>
+                <th class="text-center" style="width: 80px;">Read (R)</th>
+                <th class="text-center" style="width: 80px;">Update (U)</th>
+                <th class="text-center" style="width: 80px;">Delete (D)</th>
                 <th class="text-center" style="width: 110px;">Export/Import (E)</th>
+                <th class="text-center" style="width: 60px;">Aksi</th>
               </tr>
             </thead>
             <tbody>
       `;
-
-      const iconMap = {
-        'USER': 'bi-people-fill',
-        'ROLE': 'bi-shield-check',
-        'PERMISSION': 'bi-key-fill',
-        'CONFIG': 'bi-sliders',
-        'AUDIT': 'bi-journal-text',
-        'MENU': 'bi-menu-button-wide-fill',
-        'DASHBOARD': 'bi-grid-1x2-fill'
-      };
 
       const activePerms = (mode === 'add' ? AEF.state.activeAddRolePermissions : AEF.state.activeEditRolePermissions) || [];
 
@@ -1848,17 +1886,28 @@
         const updateCode = `${prefix}_UPDATE`;
         const deleteCode = `${prefix}_DELETE`;
         const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
-        const icon = iconMap[prefix] || 'bi-shield-lock-fill';
+        
+        const meta = this.getPrefixMetadata(prefix);
+        const icon = meta.icon || 'bi-shield-lock-fill';
+        const cleanName = meta.name;
+
+        const matchedPerm = (this.permissionsCache || []).find(p => p.permission_code === viewCode);
+        const statusVal = matchedPerm ? String(matchedPerm.status).toUpperCase() : 'ACTIVE';
+        const statusBadge = statusVal === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
 
         tableHtml += `
           <tr id="${mode}-row-${prefix}">
             <td class="fw-semibold text-dark">
-              <div class="d-flex align-items-center justify-content-between">
-                <span><i class="bi ${icon} me-2 text-secondary"></i>${viewCode}</span>
-                <button type="button" class="btn btn-link text-danger p-0 ms-2" onclick="AEF.deletePermissionPrefix('${mode}', '${prefix}')" title="Hapus Permission Code">
-                  <i class="bi bi-trash"></i>
-                </button>
+              <div class="d-flex align-items-center">
+                <i class="bi ${icon} me-2 text-primary"></i>
+                <span class="text-dark fw-medium">${viewCode}</span>
               </div>
+            </td>
+            <td>
+              <span class="text-dark fw-medium fs-7">${cleanName}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge ${statusBadge} px-2 py-1 fs-8">${statusVal}</span>
             </td>
             <td class="text-center">
               <input class="form-check-input select-all-row-cb" type="checkbox" onchange="AEF.toggleRowCheckboxes('${mode}', '${prefix}', this.checked)">
@@ -1877,6 +1926,11 @@
             </td>
             <td class="text-center">
               <input class="form-check-input role-perm-checkbox" type="checkbox" value="${exportImportCode}" id="${mode}-cb-${prefix}-exportimport" onchange="AEF.handleGranularCheckboxChange('${mode}', '${exportImportCode}', this.checked)">
+            </td>
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-light-danger text-danger border border-danger-subtle p-1" onclick="AEF.deletePermissionPrefix('${mode}', '${prefix}')" title="Hapus Permission Code">
+                <i class="bi bi-trash"></i>
+              </button>
             </td>
           </tr>
         `;
@@ -2278,12 +2332,24 @@
       const status = document.getElementById('new-role-status').checked ? 'ACTIVE' : 'INACTIVE';
 
       // Gather Checked Permissions (Menu + Granular)
-      const permissions = [...(AEF.state.activeAddRolePermissions || [])];
+      const permSet = new Set(AEF.state.activeAddRolePermissions || []);
       document.querySelectorAll('#addRoleModal .role-menu-checkbox:checked').forEach(cb => {
         if (cb.value) {
-          permissions.push(cb.value);
+          cb.value.split(',').forEach(v => {
+            const trimmed = v.trim();
+            if (trimmed) permSet.add(trimmed);
+          });
         }
       });
+      document.querySelectorAll('#addRoleModal .role-perm-checkbox:checked').forEach(cb => {
+        if (cb.value) {
+          cb.value.split(',').forEach(v => {
+            const trimmed = v.trim();
+            if (trimmed) permSet.add(trimmed);
+          });
+        }
+      });
+      const permissions = Array.from(permSet);
 
       // Gather assigned user IDs
       const assignedUsers = (this.state.addRoleAssignedUsers || []).map(u => u.id);
@@ -2401,12 +2467,24 @@
       const status = document.getElementById('edit-role-status').checked ? 'ACTIVE' : 'INACTIVE';
 
       // Gather Checked Permissions (Menu + Granular)
-      const permissions = [...(AEF.state.activeEditRolePermissions || [])];
+      const permSet = new Set(AEF.state.activeEditRolePermissions || []);
       document.querySelectorAll('#editRoleModal .role-menu-checkbox:checked').forEach(cb => {
         if (cb.value) {
-          permissions.push(cb.value);
+          cb.value.split(',').forEach(v => {
+            const trimmed = v.trim();
+            if (trimmed) permSet.add(trimmed);
+          });
         }
       });
+      document.querySelectorAll('#editRoleModal .role-perm-checkbox:checked').forEach(cb => {
+        if (cb.value) {
+          cb.value.split(',').forEach(v => {
+            const trimmed = v.trim();
+            if (trimmed) permSet.add(trimmed);
+          });
+        }
+      });
+      const permissions = Array.from(permSet);
 
       // Gather assigned user IDs
       const assignedUsers = (this.state.editRoleAssignedUsers || []).map(u => u.id);
@@ -2545,8 +2623,8 @@
           if (res.success && Array.isArray(res.data)) {
             this.permissionsCache = res.data;
             
-            // Extract prefixes
-            const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'CONFIG', 'AUDIT', 'MENU']);
+            // Extract prefixes seeded with standard menu prefixes
+            const prefixes = new Set(['DASHBOARD', 'USER', 'ROLE', 'PERMISSION', 'PROJECT', 'MENU', 'CONFIG', 'AUDIT']);
             res.data.forEach(p => {
               const code = String(p.permission_code || '').trim().toUpperCase();
               if (!code) return;
@@ -2562,10 +2640,19 @@
             
             this.renderPermissionsMatrix();
           } else {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat matrix: ${res ? res.message : 'Respon kosong'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-3">Gagal memuat matrix: ${res ? res.message : 'Respon kosong'}</td></tr>`;
           }
         }).apiGetPermissions();
       };
+
+      // Ensure menus cache is populated for accurate menu names
+      if (!AEF.menusCache) {
+        google.script.run.withSuccessHandler((mRes) => {
+          if (mRes && mRes.success && Array.isArray(mRes.data)) {
+            AEF.menusCache = mRes.data;
+          }
+        }).apiGetMenus();
+      }
 
       if (!this.rolesCache) {
         google.script.run.withSuccessHandler((res) => {
@@ -2573,7 +2660,7 @@
             this.rolesCache = res.data;
             fetchPerms();
           } else {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Gagal memuat list role.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-3">Gagal memuat list role.</td></tr>`;
           }
         }).apiGetRoles();
       } else {
@@ -2670,9 +2757,11 @@
             <span class="text-muted ms-2 fs-8 fw-normal">(${row.code})</span>
           `;
         } else {
+          const meta = this.getPrefixMetadata(prefix);
+          const icon = meta.icon || 'bi-key';
           labelCellHtml = `
             <span class="text-muted me-2" style="font-family: monospace;">├─</span>
-            <i class="bi bi-key me-2 text-muted"></i>
+            <i class="bi ${icon} me-2 text-muted"></i>
             <span class="text-dark fw-medium">${row.name}_VIEW</span>
             <span class="text-muted ms-2 fs-8">(${row.code})</span>
           `;
@@ -2686,9 +2775,10 @@
           const deleteCode = `${prefix}_DELETE`;
           const exportImportCode = `${prefix}_EXPORT,${prefix}_IMPORT`;
 
-          // Find description and status from permissionsCache
+          // Find description and status from permissionsCache and metadata
+          const meta = this.getPrefixMetadata(prefix);
           const matchedPerm = (this.permissionsCache || []).find(p => p.permission_code === viewCode);
-          const cleanName = matchedPerm ? String(matchedPerm.permission_name).replace(/\s*-\s*VIEW$/i, '') : `${prefix} Permission`;
+          const cleanName = meta.name;
           const statusVal = matchedPerm ? String(matchedPerm.status).toUpperCase() : 'ACTIVE';
           const statusBadge = statusVal === 'INACTIVE' ? 'badge-light-danger' : 'badge-light-success';
 
@@ -2752,7 +2842,7 @@
         }
       });
 
-      tbody.innerHTML = html || '<tr><td colspan="8" class="text-center py-3">Tidak ada data.</td></tr>';
+      tbody.innerHTML = html || '<tr><td colspan="10" class="text-center py-3">Tidak ada data.</td></tr>';
 
       // Update the select all checks for each row that has prefix
       pageSlice.forEach(row => {
