@@ -20,6 +20,31 @@ function apiAutoCreateDb() {
   }
 }
 
+function apiVerifySpreadsheetId(spreadsheetId) {
+  try {
+    if (!spreadsheetId) {
+      return Response.error('Spreadsheet ID wajib diisi', 'VALIDATION_ERROR');
+    }
+    let cleanId = String(spreadsheetId).trim();
+    // Extract ID if full Google Sheet URL is provided
+    const match = cleanId.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+      cleanId = match[1];
+    }
+
+    const ss = SpreadsheetApp.openById(cleanId);
+    PropertiesService.getScriptProperties().setProperty('SPREADSHEET_ID', cleanId);
+    return Response.success('Spreadsheet berhasil diverifikasi dan terhubung', {
+      spreadsheet_id: cleanId,
+      name: ss.getName(),
+      url: ss.getUrl()
+    }, 'SPREADSHEET_VERIFIED');
+  } catch (err) {
+    LoggerUtil.error('SetupController', 'apiVerifySpreadsheetId failed', err);
+    return Response.error('Gagal mengakses spreadsheet: ' + err.message, 'ACCESS_ERROR');
+  }
+}
+
 function apiExecuteSetup(payload) {
   try {
     if (!payload || !payload.spreadsheet_id || !payload.admin) {

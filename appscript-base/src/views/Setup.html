@@ -172,34 +172,56 @@
     <div class="wizard-body">
       <div id="alert-container"></div>
 
-      <!-- STEP 1: Database Link & Auto Creation -->
+      <!-- STEP 1: Database Link & Manual Input / Auto Creation -->
       <div id="step-1" class="wizard-step">
-        <h4 class="fw-bold text-dark mb-3"><i class="bi bi-database me-2 text-primary"></i>1. Database & Folder Link</h4>
-        <p class="text-muted small mb-4">Kami akan membuat folder khusus dan Google Spreadsheet database Anda di Google Drive secara otomatis.</p>
+        <h4 class="fw-bold text-dark mb-2"><i class="bi bi-database-fill-gear me-2 text-primary"></i>1. Koneksi Database Spreadsheet</h4>
+        <p class="text-muted small mb-4">Masukkan Spreadsheet ID Google Sheets yang akan digunakan sebagai basis data aplikasi AEF Anda.</p>
         
-        <div class="status-card mb-4" id="drive-creation-box">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="fw-medium text-dark"><i class="bi bi-folder-symlink me-2 text-warning"></i>Status Pembuatan Database</span>
-            <span class="badge bg-secondary" id="db-status-badge">Menyiapkan...</span>
+        <div class="mb-3">
+          <label for="spreadsheet-id-input" class="form-label fw-semibold text-dark d-flex justify-content-between">
+            <span>Spreadsheet ID Koneksi <span class="text-danger">*</span></span>
+            <span class="small text-muted fw-normal">Dapat berupa ID atau URL Google Sheets</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-file-earmark-spreadsheet-fill text-success"></i></span>
+            <input type="text" class="form-control border-start-0" id="spreadsheet-id-input" placeholder="Masukkan ID atau paste link URL Google Spreadsheet..." oninput="handleSpreadsheetInputChange(this.value)">
+            <button class="btn btn-outline-primary fw-semibold px-3" type="button" id="btn-verify-db" onclick="verifySpreadsheetConnection()">
+              <i class="bi bi-shield-check me-1"></i> Uji Koneksi
+            </button>
           </div>
-          <p class="text-muted small mb-3" id="db-status-desc">Menghubungi Google Drive API...</p>
-          <div class="progress mb-3" style="height: 6px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 10%" id="db-progress-bar"></div>
-          </div>
-          <div class="d-none" id="db-details">
-            <div class="small mb-1 text-dark"><strong>Folder Drive:</strong> <span id="folder-name-val"></span></div>
-            <div class="small text-dark"><strong>Spreadsheet ID:</strong> <code id="spreadsheet-id-val"></code></div>
+          <div class="form-text mt-1 text-muted" style="font-size: 0.78rem;">
+            Contoh: <code>14PnWfWyUzleWTh-4mOF8cAtlbwa2XVOwNrYSp7OTC5mvoiV7GA2VWrx6</code> atau URL lengkap spreadsheet.
           </div>
         </div>
 
-        <div class="mb-3">
-          <label for="spreadsheet-id-input" class="form-label fw-semibold text-dark">Spreadsheet ID Koneksi</label>
-          <input type="text" class="form-control" id="spreadsheet-id-input" placeholder="Membuat otomatis..." readonly>
-          <div class="form-text">ID Spreadsheet ini akan digunakan sebagai basis data relasional.</div>
+        <!-- Connection Status Card -->
+        <div class="status-card mb-3" id="drive-creation-box">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="fw-semibold text-dark small"><i class="bi bi-link-45deg me-1"></i>Status Koneksi Database</span>
+            <span class="badge bg-secondary" id="db-status-badge">Menunggu Input</span>
+          </div>
+          <p class="text-muted small mb-0" id="db-status-desc">Silakan masukkan Spreadsheet ID di atas lalu klik <strong>Uji Koneksi</strong> atau lanjutkan langkah.</p>
+          <div class="progress my-2 d-none" style="height: 6px;" id="db-progress-container">
+            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 10%" id="db-progress-bar"></div>
+          </div>
+          <div class="d-none mt-2 pt-2 border-top border-light-subtle" id="db-details">
+            <div class="small mb-1 text-dark"><strong>Nama File:</strong> <span id="db-sheet-name" class="fw-semibold text-primary"></span></div>
+            <div class="small text-muted"><strong>URL:</strong> <a href="#" id="db-sheet-link" target="_blank" class="text-decoration-none small text-truncate d-inline-block" style="max-width: 400px; vertical-align: middle;">Buka Spreadsheet</a></div>
+          </div>
+        </div>
+
+        <!-- Optional Auto-create Option -->
+        <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4" style="border: 1px dashed #cbd5e1;">
+          <div class="small text-muted">
+            <i class="bi bi-info-circle me-1 text-primary"></i> Belum memiliki file Google Spreadsheet?
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" id="btn-auto-create-db" onclick="autoCreateDatabase()">
+            <i class="bi bi-plus-circle text-primary"></i> Buat Spreadsheet Baru Otomatis di Drive
+          </button>
         </div>
 
         <div class="d-flex justify-content-end mt-4">
-          <button type="button" class="btn btn-primary-grad" id="btn-next-1" disabled onclick="nextStep(2)">
+          <button type="button" class="btn btn-primary-grad" id="btn-next-1" onclick="handleStep1Next()">
             Lanjutkan Langkah <i class="bi bi-arrow-right ms-2"></i>
           </button>
         </div>
@@ -295,67 +317,255 @@
 
 <script>
   let currentStep = 1;
-  let autoCreatedSpreadsheetId = "";
+  let connectedSpreadsheetId = "";
+  let serverSetupState = null;
 
   document.addEventListener("DOMContentLoaded", function() {
-    <? if (typeof noGoogleLogin === 'undefined' || !noGoogleLogin) { ?>
-      // Trigger Drive Auto Creation
-      autoCreateDatabase();
-    <? } ?>
-  });
-
-  function autoCreateDatabase() {
-    const statusBadge = document.getElementById("db-status-badge");
-    const statusDesc = document.getElementById("db-status-desc");
-    const progressBar = document.getElementById("db-progress-bar");
-    const dbDetails = document.getElementById("db-details");
-    const spreadsheetInput = document.getElementById("spreadsheet-id-input");
-    const adminEmailInput = document.getElementById("admin-email");
-
-    // Pre-fill default admin details if empty
-    if (!adminEmailInput.value) {
-      document.getElementById("admin-name").value = "System Admin";
-      document.getElementById("admin-username").value = "admin";
-      document.getElementById("admin-phone").value = "08123456789";
-      document.getElementById("admin-password").value = "admin123";
+    try {
+      serverSetupState = JSON.parse('<?= typeof setupState !== "undefined" ? setupState : "{}" ?>');
+    } catch (e) {
+      serverSetupState = {};
     }
 
-    statusBadge.className = "badge bg-warning-light text-warning px-3 py-2";
-    statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menghubungkan Google Drive...`;
+    // Pre-fill admin email if active Google user is detected
+    if (serverSetupState && serverSetupState.google_email) {
+      const emailInput = document.getElementById("admin-email");
+      if (emailInput && !emailInput.value) {
+        emailInput.value = serverSetupState.google_email;
+      }
+    }
+
+    // If an existing linked spreadsheet is already configured in ScriptProperties
+    if (serverSetupState && serverSetupState.spreadsheet_id) {
+      const input = document.getElementById("spreadsheet-id-input");
+      if (input) {
+        input.value = serverSetupState.spreadsheet_id;
+        verifySpreadsheetConnection();
+      }
+    }
+  });
+
+  function extractSpreadsheetId(val) {
+    if (!val) return "";
+    let clean = String(val).trim();
+    // Match Google Spreadsheet URL: /spreadsheets/d/<ID>/...
+    const match = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return clean;
+  }
+
+  function handleSpreadsheetInputChange(val) {
+    const cleanId = extractSpreadsheetId(val);
+    const statusBadge = document.getElementById("db-status-badge");
+    const statusDesc = document.getElementById("db-status-desc");
+    const dbDetails = document.getElementById("db-details");
+
+    if (cleanId !== connectedSpreadsheetId) {
+      if (cleanId) {
+        statusBadge.className = "badge bg-warning text-dark";
+        statusBadge.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>Belum Diuji`;
+        statusDesc.innerHTML = `Spreadsheet ID dimasukkan: <code>${cleanId}</code>. Silakan klik <strong>Uji Koneksi</strong> atau lanjutkan langkah.`;
+      } else {
+        connectedSpreadsheetId = "";
+        statusBadge.className = "badge bg-secondary";
+        statusBadge.textContent = "Menunggu Input";
+        statusDesc.textContent = "Silakan masukkan Spreadsheet ID di atas lalu klik Uji Koneksi atau lanjutkan langkah.";
+      }
+      if (dbDetails) dbDetails.classList.add("d-none");
+    }
+  }
+
+  function verifySpreadsheetConnection(onComplete) {
+    const input = document.getElementById("spreadsheet-id-input");
+    const rawVal = input ? input.value : "";
+    const cleanId = extractSpreadsheetId(rawVal);
+
+    if (!cleanId) {
+      alert("Harap masukkan Spreadsheet ID atau URL Google Sheets terlebih dahulu.");
+      if (typeof onComplete === 'function') onComplete(false);
+      return;
+    }
+
+    // If pasted full URL, normalize input display to clean ID
+    if (input && rawVal !== cleanId && rawVal.includes('/spreadsheets/d/')) {
+      input.value = cleanId;
+    }
+
+    const statusBadge = document.getElementById("db-status-badge");
+    const statusDesc = document.getElementById("db-status-desc");
+    const btnVerify = document.getElementById("btn-verify-db");
+    const dbDetails = document.getElementById("db-details");
+    const dbSheetName = document.getElementById("db-sheet-name");
+    const dbSheetLink = document.getElementById("db-sheet-link");
+
+    const originalBtnHtml = btnVerify ? btnVerify.innerHTML : "";
+    if (btnVerify) {
+      btnVerify.disabled = true;
+      btnVerify.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Menguji...`;
+    }
+
+    statusBadge.className = "badge bg-info text-white";
+    statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menguji Koneksi...`;
+    statusDesc.innerText = "Memverifikasi akses ke Google Spreadsheet ID: " + cleanId;
 
     google.script.run
       .withSuccessHandler(function(response) {
-        if (response.success) {
-          autoCreatedSpreadsheetId = response.spreadsheetId;
-          spreadsheetInput.value = response.spreadsheetId;
-          if (response.email) {
-            adminEmailInput.value = response.email;
+        if (btnVerify) {
+          btnVerify.disabled = false;
+          btnVerify.innerHTML = originalBtnHtml;
+        }
+
+        if (response && response.success) {
+          connectedSpreadsheetId = cleanId;
+          statusBadge.className = "badge bg-success";
+          statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Terhubung`;
+          const sheetInfo = response.data || {};
+          statusDesc.innerHTML = `Spreadsheet <strong>"${sheetInfo.name || 'AEF Database'}"</strong> berhasil diverifikasi dan siap digunakan.`;
+          if (dbSheetName) dbSheetName.innerText = sheetInfo.name || cleanId;
+          if (dbSheetLink) {
+            dbSheetLink.href = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
+            dbSheetLink.innerText = sheetInfo.url || `https://docs.google.com/spreadsheets/d/${cleanId}/edit`;
           }
-          statusBadge.className = "badge bg-success-light text-success px-3 py-2";
-          statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Terhubung`;
-          statusDesc.innerText = "Spreadsheet '" + response.name + "' berhasil dibuat atau ditemukan di Google Drive.";
-          progressBar.style.width = "100%";
-          progressBar.className = "progress-bar bg-success progress-bar-striped progress-bar-animated";
-          dbDetails.classList.remove("d-none");
+          if (dbDetails) dbDetails.classList.remove("d-none");
+          if (typeof onComplete === 'function') onComplete(true);
         } else {
-          statusBadge.className = "badge bg-danger-light text-danger px-3 py-2";
-          statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Gagal`;
-          statusDesc.innerText = "Error: " + response.message;
+          connectedSpreadsheetId = "";
+          statusBadge.className = "badge bg-danger";
+          statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Gagal`;
+          statusDesc.innerText = response ? (response.message || "Spreadsheet tidak dapat diakses") : "Koneksi gagal";
+          if (dbDetails) dbDetails.classList.add("d-none");
+          if (typeof onComplete === 'function') onComplete(false);
         }
       })
       .withFailureHandler(function(err) {
-        statusBadge.className = "badge bg-danger-light text-danger px-3 py-2";
+        if (btnVerify) {
+          btnVerify.disabled = false;
+          btnVerify.innerHTML = originalBtnHtml;
+        }
+        connectedSpreadsheetId = "";
+        statusBadge.className = "badge bg-danger";
+        statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Error`;
+        statusDesc.innerText = "Gagal memanggil backend: " + (err.message || err);
+        if (dbDetails) dbDetails.classList.add("d-none");
+        if (typeof onComplete === 'function') onComplete(false);
+      })
+      .apiVerifySpreadsheetId(cleanId);
+  }
+
+  function handleStep1Next() {
+    const input = document.getElementById("spreadsheet-id-input");
+    const rawVal = input ? input.value : "";
+    const cleanId = extractSpreadsheetId(rawVal);
+
+    if (!cleanId) {
+      alert("Harap masukkan Spreadsheet ID atau klik 'Buat Spreadsheet Baru Otomatis' terlebih dahulu.");
+      return;
+    }
+
+    if (connectedSpreadsheetId && connectedSpreadsheetId === cleanId) {
+      nextStep(2);
+      return;
+    }
+
+    const btnNext = document.getElementById("btn-next-1");
+    const originalHtml = btnNext ? btnNext.innerHTML : "";
+    if (btnNext) {
+      btnNext.disabled = true;
+      btnNext.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Memverifikasi...`;
+    }
+
+    verifySpreadsheetConnection(function(success) {
+      if (btnNext) {
+        btnNext.disabled = false;
+        btnNext.innerHTML = originalHtml;
+      }
+      if (success) {
+        nextStep(2);
+      } else {
+        alert("Verifikasi Spreadsheet gagal. Pastikan ID benar dan akun Google Anda memiliki hak akses Edit ke file tersebut.");
+      }
+    });
+  }
+
+  function autoCreateDatabase() {
+    if (!confirm("Buat file Google Spreadsheet database baru secara otomatis di Google Drive Anda?")) {
+      return;
+    }
+
+    const statusBadge = document.getElementById("db-status-badge");
+    const statusDesc = document.getElementById("db-status-desc");
+    const progressBar = document.getElementById("db-progress-bar");
+    const progressContainer = document.getElementById("db-progress-container");
+    const dbDetails = document.getElementById("db-details");
+    const dbSheetName = document.getElementById("db-sheet-name");
+    const dbSheetLink = document.getElementById("db-sheet-link");
+    const spreadsheetInput = document.getElementById("spreadsheet-id-input");
+    const btnAutoCreate = document.getElementById("btn-auto-create-db");
+
+    if (btnAutoCreate) btnAutoCreate.disabled = true;
+    if (progressContainer) progressContainer.classList.remove("d-none");
+    if (progressBar) progressBar.style.width = "45%";
+
+    statusBadge.className = "badge bg-warning text-dark px-3 py-2";
+    statusBadge.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Membuat Database di Drive...`;
+    statusDesc.innerText = "Sedang menyiapkan folder dan file spreadsheet di Google Drive...";
+
+    google.script.run
+      .withSuccessHandler(function(response) {
+        if (btnAutoCreate) btnAutoCreate.disabled = false;
+        if (response && response.success) {
+          connectedSpreadsheetId = response.spreadsheetId;
+          if (spreadsheetInput) spreadsheetInput.value = response.spreadsheetId;
+          if (response.email) {
+            const adminEmail = document.getElementById("admin-email");
+            if (adminEmail && !adminEmail.value) adminEmail.value = response.email;
+          }
+          statusBadge.className = "badge bg-success px-3 py-2";
+          statusBadge.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Terhubung`;
+          statusDesc.innerText = "Spreadsheet '" + response.name + "' berhasil dibuat di Google Drive.";
+          if (progressBar) progressBar.style.width = "100%";
+          if (dbSheetName) dbSheetName.innerText = response.name;
+          if (dbSheetLink) {
+            dbSheetLink.href = `https://docs.google.com/spreadsheets/d/${response.spreadsheetId}/edit`;
+            dbSheetLink.innerText = `https://docs.google.com/spreadsheets/d/${response.spreadsheetId}/edit`;
+          }
+          if (dbDetails) dbDetails.classList.remove("d-none");
+        } else {
+          statusBadge.className = "badge bg-danger px-3 py-2";
+          statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Gagal`;
+          statusDesc.innerText = "Error: " + (response ? response.message : "Gagal membuat database");
+        }
+      })
+      .withFailureHandler(function(err) {
+        if (btnAutoCreate) btnAutoCreate.disabled = false;
+        statusBadge.className = "badge bg-danger px-3 py-2";
         statusBadge.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>Backend Error`;
         statusDesc.innerText = "Gagal memanggil backend: " + err.message;
       })
       .autoCreateDatabaseFolderAndSheet();
   }
 
+  function updateStepIndicators(step) {
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById(`dot-${i}`);
+      if (!dot) continue;
+      dot.classList.remove("active", "completed");
+      if (i === step) {
+        dot.classList.add("active");
+      } else if (i < step) {
+        dot.classList.add("completed");
+      }
+    }
+  }
+
   function nextStep(step) {
-    // Basic validation before going to next step
     if (step === 2) {
-      if (!autoCreatedSpreadsheetId) {
-        alert("Harap tunggu hingga database terhubung.");
+      const input = document.getElementById("spreadsheet-id-input");
+      const cleanId = extractSpreadsheetId(input ? input.value : "");
+      if (!connectedSpreadsheetId || connectedSpreadsheetId !== cleanId) {
+        alert("Harap pastikan koneksi database telah terhubung terlebih dahulu.");
         return;
       }
     } else if (step === 3) {
@@ -373,19 +583,7 @@
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
     document.getElementById(`step-${step}`).classList.remove("d-none");
     
-    // Update stepper visual state
-    document.querySelectorAll(".stepper-item").forEach((el, idx) => {
-      if (idx + 1 === step) {
-        el.classList.add("active");
-        el.classList.remove("completed");
-      } else if (idx + 1 < step) {
-        el.classList.add("completed");
-        el.classList.remove("active");
-      } else {
-        el.classList.remove("active", "completed");
-      }
-    });
-
+    updateStepIndicators(step);
     currentStep = step;
   }
 
@@ -393,18 +591,7 @@
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
     document.getElementById(`step-${step}`).classList.remove("d-none");
 
-    document.querySelectorAll(".stepper-item").forEach((el, idx) => {
-      if (idx + 1 === step) {
-        el.classList.add("active");
-        el.classList.remove("completed");
-      } else if (idx + 1 < step) {
-        el.classList.add("completed");
-        el.classList.remove("active");
-      } else {
-        el.classList.remove("active", "completed");
-      }
-    });
-
+    updateStepIndicators(step);
     currentStep = step;
   }
 
@@ -428,12 +615,19 @@
   }
 
   function submitSetup() {
+    const input = document.getElementById("spreadsheet-id-input");
+    const finalSpreadsheetId = connectedSpreadsheetId || (input ? extractSpreadsheetId(input.value) : "");
+    if (!finalSpreadsheetId) {
+      alert("Spreadsheet ID belum terhubung!");
+      return;
+    }
+
     // Hide all steps
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.add("d-none"));
     document.getElementById("progress-overlay").classList.remove("d-none");
 
     const payload = {
-      spreadsheet_id: autoCreatedSpreadsheetId,
+      spreadsheet_id: finalSpreadsheetId,
       admin: {
         name: document.getElementById("admin-name").value,
         username: document.getElementById("admin-username").value,
@@ -448,7 +642,7 @@
 
     google.script.run
       .withSuccessHandler(function(response) {
-        if (response.success) {
+        if (response && response.success) {
           document.getElementById("progress-text").innerText = "Selesai! Menyegarkan aplikasi...";
           setTimeout(function() {
             window.location.reload();
@@ -456,7 +650,7 @@
         } else {
           document.getElementById("progress-overlay").classList.add("d-none");
           document.getElementById(`step-${currentStep}`).classList.remove("d-none");
-          showError("Gagal menginisialisasi database: " + response.message);
+          showError("Gagal menginisialisasi database: " + (response ? response.message : "Unknown error"));
         }
       })
       .withFailureHandler(function(err) {
