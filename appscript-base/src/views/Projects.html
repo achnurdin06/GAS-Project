@@ -119,25 +119,28 @@
         <table class="table table-aef align-middle mb-0">
           <thead>
             <tr>
-              <th onclick="AEF.handleProjectsSort('project_code')" style="cursor: pointer; user-select: none; width: 13%;">
+              <th onclick="AEF.handleProjectsSort('project_code')" style="cursor: pointer; user-select: none; width: 11%;">
                 Kode Proyek <i id="projects-sort-icon-project_code" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
-              <th onclick="AEF.handleProjectsSort('project_name')" style="cursor: pointer; user-select: none; width: 23%;">
+              <th onclick="AEF.handleProjectsSort('project_name')" style="cursor: pointer; user-select: none; width: 20%;">
                 Nama Proyek & Klien <i id="projects-sort-icon-project_name" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
-              <th onclick="AEF.handleProjectsSort('project_manager')" style="cursor: pointer; user-select: none; width: 15%;">
+              <th onclick="AEF.handleProjectsSort('project_manager')" style="cursor: pointer; user-select: none; width: 12%;">
                 Manajer Proyek <i id="projects-sort-icon-project_manager" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              </th>
+              <th onclick="AEF.handleProjectsSort('profit_center')" style="cursor: pointer; user-select: none; width: 10%;">
+                Profit Center <i id="projects-sort-icon-profit_center" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
               <th onclick="AEF.handleProjectsSort('start_date')" style="cursor: pointer; user-select: none; width: 13%;">
                 Timeline <i id="projects-sort-icon-start_date" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
-              <th onclick="AEF.handleProjectsSort('budget')" style="cursor: pointer; user-select: none; width: 12%;">
-                Anggaran <i id="projects-sort-icon-budget" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
+              <th onclick="AEF.handleProjectsSort('contract_value')" style="cursor: pointer; user-select: none; width: 13%;">
+                Nilai Kontrak / Budget <i id="projects-sort-icon-contract_value" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
-              <th onclick="AEF.handleProjectsSort('progress')" style="cursor: pointer; user-select: none; width: 10%;">
+              <th onclick="AEF.handleProjectsSort('progress')" style="cursor: pointer; user-select: none; width: 8%;">
                 Progress <i id="projects-sort-icon-progress" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
-              <th onclick="AEF.handleProjectsSort('status')" style="cursor: pointer; user-select: none; width: 8%;">
+              <th onclick="AEF.handleProjectsSort('status')" style="cursor: pointer; user-select: none; width: 7%;">
                 Status <i id="projects-sort-icon-status" class="bi bi-arrow-down-up ms-1 text-muted opacity-50" style="font-size: 0.75rem;"></i>
               </th>
               <th style="width: 6%; text-align: center;">Aksi</th>
@@ -148,8 +151,9 @@
               <th><input type="text" id="projects-filter-code" class="form-control form-control-sm" placeholder="Filter kode..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th><input type="text" id="projects-filter-name" class="form-control form-control-sm" placeholder="Filter nama / klien..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th><input type="text" id="projects-filter-pm" class="form-control form-control-sm" placeholder="Filter manager..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-profit-center" class="form-control form-control-sm" placeholder="Filter profit center..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th><input type="text" id="projects-filter-timeline" class="form-control form-control-sm" placeholder="Filter timeline..." oninput="AEF.handleProjectsColumnFilter()"></th>
-              <th><input type="text" id="projects-filter-budget" class="form-control form-control-sm" placeholder="Filter anggaran..." oninput="AEF.handleProjectsColumnFilter()"></th>
+              <th><input type="text" id="projects-filter-budget" class="form-control form-control-sm" placeholder="Filter nilai..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th><input type="text" id="projects-filter-progress" class="form-control form-control-sm" placeholder="Filter %..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th><input type="text" id="projects-filter-status" class="form-control form-control-sm" placeholder="Filter status..." oninput="AEF.handleProjectsColumnFilter()"></th>
               <th></th>
@@ -158,7 +162,7 @@
           <tbody id="projects-table-body">
             <!-- Dynamically populated rows -->
             <tr>
-              <td colspan="8" class="text-center py-4 text-muted">
+              <td colspan="9" class="text-center py-4 text-muted">
                 <div class="spinner-border spinner-border-sm text-primary me-2"></div> Memuat data proyek...
               </td>
             </tr>

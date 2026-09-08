@@ -43,7 +43,12 @@ class ProjectService {
       project_manager: p.project_manager || '',
       start_date: this.formatDateHelper(p.start_date, true),
       end_date: this.formatDateHelper(p.end_date, true),
+      contract_date: this.formatDateHelper(p.contract_date, true),
+      actual_start_date: this.formatDateHelper(p.actual_start_date, true),
+      actual_finish_date: this.formatDateHelper(p.actual_finish_date, true),
       budget: Number(p.budget || 0),
+      contract_value: Number(p.contract_value || 0),
+      profit_center: p.profit_center || '',
       priority: String(p.priority || 'MEDIUM').toUpperCase(),
       status: String(p.status || 'PLANNING').toUpperCase(),
       progress: Math.min(100, Math.max(0, Number(p.progress || 0))),
@@ -107,9 +112,14 @@ class ProjectService {
       client_name: client ? client.client_name : 'Unknown Client',
       start_date: this.formatDateHelper(project.start_date, true),
       end_date: this.formatDateHelper(project.end_date, true),
+      contract_date: this.formatDateHelper(project.contract_date, true),
+      actual_start_date: this.formatDateHelper(project.actual_start_date, true),
+      actual_finish_date: this.formatDateHelper(project.actual_finish_date, true),
+      budget: Number(project.budget || 0),
+      contract_value: Number(project.contract_value || 0),
+      profit_center: project.profit_center || '',
       created_at: this.formatDateHelper(project.created_at, false),
       updated_at: this.formatDateHelper(project.updated_at, false),
-      budget: Number(project.budget || 0),
       progress: Math.min(100, Math.max(0, Number(project.progress || 0)))
     };
     return Response.success('Detail proyek berhasil diambil', safeProject, 'PROJECT_DETAIL_SUCCESS');
@@ -141,6 +151,7 @@ class ProjectService {
 
     const progressVal = payload.progress !== undefined ? Math.min(100, Math.max(0, Number(payload.progress))) : 0;
     const budgetVal = payload.budget !== undefined ? Math.max(0, Number(payload.budget)) : 0;
+    const contractVal = payload.contract_value !== undefined ? Math.max(0, Number(payload.contract_value)) : 0;
 
     const newProject = {
       id: Utils.generateUuid(),
@@ -150,7 +161,12 @@ class ProjectService {
       project_manager: payload.project_manager ? String(payload.project_manager).trim() : '',
       start_date: payload.start_date ? String(payload.start_date).trim() : '',
       end_date: payload.end_date ? String(payload.end_date).trim() : '',
+      contract_date: payload.contract_date ? String(payload.contract_date).trim() : '',
+      actual_start_date: payload.actual_start_date ? String(payload.actual_start_date).trim() : '',
+      actual_finish_date: payload.actual_finish_date ? String(payload.actual_finish_date).trim() : '',
       budget: budgetVal,
+      contract_value: contractVal,
+      profit_center: payload.profit_center ? String(payload.profit_center).trim() : '',
       priority: payload.priority ? String(payload.priority).trim().toUpperCase() : 'MEDIUM',
       status: payload.status ? String(payload.status).trim().toUpperCase() : 'PLANNING',
       progress: progressVal,
@@ -195,7 +211,12 @@ class ProjectService {
     if (payload.project_manager !== undefined) updateData.project_manager = String(payload.project_manager).trim();
     if (payload.start_date !== undefined) updateData.start_date = String(payload.start_date).trim();
     if (payload.end_date !== undefined) updateData.end_date = String(payload.end_date).trim();
+    if (payload.contract_date !== undefined) updateData.contract_date = String(payload.contract_date).trim();
+    if (payload.actual_start_date !== undefined) updateData.actual_start_date = String(payload.actual_start_date).trim();
+    if (payload.actual_finish_date !== undefined) updateData.actual_finish_date = String(payload.actual_finish_date).trim();
     if (payload.budget !== undefined) updateData.budget = Math.max(0, Number(payload.budget));
+    if (payload.contract_value !== undefined) updateData.contract_value = Math.max(0, Number(payload.contract_value));
+    if (payload.profit_center !== undefined) updateData.profit_center = String(payload.profit_center).trim();
     if (payload.priority !== undefined) updateData.priority = String(payload.priority).trim().toUpperCase();
     if (payload.status !== undefined) updateData.status = String(payload.status).trim().toUpperCase();
     if (payload.progress !== undefined) updateData.progress = Math.min(100, Math.max(0, Number(payload.progress)));

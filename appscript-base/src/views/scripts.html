@@ -4434,6 +4434,7 @@
       const filterCode = (document.getElementById('projects-filter-code')?.value || '').toLowerCase().trim();
       const filterName = (document.getElementById('projects-filter-name')?.value || '').toLowerCase().trim();
       const filterPm = (document.getElementById('projects-filter-pm')?.value || '').toLowerCase().trim();
+      const filterProfitCenter = (document.getElementById('projects-filter-profit-center')?.value || '').toLowerCase().trim();
       const filterTimeline = (document.getElementById('projects-filter-timeline')?.value || '').toLowerCase().trim();
       const filterBudget = (document.getElementById('projects-filter-budget')?.value || '').toLowerCase().trim();
       const filterProgress = (document.getElementById('projects-filter-progress')?.value || '').toLowerCase().trim();
@@ -4445,6 +4446,7 @@
           const matchSearch = String(p.project_code || '').toLowerCase().includes(searchVal) ||
             String(p.project_name || '').toLowerCase().includes(searchVal) ||
             String(p.client_name || '').toLowerCase().includes(searchVal) ||
+            String(p.profit_center || '').toLowerCase().includes(searchVal) ||
             String(p.project_manager || '').toLowerCase().includes(searchVal);
           if (!matchSearch) return false;
         }
@@ -4463,8 +4465,9 @@
         if (filterCode && !String(p.project_code || '').toLowerCase().includes(filterCode)) return false;
         if (filterName && !(String(p.project_name || '').toLowerCase().includes(filterName) || String(p.client_name || '').toLowerCase().includes(filterName))) return false;
         if (filterPm && !String(p.project_manager || '').toLowerCase().includes(filterPm)) return false;
-        if (filterTimeline && !(String(p.start_date || '').toLowerCase().includes(filterTimeline) || String(p.end_date || '').toLowerCase().includes(filterTimeline))) return false;
-        if (filterBudget && !String(p.budget || '').toLowerCase().includes(filterBudget)) return false;
+        if (filterProfitCenter && !String(p.profit_center || '').toLowerCase().includes(filterProfitCenter)) return false;
+        if (filterTimeline && !(String(p.start_date || '').toLowerCase().includes(filterTimeline) || String(p.end_date || '').toLowerCase().includes(filterTimeline) || String(p.contract_date || '').toLowerCase().includes(filterTimeline))) return false;
+        if (filterBudget && !(String(p.budget || '').toLowerCase().includes(filterBudget) || String(p.contract_value || '').toLowerCase().includes(filterBudget))) return false;
         if (filterProgress && !String(p.progress || '').toLowerCase().includes(filterProgress)) return false;
         if (filterStatus && !String(p.status || '').toLowerCase().includes(filterStatus)) return false;
 
@@ -4520,6 +4523,7 @@
       else statusBadge = '<span class="badge badge-light-primary fw-bold">Planning</span>';
 
       // Currency format
+      const formattedContract = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.contract_value || 0);
       const formattedBudget = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.budget || 0);
 
       // Progress bar styling
@@ -4531,9 +4535,6 @@
       // PM Initials
       const pmName = p.project_manager || 'Unassigned';
       const pmInitial = pmName.charAt(0).toUpperCase();
-
-      const canEdit = this.hasPermission('PROJECT_UPDATE') || this.hasPermission('PROJECT_VIEW');
-      const canDelete = this.hasPermission('PROJECT_DELETE');
 
       return `
         <tr>
@@ -4558,6 +4559,9 @@
             </div>
           </td>
           <td>
+            <span class="badge bg-light text-dark border fw-medium">${p.profit_center || '-'}</span>
+          </td>
+          <td>
             <div class="text-dark small d-flex align-items-center gap-1">
               <i class="bi bi-calendar3 text-muted" style="font-size: 0.75rem;"></i>
               <span>${p.start_date || '-'}</span>
@@ -4565,7 +4569,8 @@
             <div class="text-muted small mt-1" style="font-size: 0.72rem;">s/d ${p.end_date || '-'}</div>
           </td>
           <td>
-            <div class="fw-semibold text-dark fs-7">${formattedBudget}</div>
+            <div class="fw-bold text-success fs-7">${formattedContract}</div>
+            <div class="text-muted small mt-1" style="font-size: 0.72rem;">Budget: ${formattedBudget}</div>
           </td>
           <td>
             <div class="d-flex align-items-center gap-2">
@@ -4678,7 +4683,12 @@
         project_manager: document.getElementById('add-project-pm')?.value || '',
         start_date: document.getElementById('add-project-start')?.value || '',
         end_date: document.getElementById('add-project-end')?.value || '',
+        contract_date: document.getElementById('add-project-contract-date')?.value || '',
+        actual_start_date: document.getElementById('add-project-actual-start')?.value || '',
+        actual_finish_date: document.getElementById('add-project-actual-finish')?.value || '',
+        contract_value: Number(document.getElementById('add-project-contract-value')?.value || 0),
         budget: Number(document.getElementById('add-project-budget')?.value || 0),
+        profit_center: document.getElementById('add-project-profit-center')?.value || '',
         priority: document.getElementById('add-project-priority')?.value || 'MEDIUM',
         status: document.getElementById('add-project-status')?.value || 'PLANNING',
         progress: Number(document.getElementById('add-project-progress')?.value || 0),
@@ -4724,7 +4734,12 @@
       document.getElementById('edit-project-pm').value = project.project_manager || '';
       document.getElementById('edit-project-start').value = project.start_date || '';
       document.getElementById('edit-project-end').value = project.end_date || '';
+      document.getElementById('edit-project-contract-date').value = project.contract_date || '';
+      document.getElementById('edit-project-actual-start').value = project.actual_start_date || '';
+      document.getElementById('edit-project-actual-finish').value = project.actual_finish_date || '';
+      document.getElementById('edit-project-contract-value').value = project.contract_value || 0;
       document.getElementById('edit-project-budget').value = project.budget || 0;
+      document.getElementById('edit-project-profit-center').value = project.profit_center || '';
       document.getElementById('edit-project-priority').value = String(project.priority || 'MEDIUM').toUpperCase();
       document.getElementById('edit-project-status').value = String(project.status || 'PLANNING').toUpperCase();
       document.getElementById('edit-project-progress').value = project.progress || 0;
@@ -4752,7 +4767,12 @@
         project_manager: document.getElementById('edit-project-pm')?.value || '',
         start_date: document.getElementById('edit-project-start')?.value || '',
         end_date: document.getElementById('edit-project-end')?.value || '',
+        contract_date: document.getElementById('edit-project-contract-date')?.value || '',
+        actual_start_date: document.getElementById('edit-project-actual-start')?.value || '',
+        actual_finish_date: document.getElementById('edit-project-actual-finish')?.value || '',
+        contract_value: Number(document.getElementById('edit-project-contract-value')?.value || 0),
         budget: Number(document.getElementById('edit-project-budget')?.value || 0),
+        profit_center: document.getElementById('edit-project-profit-center')?.value || '',
         priority: document.getElementById('edit-project-priority')?.value || 'MEDIUM',
         status: document.getElementById('edit-project-status')?.value || 'PLANNING',
         progress: Number(document.getElementById('edit-project-progress')?.value || 0),
@@ -4793,10 +4813,15 @@
       document.getElementById('detail-project-name').innerText = project.project_name || '-';
       document.getElementById('detail-project-client').innerText = project.client_name || '-';
       document.getElementById('detail-project-pm').innerText = project.project_manager || 'Unassigned';
+      document.getElementById('detail-project-contract-date').innerText = project.contract_date || '-';
       document.getElementById('detail-project-timeline').innerText = `${project.start_date || '-'} s/d ${project.end_date || '-'}`;
-      
+      document.getElementById('detail-project-actual-timeline').innerText = `${project.actual_start_date || '-'} s/d ${project.actual_finish_date || '-'}`;
+      document.getElementById('detail-project-profit-center').innerText = project.profit_center || '-';
+
+      const formattedContract = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(project.contract_value || 0);
       const formattedBudget = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(project.budget || 0);
-      document.getElementById('detail-project-budget').innerText = formattedBudget;
+      document.getElementById('detail-project-contract-value').innerText = formattedContract;
+      document.getElementById('detail-project-budget').innerText = `Budget: ${formattedBudget}`;
 
       const progress = Number(project.progress || 0);
       document.getElementById('detail-project-progress-text').innerText = `${progress}%`;
@@ -5000,7 +5025,11 @@
 
           return `
             <tr class="aef-table-row">
-              <td class="fw-medium text-dark">${c.client_code || '-'}</td>
+              <td class="fw-medium text-dark">
+                <a href="#" class="badge badge-light-primary text-decoration-none fw-bold" onclick="AEF.openDetailClientModal('${c.id}'); return false;">
+                  ${c.client_code || '-'}
+                </a>
+              </td>
               <td>
                 <div class="fw-bold text-dark">${c.client_name || '-'}</div>
               </td>
@@ -5013,6 +5042,7 @@
                     <i class="bi bi-three-dots text-muted"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end shadow-sm border-light-subtle" style="font-size: 0.85rem; border-radius: 0.5rem; z-index: 1050;">
+                    <li><a class="dropdown-item py-2" href="#" onclick="event.preventDefault(); AEF.openDetailClientModal('${c.id}')"><i class="bi bi-eye me-2 text-info"></i> Detail Client</a></li>
                     <li><a class="dropdown-item py-2" href="#" onclick="event.preventDefault(); AEF.openEditClientModal('${c.id}')"><i class="bi bi-pencil me-2 text-primary"></i> Edit Data</a></li>
                     <li><hr class="dropdown-divider my-1"></li>
                     <li><a class="dropdown-item py-2 text-danger" href="#" onclick="event.preventDefault(); AEF.confirmDeleteClient('${c.id}')"><i class="bi bi-trash me-2"></i> Hapus</a></li>
@@ -5109,6 +5139,43 @@
       this.showModal('modal-client');
     },
 
+    openDetailClientModal: function (id) {
+      const raw = this.paginationState.clients.rawData || [];
+      const client = raw.find(c => c.id === id);
+      if (!client) return;
+
+      document.getElementById('detail-client-code').innerText = client.client_code || '-';
+      document.getElementById('detail-client-name').innerText = client.client_name || '-';
+      document.getElementById('detail-client-pic').innerText = client.contact_person || '-';
+      document.getElementById('detail-client-phone').innerText = client.phone || '-';
+      document.getElementById('detail-client-email').innerText = client.email || '-';
+      document.getElementById('detail-client-address').innerText = client.address || '-';
+      document.getElementById('detail-client-description').innerText = client.description || 'Tidak ada catatan tambahan.';
+      document.getElementById('detail-client-created').innerText = client.created_at ? client.created_at.split('T')[0] : '-';
+      document.getElementById('detail-client-updated').innerText = client.updated_at ? client.updated_at.split('T')[0] : '-';
+
+      const statusBadge = document.getElementById('detail-client-status-badge');
+      if (statusBadge) {
+        statusBadge.innerText = client.status === 'ACTIVE' ? 'Aktif' : 'Nonaktif';
+        statusBadge.className = client.status === 'ACTIVE' ? 'badge badge-light-success' : 'badge badge-light-danger';
+      }
+
+      // Count linked projects
+      const projects = (this.paginationState.projects && this.paginationState.projects.rawData) || [];
+      const linked = projects.filter(p => p.client_id === client.id);
+      document.getElementById('detail-client-project-count').innerText = `${linked.length} Proyek`;
+
+      const editBtn = document.getElementById('btn-client-edit-action');
+      if (editBtn) {
+        editBtn.onclick = () => {
+          this.hideModal('modal-detail-client');
+          this.openEditClientModal(client.id);
+        };
+      }
+
+      this.showModal('modal-detail-client');
+    },
+
     submitClientForm: function () {
       const btn = document.getElementById('btn-save-client');
       if (btn) {
@@ -5167,22 +5234,48 @@
       }
     },
 
-    confirmDeleteClient: function (id) {
-      if (confirm('Apakah Anda yakin ingin menghapus data pelanggan ini? Tindakan ini tidak dapat dibatalkan.')) {
-        google.script.run
-          .withSuccessHandler((res) => {
-            if (res && res.success) {
-              this.showToast('Data pelanggan berhasil dihapus', 'success');
-              this.loadClientsTable(true);
-            } else {
-              alert(res.message || 'Gagal menghapus data.');
-            }
-          })
-          .withFailureHandler((err) => {
-            alert('Terjadi kesalahan: ' + (err.message || err));
-          })
-          .apiDeleteClient({ id: id, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
+    confirmDeleteClient: function (id, name) {
+      if (!name && this.paginationState && this.paginationState.clients && Array.isArray(this.paginationState.clients.rawData)) {
+        const found = this.paginationState.clients.rawData.find(c => c.id === id);
+        if (found) name = found.client_name;
       }
+      document.getElementById('delete-client-id').value = id;
+      document.getElementById('delete-client-name-preview').innerText = name || 'pelanggan terpilih';
+      this.showModal('modal-delete-client');
+    },
+
+    submitDeleteClient: function () {
+      const id = document.getElementById('delete-client-id')?.value;
+      if (!id) return;
+
+      const btn = document.getElementById('btn-submit-delete-client');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menghapus...';
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i> Ya, Hapus Pelanggan';
+          }
+          if (res && res.success) {
+            this.hideModal('modal-delete-client');
+            this.showToast(res.message || 'Data pelanggan berhasil dihapus!', 'success');
+            this.loadClientsTable(true);
+          } else {
+            alert(res.message || 'Gagal menghapus data pelanggan.');
+          }
+        })
+        .withFailureHandler((err) => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash me-1"></i> Ya, Hapus Pelanggan';
+          }
+          alert('Terjadi kesalahan: ' + (err.message || err));
+        })
+        .apiDeleteClient({ id: id, actor_id: this.state.user ? this.state.user.id : 'SYSTEM' });
     },
 
     populateClientDropdown: function (elementId, selectedId = '') {

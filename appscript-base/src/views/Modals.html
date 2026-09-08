@@ -1028,20 +1028,42 @@
               <input type="text" id="add-project-pm" class="form-control form-control-sm" placeholder="Nama penanggung jawab proyek">
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Tanggal Mulai</label>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Tanggal Kontrak</label>
+              <input type="date" id="add-project-contract-date" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Tanggal Mulai (Plan)</label>
               <input type="date" id="add-project-start" class="form-control form-control-sm">
             </div>
-            <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Target Tanggal Selesai</label>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Target Tanggal Selesai (Plan)</label>
               <input type="date" id="add-project-end" class="form-control form-control-sm">
             </div>
 
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Actual Date Start (Tgl Mulai Aktual)</label>
+              <input type="date" id="add-project-actual-start" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Actual Date Finish (Tgl Selesai Aktual)</label>
+              <input type="date" id="add-project-actual-finish" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Nilai Contract / Kontrak (Rp)</label>
+              <input type="number" id="add-project-contract-value" class="form-control form-control-sm" placeholder="0" min="0" step="1000">
+            </div>
             <div class="col-md-4">
               <label class="form-label text-muted small fw-semibold">Total Anggaran / Budget (Rp)</label>
               <input type="number" id="add-project-budget" class="form-control form-control-sm" placeholder="0" min="0" step="1000">
             </div>
             <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Profit Center</label>
+              <input type="text" id="add-project-profit-center" class="form-control form-control-sm" placeholder="Misal DIV-IT-ERP">
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Tingkat Prioritas</label>
               <select id="add-project-priority" class="form-select form-select-sm">
                 <option value="LOW">Low</option>
@@ -1050,7 +1072,7 @@
                 <option value="CRITICAL">Critical</option>
               </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Status Proyek</label>
               <select id="add-project-status" class="form-select form-select-sm">
                 <option value="PLANNING" selected>Planning</option>
@@ -1122,20 +1144,42 @@
               <input type="text" id="edit-project-pm" class="form-control form-control-sm">
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Tanggal Mulai</label>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Tanggal Kontrak</label>
+              <input type="date" id="edit-project-contract-date" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Tanggal Mulai (Plan)</label>
               <input type="date" id="edit-project-start" class="form-control form-control-sm">
             </div>
-            <div class="col-md-6">
-              <label class="form-label text-muted small fw-semibold">Target Tanggal Selesai</label>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Target Tanggal Selesai (Plan)</label>
               <input type="date" id="edit-project-end" class="form-control form-control-sm">
             </div>
 
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Actual Date Start (Tgl Mulai Aktual)</label>
+              <input type="date" id="edit-project-actual-start" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-muted small fw-semibold">Actual Date Finish (Tgl Selesai Aktual)</label>
+              <input type="date" id="edit-project-actual-finish" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Nilai Contract / Kontrak (Rp)</label>
+              <input type="number" id="edit-project-contract-value" class="form-control form-control-sm" min="0" step="1000">
+            </div>
             <div class="col-md-4">
               <label class="form-label text-muted small fw-semibold">Total Anggaran / Budget (Rp)</label>
               <input type="number" id="edit-project-budget" class="form-control form-control-sm" min="0" step="1000">
             </div>
             <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Profit Center</label>
+              <input type="text" id="edit-project-profit-center" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Tingkat Prioritas</label>
               <select id="edit-project-priority" class="form-select form-select-sm">
                 <option value="LOW">Low</option>
@@ -1144,7 +1188,7 @@
                 <option value="CRITICAL">Critical</option>
               </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label text-muted small fw-semibold">Status Proyek</label>
               <select id="edit-project-status" class="form-select form-select-sm">
                 <option value="PLANNING">Planning</option>
@@ -1194,24 +1238,27 @@
         <button type="button" class="btn-close" onclick="AEF.hideModal('modal-detail-project')"></button>
       </div>
       <div class="modal-body p-4">
-        <!-- Badges & Progress Header -->
+        <!-- Badges & Financial Header -->
         <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3 flex-wrap gap-2">
           <div class="d-flex align-items-center gap-2">
             <span class="text-muted small">Status:</span>
             <span id="detail-project-status-badge" class="badge badge-light-primary">PLANNING</span>
             <span class="text-muted small ms-2">Prioritas:</span>
             <span id="detail-project-priority-badge" class="badge badge-light-warning">MEDIUM</span>
+            <span class="text-muted small ms-2">Profit Center:</span>
+            <span id="detail-project-profit-center" class="badge bg-white text-dark border fw-bold">-</span>
           </div>
           <div class="text-end">
-            <span class="text-muted small d-block">Anggaran Proyek</span>
-            <h5 class="fw-bold text-dark mb-0" id="detail-project-budget">Rp 0</h5>
+            <span class="text-muted small d-block">Nilai Kontrak / Budget</span>
+            <h5 class="fw-bold text-success mb-0" id="detail-project-contract-value">Rp 0</h5>
+            <div class="text-muted small" style="font-size: 0.75rem;" id="detail-project-budget">Budget: Rp 0</div>
           </div>
         </div>
 
         <!-- Progress Bar -->
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="small text-muted fw-semibold">Progress Keseluruhan</span>
+            <span class="small text-muted fw-semibold">Progress Pengerjaan</span>
             <span class="small fw-bold text-primary" id="detail-project-progress-text">0%</span>
           </div>
           <div class="progress" style="height: 10px; border-radius: 6px;">
@@ -1230,9 +1277,17 @@
               <span class="text-muted small d-block">Manajer Proyek / PIC</span>
               <span class="fw-semibold text-dark fs-7" id="detail-project-pm">-</span>
             </div>
-            <div>
-              <span class="text-muted small d-block">Jadwal Pelaksanaan</span>
+            <div class="mb-3">
+              <span class="text-muted small d-block">Tanggal Kontrak</span>
+              <span class="fw-semibold text-dark fs-7" id="detail-project-contract-date">-</span>
+            </div>
+            <div class="mb-3">
+              <span class="text-muted small d-block">Jadwal Rencana (Plan)</span>
               <span class="fw-semibold text-dark fs-7" id="detail-project-timeline">-</span>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Realisasi (Actual Dates)</span>
+              <span class="fw-semibold text-dark fs-7" id="detail-project-actual-timeline">-</span>
             </div>
           </div>
 
@@ -1279,6 +1334,169 @@
           <button type="button" class="btn btn-light text-muted border btn-sm px-3" onclick="AEF.hideModal('modal-delete-project')">Batal</button>
           <button type="button" id="btn-submit-delete-project" class="btn btn-danger btn-sm px-3" onclick="AEF.submitDeleteProject()">
             <i class="bi bi-trash me-1"></i> Ya, Hapus Proyek
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODALS: DATA PELANGGAN (CLIENT)            -->
+<!-- ========================================== -->
+<!-- 1. Tambah/Edit Client Modal -->
+<div class="modal fade" id="modal-client" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-bottom-0 pb-0">
+        <h5 class="modal-title fw-bold" id="modal-client-title">Tambah Pelanggan Baru</h5>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('modal-client')" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="form-client">
+          <input type="hidden" id="client-id" name="client_id">
+          
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Kode Pelanggan <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm bg-light" id="client-code" name="client_code" placeholder="Otomatis digenerate" readonly>
+              <div class="form-text" style="font-size: 0.7rem;">Dikosongkan untuk auto-generate.</div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label text-muted small fw-semibold">Nama Klien / Instansi <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" id="client-name" name="client_name" placeholder="Misal: PT Teknologi Cemerlang" required>
+            </div>
+
+            <div class="col-md-12">
+              <hr class="my-2 border-light-subtle">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Contact Person (PIC)</label>
+              <input type="text" class="form-control form-control-sm" id="client-pic" name="contact_person" placeholder="Nama lengkap">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">No. Telepon / HP</label>
+              <input type="text" class="form-control form-control-sm" id="client-phone" name="phone" placeholder="0812...">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Email Kontak</label>
+              <input type="email" class="form-control form-control-sm" id="client-email" name="email" placeholder="email@perusahaan.com">
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label text-muted small fw-semibold">Alamat Lengkap</label>
+              <textarea class="form-control form-control-sm" id="client-address" name="address" rows="2" placeholder="Alamat lengkap kantor / domisili"></textarea>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label text-muted small fw-semibold">Keterangan / Deskripsi</label>
+              <textarea class="form-control form-control-sm" id="client-description" name="description" rows="1" placeholder="Catatan opsional"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label text-muted small fw-semibold">Status <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" id="client-status" name="status" required>
+                <option value="ACTIVE" selected>Aktif</option>
+                <option value="INACTIVE">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer border-top-0 pt-0">
+        <button type="button" class="btn btn-sm btn-light text-muted border" onclick="AEF.hideModal('modal-client')">Batal</button>
+        <button type="button" class="btn btn-sm btn-aef-primary px-4" id="btn-save-client" onclick="AEF.submitClientForm()">
+          <i class="bi bi-save me-1"></i> Simpan Data
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Detail Client Modal -->
+<div class="modal fade" id="modal-detail-client" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-header border-light py-3 px-4 d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge badge-light-primary mb-1" id="detail-client-code">CLI-2025-001</span>
+          <h5 class="modal-title fw-bold text-dark" id="detail-client-name">Nama Pelanggan</h5>
+        </div>
+        <button type="button" class="btn-close" onclick="AEF.hideModal('modal-detail-client')"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
+          <div>
+            <span class="text-muted small me-2">Status Akun:</span>
+            <span id="detail-client-status-badge" class="badge badge-light-success">Aktif</span>
+          </div>
+          <div class="text-end">
+            <span class="text-muted small d-block">Jumlah Proyek Terkait</span>
+            <span class="fw-bold text-primary fs-6" id="detail-client-project-count">0 Proyek</span>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 border-end border-light">
+            <div class="mb-3">
+              <span class="text-muted small d-block">Contact Person (PIC)</span>
+              <span class="fw-semibold text-dark fs-7" id="detail-client-pic">-</span>
+            </div>
+            <div class="mb-3">
+              <span class="text-muted small d-block">No. Telepon / WhatsApp</span>
+              <span class="fw-semibold text-dark fs-7" id="detail-client-phone">-</span>
+            </div>
+            <div>
+              <span class="text-muted small d-block">Alamat Email</span>
+              <span class="fw-semibold text-dark fs-7" id="detail-client-email">-</span>
+            </div>
+          </div>
+
+          <div class="col-md-6 ps-md-3">
+            <div class="mb-3">
+              <span class="text-muted small d-block">Alamat Kantor / Domisili</span>
+              <span class="text-dark small d-block" id="detail-client-address">-</span>
+            </div>
+            <div class="mb-3">
+              <span class="text-muted small d-block">Keterangan / Catatan</span>
+              <span class="text-muted small d-block" id="detail-client-description">-</span>
+            </div>
+            <div class="pt-2 border-top border-light">
+              <div class="row g-2 text-muted small" style="font-size: 0.72rem;">
+                <div class="col-6">Dibuat: <span class="text-dark fw-medium" id="detail-client-created">-</span></div>
+                <div class="col-6">Diperbarui: <span class="text-dark fw-medium" id="detail-client-updated">-</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-light py-3 px-4 bg-light-subtle d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-light text-muted border btn-sm" onclick="AEF.hideModal('modal-detail-client')">Tutup</button>
+        <button type="button" id="btn-client-edit-action" class="btn btn-aef-primary btn-sm">
+          <i class="bi bi-pencil-square me-1"></i> Edit Pelanggan Ini
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Konfirmasi Hapus Client Modal -->
+<div class="modal fade" id="modal-delete-client" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+    <div class="modal-content bg-white border-0 shadow-lg" style="border-radius: 0.75rem;">
+      <div class="modal-body p-4 text-center">
+        <div class="mx-auto rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background-color: #ffeef0;">
+          <i class="bi bi-trash3-fill fs-2" style="color: #f1416c;"></i>
+        </div>
+        <h5 class="fw-bold text-dark mb-1">Hapus Data Pelanggan?</h5>
+        <p class="text-muted small mb-3">
+          Apakah Anda yakin ingin menghapus pelanggan <span class="fw-bold text-dark" id="delete-client-name-preview">-</span>? Data yang terhubung tidak akan hilang permanen namun status akan dinonaktifkan.
+        </p>
+        <input type="hidden" id="delete-client-id">
+        <div class="d-flex justify-content-center gap-2">
+          <button type="button" class="btn btn-light text-muted border btn-sm px-3" onclick="AEF.hideModal('modal-delete-client')">Batal</button>
+          <button type="button" id="btn-submit-delete-client" class="btn btn-danger btn-sm px-3" onclick="AEF.submitDeleteClient()">
+            <i class="bi bi-trash me-1"></i> Ya, Hapus Pelanggan
           </button>
         </div>
       </div>

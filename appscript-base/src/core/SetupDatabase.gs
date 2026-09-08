@@ -818,16 +818,28 @@ function syncMasterProject(ss) {
     const repo = new ProjectRepository();
     repo.initProjectSheet(ss);
   } else {
-    // If it exists, ensure it has client_id instead of client_name
-    const pData = projectSheet.getRange(1, 1, 1, projectSheet.getLastColumn()).getValues();
-    if (pData[0].indexOf('client_name') !== -1) {
-      // It still uses client_name, rename header to client_id
-      const colIdx = pData[0].indexOf('client_name') + 1;
+    // If it exists, ensure header columns match
+    const pData = projectSheet.getRange(1, 1, 1, Math.max(1, projectSheet.getLastColumn())).getValues();
+    const currentHeaders = pData[0].map(h => String(h).trim());
+
+    if (currentHeaders.indexOf('client_name') !== -1 && currentHeaders.indexOf('client_id') === -1) {
+      const colIdx = currentHeaders.indexOf('client_name') + 1;
       projectSheet.getRange(1, colIdx).setValue('client_id');
+      currentHeaders[colIdx - 1] = 'client_id';
     }
+
+    // Auto-append missing new fields to header row
+    const targetHeaders = ['contract_date', 'actual_start_date', 'actual_finish_date', 'contract_value', 'profit_center'];
+    targetHeaders.forEach(h => {
+      if (currentHeaders.indexOf(h) === -1) {
+        const nextCol = projectSheet.getLastColumn() + 1;
+        projectSheet.getRange(1, nextCol).setValue(h).setFontWeight('bold').setBackground('#f3f4f6');
+        currentHeaders.push(h);
+      }
+    });
   }
 
-  // 2. Ensure mst_permission has PROJECT permissions
+  // 2. Ensure mst_permission has PROJECT & CLIENT permissions
   const permSheet = ss.getSheetByName('mst_permission');
   if (permSheet && permSheet.getLastRow() > 0) {
     const permData = permSheet.getDataRange().getValues();
@@ -847,7 +859,11 @@ function syncMasterProject(ss) {
         { code: 'PROJECT_VIEW', name: 'View Project Management' },
         { code: 'PROJECT_CREATE', name: 'Create Project' },
         { code: 'PROJECT_UPDATE', name: 'Update Project' },
-        { code: 'PROJECT_DELETE', name: 'Delete Project' }
+        { code: 'PROJECT_DELETE', name: 'Delete Project' },
+        { code: 'CLIENT_VIEW', name: 'View Client Data' },
+        { code: 'CLIENT_CREATE', name: 'Create Client' },
+        { code: 'CLIENT_UPDATE', name: 'Update Client' },
+        { code: 'CLIENT_DELETE', name: 'Delete Client' }
       ];
 
       ['ROLE_SUPER_ADMIN', 'ROLE_ADMIN'].forEach(roleId => {
@@ -1047,6 +1063,13 @@ function syncMenuPermissions(ss) {
     { code: 'PROJECT_DELETE', name: 'Master Proyek - DELETE' },
     { code: 'PROJECT_EXPORT', name: 'Master Proyek - EXPORT' },
     { code: 'PROJECT_IMPORT', name: 'Master Proyek - IMPORT' },
+    // Data Pelanggan (Clients)
+    { code: 'CLIENT_VIEW', name: 'Data Pelanggan - VIEW' },
+    { code: 'CLIENT_CREATE', name: 'Data Pelanggan - CREATE' },
+    { code: 'CLIENT_UPDATE', name: 'Data Pelanggan - UPDATE' },
+    { code: 'CLIENT_DELETE', name: 'Data Pelanggan - DELETE' },
+    { code: 'CLIENT_EXPORT', name: 'Data Pelanggan - EXPORT' },
+    { code: 'CLIENT_IMPORT', name: 'Data Pelanggan - IMPORT' },
     // Menus
     { code: 'MENU_VIEW', name: 'Menu Management - VIEW' },
     { code: 'MENU_CREATE', name: 'Menu Management - CREATE' },
