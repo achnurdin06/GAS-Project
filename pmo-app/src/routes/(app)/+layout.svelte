@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Sidebar from '#lib/components/layout/Sidebar.svelte';
+	import Toaster from '#lib/components/ui/Toaster.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -10,4 +11,5 @@
 	<main class="min-w-0 flex-1 p-6">
 		{@render children()}
 	</main>
+	<Toaster />
 </div>
