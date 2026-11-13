@@ -5,6 +5,8 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let editingId = $state<string | null>(null);
+
 	const submit = () => {
 		return async ({
 			result,
@@ -80,7 +82,34 @@
 					<td class="px-3 py-2">{m.permissionCode ?? '-'}</td>
 					<td class="px-3 py-2">{m.sortOrder}</td>
 					<td class="px-3 py-2">{m.isActive ? 'Aktif' : 'Nonaktif'}</td>
-					<td class="px-3 py-2 text-right">
+					<td class="px-3 py-2 text-right whitespace-nowrap">
+						{#if data.can.update}
+							<form method="POST" action="?/move" use:enhance={submit} class="inline">
+								<input type="hidden" name="id" value={m.id} />
+								<input type="hidden" name="direction" value="up" />
+								<button
+									type="submit"
+									title="Naikkan"
+									class="px-1 text-slate-600 hover:text-[#17365D]">↑</button
+								>
+							</form>
+							<form method="POST" action="?/move" use:enhance={submit} class="inline">
+								<input type="hidden" name="id" value={m.id} />
+								<input type="hidden" name="direction" value="down" />
+								<button
+									type="submit"
+									title="Turunkan"
+									class="px-1 text-slate-600 hover:text-[#17365D]">↓</button
+								>
+							</form>
+						{/if}
+						{#if data.can.update}
+							<button
+								type="button"
+								class="text-[#17365D] hover:underline"
+								onclick={() => (editingId = editingId === m.id ? null : m.id)}>Edit</button
+							>
+						{/if}
 						{#if data.can.delete}
 							<form method="POST" action="?/delete" use:enhance={submit}>
 								<input type="hidden" name="id" value={m.id} />
@@ -89,6 +118,77 @@
 						{/if}
 					</td>
 				</tr>
+				{#if editingId === m.id}
+					<tr>
+						<td colspan="7" class="bg-slate-50 px-3 py-3">
+							<form
+								method="POST"
+								action="?/update"
+								use:enhance={submit}
+								class="grid gap-2 text-sm md:grid-cols-4"
+							>
+								<input type="hidden" name="id" value={m.id} />
+								<label>
+									<span class="block text-xs text-slate-600">Label</span>
+									<input
+										name="label"
+										value={m.label}
+										required
+										class="mt-1 w-full rounded-md border-slate-300"
+									/>
+								</label>
+								<label>
+									<span class="block text-xs text-slate-600">Route</span>
+									<input
+										name="route"
+										value={m.route ?? ''}
+										class="mt-1 w-full rounded-md border-slate-300"
+									/>
+								</label>
+								<label>
+									<span class="block text-xs text-slate-600">Icon</span>
+									<input
+										name="icon"
+										value={m.icon ?? ''}
+										class="mt-1 w-full rounded-md border-slate-300"
+									/>
+								</label>
+								<label>
+									<span class="block text-xs text-slate-600">Parent</span>
+									<select name="parentId" class="mt-1 w-full rounded-md border-slate-300">
+										<option value="">-- Root --</option>
+										{#each data.menus.filter((x) => !x.parentId && x.id !== m.id) as pm (pm.id)}
+											<option value={pm.id} selected={m.parentId === pm.id}>{pm.label}</option>
+										{/each}
+									</select>
+								</label>
+								<label>
+									<span class="block text-xs text-slate-600">Urutan</span>
+									<input
+										name="sortOrder"
+										type="number"
+										value={m.sortOrder}
+										class="mt-1 w-full rounded-md border-slate-300"
+									/>
+								</label>
+								<label>
+									<span class="block text-xs text-slate-600">Permission</span>
+									<input
+										name="permissionCode"
+										value={m.permissionCode ?? ''}
+										class="mt-1 w-full rounded-md border-slate-300"
+									/>
+								</label>
+								<label class="flex items-end gap-2 pb-2">
+									<input type="checkbox" name="isActive" checked={m.isActive} /> Aktif
+								</label>
+								<button type="submit" class="rounded-md bg-[#17365D] px-3 py-2 text-white">
+									Simpan
+								</button>
+							</form>
+						</td>
+					</tr>
+				{/if}
 			{/each}
 		</tbody>
 	</table>

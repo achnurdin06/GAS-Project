@@ -6,6 +6,7 @@ import {
 	deleteMenu,
 	listMenus,
 	MenuServiceError,
+	moveMenu,
 	updateMenu
 } from '#lib/server/services/menu.service.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -70,6 +71,21 @@ export const actions: Actions = {
 		try {
 			await updateMenu(id, parsed.data, actorOf(locals, getClientAddress()));
 			return { message: 'Menu disimpan' };
+		} catch (e) {
+			if (e instanceof MenuServiceError)
+				return fail(400, { errors: { [e.field ?? '_']: e.message } });
+			throw e;
+		}
+	},
+
+	move: async ({ request, locals, getClientAddress }) => {
+		requirePermission(locals, 'menu.update');
+		const form = await request.formData();
+		const id = String(form.get('id'));
+		const direction = form.get('direction') === 'up' ? 'up' : 'down';
+		try {
+			await moveMenu(id, direction, actorOf(locals, getClientAddress()));
+			return { message: 'Urutan disimpan' };
 		} catch (e) {
 			if (e instanceof MenuServiceError)
 				return fail(400, { errors: { [e.field ?? '_']: e.message } });

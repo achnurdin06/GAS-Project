@@ -2,6 +2,7 @@ import { asc, eq, inArray } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import { roles, permissions, rolePermissions, userRoles } from '#lib/server/db/schema.ts';
 import { writeAudit } from './audit.service.ts';
+import { invalidateMenuCache } from './menu-cache.ts';
 import type { RoleInput, RolePermissionGrant } from '#lib/schemas/role.schema.ts';
 
 export interface Actor {
@@ -203,21 +204,25 @@ export async function setRolePermissions(
 		if (found.length !== new Set(ids).size) throw new RoleServiceError('Permission tidak valid');
 	}
 	const before = await db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-	return db.transaction(async (tx) => {
-		await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-		if (grants.length) {
-			await tx
-				.insert(rolePermissions)
-				.values(grants.map((g) => ({ roleId, permissionId: g.permissionId, scope: g.scope })));
-		}
-		await writeAudit(tx, {
-			userId: actor.userId,
-			action: 'update',
-			entityType: 'role_permissions',
-			entityId: roleId,
-			before,
-			after: grants,
-			ip: actor.ip
+	return db
+		.transaction(async (tx) => {
+			await tx.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+			if (grants.length) {
+				await tx
+					.insert(rolePermissions)
+					.values(grants.map((g) => ({ roleId, permissionId: g.permissionId, scope: g.scope })));
+			}
+			await writeAudit(tx, {
+				userId: actor.userId,
+				action: 'update',
+				entityType: 'role_permissions',
+				entityId: roleId,
+				before,
+				after: grants,
+				ip: actor.ip
+			});
+		})
+		.then(() => {
+			invalidateMenuCache();
 		});
-	});
 }
