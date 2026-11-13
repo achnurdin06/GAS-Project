@@ -1,0 +1,15 @@
+{
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
+	"[svelte]": { "editor.defaultFormatter": "svelte.svelte-vscode" },
+	"eslint.validate": ["javascript", "typescript", "svelte"],
+	"typescript.preferences.importModuleSpecifier": "non-relative",
+	"files.exclude": { "**/.svelte-kit": true, "**/node_modules": true },
+	"search.exclude": { "**/build": true, "**/.svelte-kit": true },
+	"chat.instructionsFilesLocations": { ".github": true },
+	"github.copilot.chat.codeGeneration.useInstructionFiles": true
+}

@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: pmo
+      POSTGRES_PASSWORD: pmo_dev_password
+      POSTGRES_DB: pmo
+      TZ: Asia/Jakarta
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Penyimpanan evidence/lampiran (S3-compatible) — aktifkan di Fase 3 (Billing)
+  # minio:
+  #   image: minio/minio
+  #   command: server /data --console-address ":9001"
+  #   ports: ["9000:9000", "9001:9001"]
+  #   environment:
+  #     MINIO_ROOT_USER: pmo
+  #     MINIO_ROOT_PASSWORD: pmo_dev_password
+  #   volumes: [miniodata:/data]
+
+volumes:
+  pgdata:
+  # miniodata:
