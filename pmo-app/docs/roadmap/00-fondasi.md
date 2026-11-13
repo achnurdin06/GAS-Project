@@ -19,7 +19,7 @@
 - [x] **F0-3 Helper audit**: `src/lib/server/services/audit.service.ts` → `writeAudit(tx, { userId, action, entityType, entityId, before, after, ip })`.
 - [x] **F0-4 Komponen UI dasar**: `Badge` (RAG/status), `KpiTile`, `DataTable` (paginasi + sort server-side), `Modal`, `Toast`, `Select` dari master_values.
 - [x] **F0-5 User Management** (FR-USER-01..06): list, tambah (pakai Better Auth admin API / insert user+account), edit, nonaktifkan, reset password, assign role, assign project.
-- [ ] **F0-6 Role & Permission** (FR-ROLE-01..05): CRUD role + matriks checkbox resource × action + scope.
-- [ ] **F0-7 Menu Management** (FR-MENU-01..05): CRUD menu; sidebar membaca tabel `menus` (cache per role), menggantikan `DEFAULT_MENU`.
-- [ ] **F0-8 Master Data & Settings** (FR-MD-01..02): CRUD nilai master (tidak bisa hapus yang dipakai), edit settings (threshold RAG, mapping status).
-- [ ] **F0-9 Audit Trail viewer** (FR-AUD-03).
+- [x] **F0-6 Role & Permission** (FR-ROLE-01..05): CRUD role + matriks checkbox resource × action + scope.
+- [x] **F0-7 Menu Management** (FR-MENU-01..05): CRUD menu; sidebar membaca tabel `menus` (cache per role), menggantikan `DEFAULT_MENU`.
+- [x] **F0-8 Master Data & Settings** (FR-MD-01..02): CRUD nilai master (tidak bisa hapus yang dipakai), edit settings (threshold RAG, mapping status).
+- [x] **F0-9 Audit Trail viewer** (FR-AUD-03).
