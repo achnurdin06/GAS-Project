@@ -17,8 +17,8 @@
 - [x] **F0-1 Ganti password wajib** (FR-AUTH-06): setelah login, jika `user_profiles.must_change_password` true, redirect ke `/account/password`; form ganti password via `auth.api.changePassword`.
 - [x] **F0-2 Lock akun & audit login** (FR-AUTH-07, FR-AUD-02): catat `login`/`login_failed` ke `audit_logs`; kunci akun (status Locked) setelah 5 kali gagal dalam 15 menit.
 - [x] **F0-3 Helper audit**: `src/lib/server/services/audit.service.ts` → `writeAudit(tx, { userId, action, entityType, entityId, before, after, ip })`.
-- [ ] **F0-4 Komponen UI dasar**: `Badge` (RAG/status), `KpiTile`, `DataTable` (paginasi + sort server-side), `Modal`, `Toast`, `Select` dari master_values.
-- [ ] **F0-5 User Management** (FR-USER-01..06): list, tambah (pakai Better Auth admin API / insert user+account), edit, nonaktifkan, reset password, assign role, assign project.
+- [x] **F0-4 Komponen UI dasar**: `Badge` (RAG/status), `KpiTile`, `DataTable` (paginasi + sort server-side), `Modal`, `Toast`, `Select` dari master_values.
+- [x] **F0-5 User Management** (FR-USER-01..06): list, tambah (pakai Better Auth admin API / insert user+account), edit, nonaktifkan, reset password, assign role, assign project.
 - [ ] **F0-6 Role & Permission** (FR-ROLE-01..05): CRUD role + matriks checkbox resource × action + scope.
 - [ ] **F0-7 Menu Management** (FR-MENU-01..05): CRUD menu; sidebar membaca tabel `menus` (cache per role), menggantikan `DEFAULT_MENU`.
 - [ ] **F0-8 Master Data & Settings** (FR-MD-01..02): CRUD nilai master (tidak bisa hapus yang dipakai), edit settings (threshold RAG, mapping status).

@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends Record<string, unknown>">
+<script lang="ts" generics="T extends object">
 	import { goto } from '$app/navigation';
 	import { page as pageState } from '$app/state';
 	import type { Snippet } from 'svelte';
