@@ -114,52 +114,6 @@ export async function deleteMenu(id: string, actor: Actor) {
 		});
 }
 
-/** Build nested menu tree filtered by permission. */
-export async function buildMenuForRoles(roleCodes: string[], authzPerms: Set<string>) {
-	const rows = await db
-		.select()
-		.from(menus)
-		.where(eq(menus.isActive, true))
-		.orderBy(asc(menus.sortOrder));
-	const byParent = new Map<string | null, MenuRow[]>();
-	for (const r of rows) {
-		const key = r.parentId;
-		if (!byParent.has(key)) byParent.set(key, []);
-		byParent.get(key)!.push(r);
-	}
-	function hasPerm(code: string | null) {
-		if (!code) return true;
-		return authzPerms.has(code);
-	}
-	function build(parentId: string | null): {
-		label: string;
-		route?: string;
-		icon?: string;
-		children?: { label: string; route?: string; icon?: string; children?: unknown[] }[];
-	}[] {
-		const children = byParent.get(parentId) ?? [];
-		const out: {
-			label: string;
-			route?: string;
-			icon?: string;
-			children?: { label: string; route?: string; icon?: string; children?: unknown[] }[];
-		}[] = [];
-		for (const c of children) {
-			if (!hasPerm(c.permissionCode)) continue;
-			const kids = build(c.id);
-			if (kids.length === 0 && c.route == null && (byParent.get(c.id)?.length ?? 0) > 0) continue;
-			out.push({
-				label: c.label,
-				route: c.route ?? undefined,
-				icon: c.icon ?? undefined,
-				children: kids.length ? kids : undefined
-			});
-		}
-		return out;
-	}
-	return build(null);
-}
-
 /** Tukar `sortOrder` dengan tetangga terdekat pada level yang sama (FR-MENU-03). */
 export async function moveMenu(id: string, direction: 'up' | 'down', actor: Actor) {
 	const [current] = await db.select().from(menus).where(eq(menus.id, id));
