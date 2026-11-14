@@ -1,1 +1,0 @@
-ALTER TABLE "pmo"."user_profiles" ADD COLUMN "locked_until" timestamp with time zone;
